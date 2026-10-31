@@ -20,17 +20,18 @@ type Props = {
   initialData?: string;
   onChange: (json: string) => void;
   onSelectionChange: (selected: boolean) => void;
+  onTextChange: (name: string, value: string) => void;
 };
 
 export type { Tool };
 
 export default function DesignCanvas({
   slideId, title, eyebrow, body, theme, tool, fill, stroke, strokeWidth,
-  fontFamily, fontSize, shadowEnabled, opacity, initialData, onChange, onSelectionChange
+  fontFamily, fontSize, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange
 }: Props) {
   const elementRef = useRef<HTMLCanvasElement>(null);
   const canvasRef = useRef<any>(null);
-  const latestRef = useRef({ title, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontSize, shadowEnabled, opacity, initialData, onChange, onSelectionChange });
+  const latestRef = useRef({ title, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontSize, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange });
   latestRef.current = { title, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontSize, initialData, onChange, onSelectionChange };
 
   useEffect(() => {
@@ -109,6 +110,13 @@ export default function DesignCanvas({
       canvas.on("object:added", save);
       canvas.on("object:removed", save);
       canvas.on("text:changed", save);
+      canvas.on("text:editing:exited", (event: any) => {
+        const object = event.target;
+        if (object?.name && typeof object.text === "string") {
+          latestRef.current.onTextChange(object.name, object.text);
+        }
+        save();
+      });
       canvas.on("selection:created", selection);
       canvas.on("selection:updated", selection);
       canvas.on("selection:cleared", selection);
