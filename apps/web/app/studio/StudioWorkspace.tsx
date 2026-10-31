@@ -103,6 +103,20 @@ export default function StudioWorkspace() {
     setHistoryIndex((current) => ({ ...current, [activeId]: (current[activeId] ?? 0) + 1 }));
   }
 
+  function applyStylePreset(preset: "violet" | "glass" | "neon" | "outline" | "sunset") {
+    const presets = {
+      violet: { fill: "#8b5cf6", stroke: "#c4b5fd", shadow: true },
+      glass: { fill: "rgba(255,255,255,0.16)", stroke: "rgba(255,255,255,0.72)", shadow: false },
+      neon: { fill: "#211338", stroke: "#e879f9", shadow: true },
+      outline: { fill: "rgba(0,0,0,0)", stroke: "#a78bfa", shadow: false },
+      sunset: { fill: "#f97316", stroke: "#fed7aa", shadow: true },
+    };
+    const selected = presets[preset];
+    setFill(selected.fill);
+    setStroke(selected.stroke);
+    setShadowEnabled(selected.shadow);
+  }
+
   function sendPrompt() {
     const clean = prompt.trim();
     if (!clean) return;
@@ -199,6 +213,14 @@ export default function StudioWorkspace() {
             <div className="color-control-row"><label>Fill <input type="color" value={fill} onChange={(event) => setFill(event.target.value)}/></label><label>Border <input type="color" value={stroke} onChange={(event) => setStroke(event.target.value)}/></label></div>
             <label className="range-label">Stroke width <span>{strokeWidth}px</span></label><input className="range-control" type="range" min="1" max="18" value={strokeWidth} onChange={(event) => setStrokeWidth(Number(event.target.value))}/>
             <label className="range-label">Opacity <span>{Math.round(opacity * 100)}%</span></label><input className="range-control" type="range" min="10" max="100" value={Math.round(opacity * 100)} onChange={(event) => setOpacity(Number(event.target.value) / 100)}/>
+<div className="inspector-label preset-label">QUICK STYLE PRESETS</div>
+            <div className="style-preset-grid">
+              <button onClick={() => applyStylePreset("violet")}><i className="preset-violet"/>Violet</button>
+              <button onClick={() => applyStylePreset("glass")}><i className="preset-glass"/>Glass</button>
+              <button onClick={() => applyStylePreset("neon")}><i className="preset-neon"/>Neon</button>
+              <button onClick={() => applyStylePreset("outline")}><i className="preset-outline"/>Outline</button>
+              <button onClick={() => applyStylePreset("sunset")}><i className="preset-sunset"/>Sunset</button>
+            </div>
             <button className={`quick-action ${shadowEnabled?"selected-effect":""}`} onClick={() => setShadowEnabled((value) => !value)}><Layers3 size={14}/> {shadowEnabled?"Shadow enabled":"Add soft shadow"}</button>
           </div>
           <div className="inspector-section">
