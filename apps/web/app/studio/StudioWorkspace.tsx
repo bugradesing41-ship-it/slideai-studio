@@ -1,31 +1,25 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { sampleDeck, type DeckTheme, type SlideSpec } from "@slideai/shared";
 import {
   ArrowLeft, ArrowUpRight, Check, ChevronDown, Download, ImagePlus,
   LayoutTemplate, MessageSquare, MoreHorizontal, Plus, Send, Settings2,
   Sparkles, Type, WandSparkles, ZoomIn, ZoomOut
 } from "lucide-react";
 
-type Slide = { id: number; title: string; eyebrow: string; body: string; kind: "cover" | "content" | "stats" | "quote" };
-
-const initialSlides: Slide[] = [
-  { id: 1, title: "The next era of\nartificial intelligence", eyebrow: "A FIELD GUIDE · 2026", body: "How intelligent systems are reshaping the way we live, work and create.", kind: "cover" },
-  { id: 2, title: "A new kind of intelligence", eyebrow: "01 — THE SHIFT", body: "AI is moving beyond automation. It is becoming a creative partner, a research assistant and an interface to knowledge.", kind: "content" },
-  { id: 3, title: "The landscape is changing", eyebrow: "02 — MOMENTUM", body: "From personal assistants to scientific discovery, intelligent tools are finding a place in everyday workflows.", kind: "stats" },
-  { id: 4, title: "The opportunity is human", eyebrow: "03 — THE BIG IDEA", body: "The most meaningful progress happens when human judgment meets machine capability.", kind: "quote" },
-];
+type Slide = SlideSpec;
 
 export default function StudioWorkspace() {
-  const [slides, setSlides] = useState(initialSlides);
+  const [slides, setSlides] = useState<Slide[]>(sampleDeck.slides);
   const [activeId, setActiveId] = useState(1);
   const [prompt, setPrompt] = useState("");
   const [messages, setMessages] = useState([
     { role: "assistant", text: "Your starting deck is ready. Tell me what you would like to change, or select any text on the slide to edit it." }
   ]);
-  const [title, setTitle] = useState("The next era of artificial intelligence");
+  const [title, setTitle] = useState(sampleDeck.title);
   const [zoom, setZoom] = useState(82);
-  const [theme, setTheme] = useState<"violet" | "blue" | "light">("violet");
+  const [theme, setTheme] = useState<DeckTheme>("violet");
   const activeSlide = useMemo(() => slides.find((slide) => slide.id === activeId) ?? slides[0], [slides, activeId]);
 
   function updateActive(patch: Partial<Slide>) {
@@ -34,7 +28,7 @@ export default function StudioWorkspace() {
 
   function addSlide() {
     const id = Math.max(...slides.map((slide) => slide.id)) + 1;
-    const next: Slide = { id, title: "A new perspective", eyebrow: "04 — EXPLORE", body: "Add your key message here. Keep the idea focused, clear and memorable.", kind: "content" };
+    const next: Slide = { id, title: "A new perspective", eyebrow: "04 — EXPLORE", body: "Add your key message here. Keep the idea focused, clear and memorable.", kind: "content", layout: "title-and-body" };
     setSlides((current) => [...current, next]);
     setActiveId(id);
   }
