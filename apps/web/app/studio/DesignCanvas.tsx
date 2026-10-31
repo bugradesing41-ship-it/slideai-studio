@@ -1,5 +1,8 @@
 "use client";
 
+/* Fabric's canvas event payloads are intentionally dynamic at this integration boundary. */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { useEffect, useRef } from "react";
 
 declare module "fabric" {
@@ -305,7 +308,7 @@ export default function DesignCanvas({
     }
     canvas.requestRenderAll();
     recordCommand();
-  }, [command.token]);
+  }, [command.token, command.action]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
