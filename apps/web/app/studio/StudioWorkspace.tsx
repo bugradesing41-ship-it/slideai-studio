@@ -151,7 +151,8 @@ export default function StudioWorkspace() {
           </div>
 
           <div className="canvas-stage advanced-canvas-stage">
-            <motion.div key={activeId + transitionPreset} className="canvas-motion-frame" style={{ transform: `scale(${zoom / 100})` }} initial={transitionPreset==="rise"?{opacity:0,y:24}:transitionPreset==="zoom"?{opacity:0,scale:.94}:transitionPreset==="slide"?{opacity:0,x:28}:{opacity:0}} animate={{opacity:1,x:0,y:0,scale:1}} transition={{duration:.32,ease:"easeOut"}}>
+            <div className="canvas-zoom-frame" style={{ transform: `scale(${zoom / 100})` }}>
+              <motion.div key={activeId + transitionPreset} className="canvas-motion-frame" initial={transitionPreset==="rise"?{opacity:0,y:24}:transitionPreset==="zoom"?{opacity:0,scale:.94}:transitionPreset==="slide"?{opacity:0,x:28}:{opacity:0}} animate={{opacity:1,x:0,y:0,scale:1}} transition={{duration:.32,ease:"easeOut"}}>
               <DesignCanvas
                 slideId={activeId}
                 title={activeSlide.title}
@@ -169,7 +170,8 @@ export default function StudioWorkspace() {
                 onChange={saveCanvas}
                 onSelectionChange={() => {}}
               />
-            </motion.div>
+              </motion.div>
+            </div>
           </div>
 
           <div className="filmstrip"><div className="filmstrip-label">SLIDES <span>{slides.length}</span></div><div className="thumbnail-list">{slides.map((slide,index) => <button className={`thumbnail ${activeId===slide.id?"selected":""}`} key={slide.id} onClick={() => setActiveId(slide.id)}><div className={`thumbnail-art thumb-${slide.kind}`}><small>{slide.eyebrow}</small><strong>{slide.title}</strong><i/><i/></div><span>{String(index+1).padStart(2,"0")}</span></button>)}<button className="add-slide" onClick={addSlide}><Plus size={18}/><span>Add slide</span></button></div></div>
