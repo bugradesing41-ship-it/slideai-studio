@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   ArrowUpRight,
   FolderOpen,
@@ -38,15 +39,15 @@ export default function Home() {
   return (
     <main className="app-shell">
       <aside className="sidebar">
-        <a className="brand" href="/" aria-label="SlideAI Studio home">
+        <Link className="brand" href="/" aria-label="SlideAI Studio home">
           <span className="brand-mark"><Layers3 size={19} strokeWidth={2.3} /></span>
           <span>slideai<span className="brand-light">studio</span></span>
-        </a>
+        </Link>
 
-        <a className="new-button" href="/studio">
+        <Link className="new-button" href="/studio">
           <Plus size={17} /> New presentation
           <span className="shortcut">⌘ K</span>
-        </a>
+        </Link>
 
         <div className="nav-label">WORKSPACE</div>
         <nav className="side-nav">
