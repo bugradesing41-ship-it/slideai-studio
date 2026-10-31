@@ -260,6 +260,16 @@ export default function DesignCanvas({
 
     const active = canvas.getActiveObject();
     if (!active) return;
+    const recordCommand = () => {
+      const json = JSON.stringify(canvas.toJSON(["name", "animationPreset"]));
+      latestRef.current.onChange(json);
+      const current = historyRef.current;
+      if (current.items[current.index] !== json) {
+        const items = [...current.items.slice(0, current.index + 1), json].slice(-60);
+        historyRef.current = { items, index: items.length - 1 };
+        latestRef.current.onHistoryChange(items.length > 1, false);
+      }
+    };
     if (action === "delete") {
       canvas.remove(active);
       canvas.discardActiveObject();
@@ -269,7 +279,7 @@ export default function DesignCanvas({
         canvas.add(copy);
         canvas.setActiveObject(copy);
         canvas.requestRenderAll();
-        latestRef.current.onChange(JSON.stringify(canvas.toJSON(["name", "animationPreset"])));
+        recordCommand();
       });
       return;
     } else if (action === "front") {
@@ -278,7 +288,7 @@ export default function DesignCanvas({
       canvas.sendObjectToBack(active);
     }
     canvas.requestRenderAll();
-    latestRef.current.onChange(JSON.stringify(canvas.toJSON(["name", "animationPreset"])));
+    recordCommand();
   }, [command.token]);
 
   useEffect(() => {
