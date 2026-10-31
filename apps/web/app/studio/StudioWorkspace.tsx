@@ -1,11 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { motion } from "motion/react";
+import DesignCanvas, { type Tool } from "./DesignCanvas";
 import { sampleDeck, validateDeck, type DeckTheme, type SlideSpec } from "@slideai/shared";
 import {
   ArrowLeft, ArrowUpRight, Check, ChevronDown, ChevronDown as MoveDown, ChevronUp as MoveUp, Copy, Download, ImagePlus,
   LayoutTemplate, MessageSquare, MoreHorizontal, Plus, Send, Settings2,
-  Sparkles, Trash2, Type, WandSparkles, ZoomIn, ZoomOut
+  Sparkles, Trash2, Type, WandSparkles, ZoomIn, ZoomOut, MousePointer2,
+  Pencil, Square, Circle as CircleIcon, Triangle as TriangleIcon, Minus,
+  MoveUpRight, Star, Undo2, Redo2, Layers3, Paintbrush
 } from "lucide-react";
 
 type Slide = SlideSpec;
@@ -20,6 +24,17 @@ export default function StudioWorkspace() {
   const [title, setTitle] = useState(sampleDeck.title);
   const [zoom, setZoom] = useState(82);
   const [theme, setTheme] = useState<DeckTheme>("violet");
+  const [tool, setTool] = useState<Tool>("select");
+  const [fill, setFill] = useState("#a78bfa");
+  const [stroke, setStroke] = useState("#d8ccff");
+  const [strokeWidth, setStrokeWidth] = useState(3);
+  const [fontFamily, setFontFamily] = useState("Manrope");
+  const [fontSize, setFontSize] = useState(32);
+  const [shadowEnabled, setShadowEnabled] = useState(false);
+  const [canvasDataBySlide, setCanvasDataBySlide] = useState<Record<number, string>>({});
+  const [transitionPreset, setTransitionPreset] = useState("fade");
+  const [history, setHistory] = useState<Record<number, string[]>>({});
+  const [historyIndex, setHistoryIndex] = useState<Record<number, number>>({});
   const activeSlide = useMemo(() => slides.find((slide) => slide.id === activeId) ?? slides[0], [slides, activeId]);
 
   function updateActive(patch: Partial<Slide>) {
@@ -77,6 +92,16 @@ export default function StudioWorkspace() {
     if (validation.success) setSlides(validation.data.slides);
   }
 
+  function saveCanvas(json: string) {
+    setCanvasDataBySlide((current) => ({ ...current, [activeId]: json }));
+    setHistory((current) => {
+      const entries = current[activeId] ?? [];
+      if (entries[entries.length - 1] === json) return current;
+      return { ...current, [activeId]: [...entries.slice(-29), json] };
+    });
+    setHistoryIndex((current) => ({ ...current, [activeId]: (current[activeId] ?? 0) + 1 }));
+  }
+
   function sendPrompt() {
     const clean = prompt.trim();
     if (!clean) return;
@@ -104,24 +129,96 @@ export default function StudioWorkspace() {
         </aside>
 
         <section className="editor-main">
-          <div className="editor-toolbar"><div className="toolbar-left"><span className="toolbar-label">SLIDE {String(slides.findIndex((slide) => slide.id === activeId) + 1).padStart(2,"0")} <i>/ {String(slides.length).padStart(2,"0")}</i></span><span className="toolbar-divider"/><button className="tool-button"><Type size={14}/> Text</button><button className="tool-button"><ImagePlus size={14}/> Image</button><button className="tool-button"><LayoutTemplate size={14}/> Layout</button></div><div className="toolbar-right"><button className="icon-button" onClick={() => setZoom((value) => Math.max(50,value-5))} aria-label="Zoom out"><ZoomOut size={15}/></button><span className="zoom-value">{zoom}%</span><button className="icon-button" onClick={() => setZoom((value) => Math.min(110,value+5))} aria-label="Zoom in"><ZoomIn size={15}/></button></div></div>
-
-          <div className={`canvas-stage theme-${theme}`}><div className="slide-canvas" style={{ transform: `scale(${zoom/100})` }}>
-            <div className="slide-decoration"/><div className="slide-topline"><span>SLIDEAI / FIELD NOTES</span><span>2026&nbsp;&nbsp;—&nbsp;&nbsp;01</span></div>
-            <div className="slide-content">
-              <span className="slide-eyebrow" contentEditable suppressContentEditableWarning onBlur={(event) => updateActive({eyebrow:event.currentTarget.textContent ?? ""})}>{activeSlide.eyebrow}</span>
-              <h1 className={activeSlide.kind === "cover" ? "cover-title" : ""} contentEditable suppressContentEditableWarning onBlur={(event) => { const value = event.currentTarget.textContent ?? ""; updateActive({title:value}); setTitle(value.replace(/\n/g," ")); }}>{activeSlide.title}</h1>
-              <p contentEditable suppressContentEditableWarning onBlur={(event) => updateActive({body:event.currentTarget.textContent ?? ""})}>{activeSlide.body}</p>
-              {activeSlide.kind === "stats" && <div className="slide-stats"><div><strong>72<span>%</span></strong><small>Faster first drafts</small></div><div><strong>3.4<span>×</span></strong><small>More ideas explored</small></div><div><strong>24<span>/7</span></strong><small>Creative momentum</small></div></div>}
-              {activeSlide.kind === "quote" && <blockquote>“Technology is most powerful when it gives people more room to be human.”</blockquote>}
+          <div className="editor-toolbar editor-toolbar-advanced">
+            <div className="toolbar-left toolbar-tools">
+              <span className="toolbar-label">SLIDE {String(slides.findIndex((slide) => slide.id === activeId) + 1).padStart(2,"0")} <i>/ {String(slides.length).padStart(2,"0")}</i></span>
+              <span className="toolbar-divider"/>
+              <button className={`tool-button ${tool==="select"?"active-tool":""}`} onClick={() => setTool("select")} title="Select"><MousePointer2 size={15}/></button>
+              <button className={`tool-button ${tool==="draw"?"active-tool":""}`} onClick={() => setTool("draw")} title="Free draw"><Pencil size={15}/></button>
+              <button className={`tool-button ${tool==="rect"?"active-tool":""}`} onClick={() => setTool("rect")} title="Rectangle"><Square size={15}/></button>
+              <button className={`tool-button ${tool==="circle"?"active-tool":""}`} onClick={() => setTool("circle")} title="Circle"><CircleIcon size={15}/></button>
+              <button className={`tool-button ${tool==="triangle"?"active-tool":""}`} onClick={() => setTool("triangle")} title="Triangle"><TriangleIcon size={15}/></button>
+              <button className={`tool-button ${tool==="line"?"active-tool":""}`} onClick={() => setTool("line")} title="Line"><Minus size={15}/></button>
+              <button className={`tool-button ${tool==="arrow"?"active-tool":""}`} onClick={() => setTool("arrow")} title="Arrow"><MoveUpRight size={15}/></button>
+              <button className={`tool-button ${tool==="star"?"active-tool":""}`} onClick={() => setTool("star")} title="Star"><Star size={15}/></button>
+              <button className={`tool-button ${tool==="text"?"active-tool":""}`} onClick={() => setTool("text")} title="Add text"><Type size={15}/></button>
             </div>
-            <div className="slide-footer"><span>THINK CLEARLY. CREATE BOLDLY.</span><span>0{activeId}</span></div>
-          </div></div>
+            <div className="toolbar-right">
+              <button className="icon-button" onClick={() => setZoom((value) => Math.max(50,value-5))} aria-label="Zoom out"><ZoomOut size={15}/></button>
+              <span className="zoom-value">{zoom}%</span>
+              <button className="icon-button" onClick={() => setZoom((value) => Math.min(110,value+5))} aria-label="Zoom in"><ZoomIn size={15}/></button>
+            </div>
+          </div>
+
+          <div className="canvas-stage advanced-canvas-stage">
+            <motion.div key={activeId + transitionPreset} className="canvas-motion-frame" initial={transitionPreset==="rise"?{opacity:0,y:24}:transitionPreset==="zoom"?{opacity:0,scale:.94}:transitionPreset==="slide"?{opacity:0,x:28}:{opacity:0}} animate={{opacity:1,x:0,y:0,scale:1}} transition={{duration:.32,ease:"easeOut"}}>
+              <DesignCanvas
+                slideId={activeId}
+                title={activeSlide.title}
+                eyebrow={activeSlide.eyebrow}
+                body={activeSlide.body}
+                theme={theme}
+                tool={tool}
+                fill={fill}
+                stroke={stroke}
+                strokeWidth={strokeWidth}
+                fontFamily={fontFamily}
+                fontSize={fontSize}
+                initialData={canvasDataBySlide[activeId]}
+                onChange={saveCanvas}
+                onSelectionChange={() => {}}
+              />
+            </motion.div>
+          </div>
 
           <div className="filmstrip"><div className="filmstrip-label">SLIDES <span>{slides.length}</span></div><div className="thumbnail-list">{slides.map((slide,index) => <button className={`thumbnail ${activeId===slide.id?"selected":""}`} key={slide.id} onClick={() => setActiveId(slide.id)}><div className={`thumbnail-art thumb-${slide.kind}`}><small>{slide.eyebrow}</small><strong>{slide.title}</strong><i/><i/></div><span>{String(index+1).padStart(2,"0")}</span></button>)}<button className="add-slide" onClick={addSlide}><Plus size={18}/><span>Add slide</span></button></div></div>
         </section>
 
-        <aside className="inspector-panel"><div className="inspector-heading"><strong>Design</strong><button className="icon-button"><Settings2 size={16}/></button></div><div className="inspector-section"><div className="inspector-label">THEME <ChevronDown size={13}/></div><div className="theme-options"><button className={`theme-swatch violet-swatch ${theme==="violet"?"chosen":""}`} onClick={() => setTheme("violet")} aria-label="Violet theme"/><button className={`theme-swatch blue-swatch ${theme==="blue"?"chosen":""}`} onClick={() => setTheme("blue")} aria-label="Blue theme"/><button className={`theme-swatch light-swatch ${theme==="light"?"chosen":""}`} onClick={() => setTheme("light")} aria-label="Light theme"/></div><p className="inspector-hint">Choose a visual direction for your deck.</p></div><div className="inspector-section"><div className="inspector-label">SLIDE CONTENT <ChevronDown size={13}/></div><label className="field-label">Slide title</label><input className="inspector-input" value={activeSlide.title} onChange={(event) => updateActive({title:event.target.value})}/><label className="field-label">Description</label><textarea className="inspector-textarea" value={activeSlide.body} onChange={(event) => updateActive({body:event.target.value})}/></div><div className="inspector-section"><div className="inspector-label">SLIDE ACTIONS</div><button className="quick-action" onClick={duplicateSlide}><Copy size={14}/> Duplicate slide</button><button className="quick-action" onClick={() => moveSlide(-1)} disabled={slides.findIndex((slide) => slide.id === activeId) === 0}><MoveUp size={14}/> Move slide up</button><button className="quick-action" onClick={() => moveSlide(1)} disabled={slides.findIndex((slide) => slide.id === activeId) === slides.length - 1}><MoveDown size={14}/> Move slide down</button><button className="quick-action danger-action" onClick={deleteSlide} disabled={slides.length <= 1}><Trash2 size={14}/> Delete slide</button><div className="inspector-label action-subheading">QUICK ACTIONS</div><button className="quick-action" onClick={() => updateActive({kind:"quote",layout:"featured-quote"})}><MessageSquare size={14}/> Turn into a quote</button><button className="quick-action" onClick={() => updateActive({kind:"content",layout:"title-and-body"})}><Type size={14}/> Standard content layout</button></div><div className="inspector-tip"><Sparkles size={15}/><div><strong>Design tip</strong><p>Keep one clear message per slide. Let the layout support your story.</p></div></div></aside>
+        <aside className="inspector-panel advanced-inspector">
+          <div className="inspector-heading"><strong>Design studio</strong><button className="icon-button"><Settings2 size={16}/></button></div>
+          <div className="inspector-section">
+            <div className="inspector-label">THEME <ChevronDown size={13}/></div>
+            <div className="theme-options">
+              <button className={`theme-swatch violet-swatch ${theme==="violet"?"chosen":""}`} onClick={() => setTheme("violet")} aria-label="Violet theme"/>
+              <button className={`theme-swatch blue-swatch ${theme==="blue"?"chosen":""}`} onClick={() => setTheme("blue")} aria-label="Blue theme"/>
+              <button className={`theme-swatch light-swatch ${theme==="light"?"chosen":""}`} onClick={() => setTheme("light")} aria-label="Light theme"/>
+            </div>
+          </div>
+          <div className="inspector-section">
+            <div className="inspector-label">COLORS & STROKE</div>
+            <div className="color-control-row"><label>Fill <input type="color" value={fill} onChange={(event) => setFill(event.target.value)}/></label><label>Border <input type="color" value={stroke} onChange={(event) => setStroke(event.target.value)}/></label></div>
+            <label className="range-label">Stroke width <span>{strokeWidth}px</span></label><input className="range-control" type="range" min="1" max="18" value={strokeWidth} onChange={(event) => setStrokeWidth(Number(event.target.value))}/>
+            <button className={`quick-action ${shadowEnabled?"selected-effect":""}`} onClick={() => setShadowEnabled((value) => !value)}><Layers3 size={14}/> {shadowEnabled?"Shadow enabled":"Add soft shadow"}</button>
+          </div>
+          <div className="inspector-section">
+            <div className="inspector-label">TYPOGRAPHY</div>
+            <label className="field-label">Font family</label>
+            <select className="inspector-input" value={fontFamily} onChange={(event) => setFontFamily(event.target.value)}>
+              <option>Inter</option><option>DM Sans</option><option>Manrope</option><option>Space Grotesk</option><option>Playfair Display</option><option>Montserrat</option><option>Lora</option>
+            </select>
+            <label className="range-label">Font size <span>{fontSize}px</span></label><input className="range-control" type="range" min="12" max="100" value={fontSize} onChange={(event) => setFontSize(Number(event.target.value))}/>
+          </div>
+          <div className="inspector-section">
+            <div className="inspector-label">SLIDE TRANSITION</div>
+            <select className="inspector-input" value={transitionPreset} onChange={(event) => setTransitionPreset(event.target.value)}>
+              <option value="fade">Fade</option><option value="rise">Rise</option><option value="zoom">Zoom</option><option value="slide">Slide in</option>
+            </select>
+            <p className="inspector-hint">Preview transitions when switching between slides. Motion-powered.</p>
+          </div>
+          <div className="inspector-section">
+            <div className="inspector-label">SLIDE CONTENT</div>
+            <label className="field-label">Slide title</label><input className="inspector-input" value={activeSlide.title} onChange={(event) => { updateActive({title:event.target.value}); }}/>
+            <label className="field-label">Description</label><textarea className="inspector-textarea" value={activeSlide.body} onChange={(event) => updateActive({body:event.target.value})}/>
+          </div>
+          <div className="inspector-section">
+            <div className="inspector-label">OBJECT ACTIONS</div>
+            <button className="quick-action" onClick={duplicateSlide}><Copy size={14}/> Duplicate slide</button>
+            <button className="quick-action" onClick={() => moveSlide(-1)} disabled={slides.findIndex((slide) => slide.id === activeId) === 0}><MoveUp size={14}/> Move slide up</button>
+            <button className="quick-action" onClick={() => moveSlide(1)} disabled={slides.findIndex((slide) => slide.id === activeId) === slides.length - 1}><MoveDown size={14}/> Move slide down</button>
+            <button className="quick-action danger-action" onClick={deleteSlide} disabled={slides.length <= 1}><Trash2 size={14}/> Delete slide</button>
+          </div>
+          <div className="inspector-tip"><Sparkles size={15}/><div><strong>Pro tip</strong><p>Select any shape or text on the canvas to resize, rotate, recolor and layer it.</p></div></div>
+        </aside>
       </div>
     </main>
   );
