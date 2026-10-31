@@ -199,7 +199,9 @@ export default function DesignCanvas({
         }
         if (drawingShape) {
           canvas.selection = false;
+          restoringRef.current = true;
           canvas.add(drawingShape);
+          restoringRef.current = false;
           canvas.setActiveObject(drawingShape);
           canvas.requestRenderAll();
         }
