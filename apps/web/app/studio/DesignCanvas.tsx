@@ -62,6 +62,7 @@ export default function DesignCanvas({
         if (bodyObject) bodyObject.set("text", current.body);
         canvas.backgroundColor = current.theme === "light" ? "#f1eee7" : current.theme === "blue" ? "#102333" : "#171525";
         canvas.requestRenderAll();
+        save();
       };
 
       if (latestRef.current.initialData) {
@@ -109,50 +110,75 @@ export default function DesignCanvas({
       canvas.on("selection:created", selection);
       canvas.on("selection:updated", selection);
       canvas.on("selection:cleared", selection);
+      let drawingShape: any = null;
+      let drawStart: { x: number; y: number } | null = null;
+
       canvas.on("mouse:down", (event: any) => {
-        if (latestRef.current.tool === "rect" && event.target == null) {
-          const pointer = canvas.getPointer(event.e);
-          const shape = new fabric.Rect({ left: pointer.x, top: pointer.y, width: 180, height: 110, fill: latestRef.current.fill, stroke: latestRef.current.stroke, strokeWidth: latestRef.current.strokeWidth, rx: 8, ry: 8 });
-          canvas.add(shape); canvas.setActiveObject(shape); canvas.requestRenderAll(); save();
+        const currentTool = latestRef.current.tool;
+        if (event.target != null) return;
+        const pointer = canvas.getPointer(event.e);
+        if (currentTool === "text") {
+          const text = new fabric.IText("Double-click to edit", { left: pointer.x, top: pointer.y, fontFamily: latestRef.current.fontFamily, fontSize: latestRef.current.fontSize, fill: latestRef.current.fill, editable: true });
+          canvas.add(text); canvas.setActiveObject(text); text.enterEditing(); canvas.requestRenderAll(); save();
+          return;
         }
-        if (latestRef.current.tool === "circle" && event.target == null) {
-          const pointer = canvas.getPointer(event.e);
-          const shape = new fabric.Circle({ left: pointer.x, top: pointer.y, radius: 65, fill: latestRef.current.fill, stroke: latestRef.current.stroke, strokeWidth: latestRef.current.strokeWidth });
-          canvas.add(shape); canvas.setActiveObject(shape); canvas.requestRenderAll(); save();
-        }
-        if (latestRef.current.tool === "triangle" && event.target == null) {
-          const pointer = canvas.getPointer(event.e);
-          const shape = new fabric.Triangle({ left: pointer.x, top: pointer.y, width: 150, height: 135, fill: latestRef.current.fill, stroke: latestRef.current.stroke, strokeWidth: latestRef.current.strokeWidth });
-          canvas.add(shape); canvas.setActiveObject(shape); canvas.requestRenderAll(); save();
-        }
-        if (latestRef.current.tool === "star" && event.target == null) {
-          const pointer = canvas.getPointer(event.e);
+        if (!["rect", "circle", "triangle", "star", "line", "arrow"].includes(currentTool)) return;
+
+        drawStart = { x: pointer.x, y: pointer.y };
+        const style = { fill: latestRef.current.fill, stroke: latestRef.current.stroke, strokeWidth: latestRef.current.strokeWidth };
+        if (currentTool === "rect") drawingShape = new fabric.Rect({ left: pointer.x, top: pointer.y, width: 1, height: 1, rx: 8, ry: 8, ...style });
+        if (currentTool === "circle") drawingShape = new fabric.Ellipse({ left: pointer.x, top: pointer.y, rx: 1, ry: 1, ...style });
+        if (currentTool === "triangle") drawingShape = new fabric.Triangle({ left: pointer.x, top: pointer.y, width: 1, height: 1, ...style });
+        if (currentTool === "star") {
           const points = Array.from({ length: 10 }, (_, index) => {
-            const radius = index % 2 === 0 ? 66 : 29;
+            const radius = index % 2 === 0 ? 68 : 30;
             const angle = (Math.PI * 2 * index) / 10 - Math.PI / 2;
             return { x: 70 + Math.cos(angle) * radius, y: 70 + Math.sin(angle) * radius };
           });
-          const shape = new fabric.Polygon(points, { left: pointer.x, top: pointer.y, fill: latestRef.current.fill, stroke: latestRef.current.stroke, strokeWidth: latestRef.current.strokeWidth });
-          canvas.add(shape); canvas.setActiveObject(shape); canvas.requestRenderAll(); save();
+          drawingShape = new fabric.Polygon(points, { left: pointer.x, top: pointer.y, scaleX: 0.01, scaleY: 0.01, ...style });
         }
-        if (latestRef.current.tool === "line" && event.target == null) {
-          const pointer = canvas.getPointer(event.e);
-          const shape = new fabric.Line([pointer.x, pointer.y, pointer.x + 180, pointer.y], { stroke: latestRef.current.stroke, strokeWidth: Math.max(2, latestRef.current.strokeWidth), selectable: true });
-          canvas.add(shape); canvas.setActiveObject(shape); canvas.requestRenderAll(); save();
+        if (currentTool === "line") drawingShape = new fabric.Line([pointer.x, pointer.y, pointer.x, pointer.y], { stroke: latestRef.current.stroke, strokeWidth: Math.max(2, latestRef.current.strokeWidth) });
+        if (currentTool === "arrow") {
+          drawingShape = new fabric.Group([
+            new fabric.Line([0, 15, 150, 15], { stroke: latestRef.current.stroke, strokeWidth: Math.max(3, latestRef.current.strokeWidth) }),
+            new fabric.Triangle({ left: 138, top: 3, width: 25, height: 25, angle: 90, fill: latestRef.current.stroke })
+          ], { left: pointer.x, top: pointer.y, scaleX: 0.01, scaleY: 0.01 });
         }
-        if (latestRef.current.tool === "arrow" && event.target == null) {
-          const pointer = canvas.getPointer(event.e);
-          const shape = new fabric.Group([
-            new fabric.Line([0, 0, 155, 0], { stroke: latestRef.current.stroke, strokeWidth: Math.max(3, latestRef.current.strokeWidth), originX: "center", originY: "center" }),
-            new fabric.Triangle({ left: 145, top: -10, width: 24, height: 24, angle: 90, fill: latestRef.current.stroke, originX: "center", originY: "center" })
-          ], { left: pointer.x, top: pointer.y });
-          canvas.add(shape); canvas.setActiveObject(shape); canvas.requestRenderAll(); save();
+        if (drawingShape) {
+          canvas.selection = false;
+          canvas.add(drawingShape);
+          canvas.setActiveObject(drawingShape);
+          canvas.requestRenderAll();
         }
-        if (latestRef.current.tool === "text" && event.target == null) {
-          const pointer = canvas.getPointer(event.e);
-          const text = new fabric.IText("Double-click to edit", { left: pointer.x, top: pointer.y, fontFamily: latestRef.current.fontFamily, fontSize: latestRef.current.fontSize, fill: latestRef.current.fill, editable: true });
-          canvas.add(text); canvas.setActiveObject(text); text.enterEditing(); canvas.requestRenderAll(); save();
+      });
+
+      canvas.on("mouse:move", (event: any) => {
+        if (!drawingShape || !drawStart) return;
+        const pointer = canvas.getPointer(event.e);
+        const left = Math.min(drawStart.x, pointer.x);
+        const top = Math.min(drawStart.y, pointer.y);
+        const width = Math.max(1, Math.abs(pointer.x - drawStart.x));
+        const height = Math.max(1, Math.abs(pointer.y - drawStart.y));
+        const currentTool = latestRef.current.tool;
+        if (currentTool === "rect" || currentTool === "triangle") drawingShape.set({ left, top, width, height });
+        if (currentTool === "circle") drawingShape.set({ left, top, rx: width / 2, ry: height / 2 });
+        if (currentTool === "star") drawingShape.set({ left, top, scaleX: width / 140, scaleY: height / 140 });
+        if (currentTool === "line") drawingShape.set({ x1: drawStart.x, y1: drawStart.y, x2: pointer.x, y2: pointer.y });
+        if (currentTool === "arrow") {
+          drawingShape.set({ left, top, scaleX: width / 165, scaleY: Math.max(0.2, height / 30) });
         }
+        drawingShape.setCoords();
+        canvas.requestRenderAll();
+      });
+
+      canvas.on("mouse:up", () => {
+        if (!drawingShape) return;
+        canvas.selection = true;
+        drawingShape.setCoords();
+        drawingShape = null;
+        drawStart = null;
+        canvas.requestRenderAll();
+        save();
       });
 
       canvas.isDrawingMode = latestRef.current.tool === "draw";
