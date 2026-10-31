@@ -1,6 +1,5 @@
 import {
   ArrowUpRight,
-  FilePlus2,
   FolderOpen,
   Layers3,
   Plus,
