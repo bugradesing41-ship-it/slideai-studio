@@ -9,7 +9,7 @@ import {
   LayoutTemplate, MessageSquare, MoreHorizontal, Plus, Send, Settings2,
   Sparkles, Trash2, Type, WandSparkles, ZoomIn, ZoomOut, MousePointer2,
   Pencil, Square, Circle as CircleIcon, Triangle as TriangleIcon, Minus,
-  MoveUpRight, Star, Undo2, Redo2, Layers3, Paintbrush
+  MoveUpRight, Star, Undo2, Redo2, Layers3, Paintbrush, Diamond, Hexagon, Pentagon, Heart, MessageSquareText
 } from "lucide-react";
 
 type Slide = SlideSpec;
@@ -141,6 +141,11 @@ export default function StudioWorkspace() {
               <button className={`tool-button ${tool==="line"?"active-tool":""}`} onClick={() => setTool("line")} title="Line"><Minus size={15}/></button>
               <button className={`tool-button ${tool==="arrow"?"active-tool":""}`} onClick={() => setTool("arrow")} title="Arrow"><MoveUpRight size={15}/></button>
               <button className={`tool-button ${tool==="star"?"active-tool":""}`} onClick={() => setTool("star")} title="Star"><Star size={15}/></button>
+              <button className={`tool-button ${tool==="diamond"?"active-tool":""}`} onClick={() => setTool("diamond")} title="Diamond"><Diamond size={15}/></button>
+              <button className={`tool-button ${tool==="hexagon"?"active-tool":""}`} onClick={() => setTool("hexagon")} title="Hexagon"><Hexagon size={15}/></button>
+              <button className={`tool-button ${tool==="pentagon"?"active-tool":""}`} onClick={() => setTool("pentagon")} title="Pentagon"><Pentagon size={15}/></button>
+              <button className={`tool-button ${tool==="heart"?"active-tool":""}`} onClick={() => setTool("heart")} title="Heart"><Heart size={15}/></button>
+              <button className={`tool-button ${tool==="speech"?"active-tool":""}`} onClick={() => setTool("speech")} title="Speech bubble"><MessageSquareText size={15}/></button>
               <button className={`tool-button ${tool==="text"?"active-tool":""}`} onClick={() => setTool("text")} title="Add text"><Type size={15}/></button>
             </div>
             <div className="toolbar-right">
