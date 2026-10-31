@@ -164,6 +164,7 @@ export default function StudioWorkspace() {
                 strokeWidth={strokeWidth}
                 fontFamily={fontFamily}
                 fontSize={fontSize}
+                shadowEnabled={shadowEnabled}
                 initialData={canvasDataBySlide[activeId]}
                 onChange={saveCanvas}
                 onSelectionChange={() => {}}
