@@ -31,6 +31,7 @@ export default function StudioWorkspace() {
   const [fontFamily, setFontFamily] = useState("Manrope");
   const [fontSize, setFontSize] = useState(32);
   const [shadowEnabled, setShadowEnabled] = useState(false);
+  const [opacity, setOpacity] = useState(1);
   const [canvasDataBySlide, setCanvasDataBySlide] = useState<Record<number, string>>({});
   const [transitionPreset, setTransitionPreset] = useState("fade");
   const [history, setHistory] = useState<Record<number, string[]>>({});
@@ -171,6 +172,7 @@ export default function StudioWorkspace() {
                 fontFamily={fontFamily}
                 fontSize={fontSize}
                 shadowEnabled={shadowEnabled}
+                opacity={opacity}
                 initialData={canvasDataBySlide[activeId]}
                 onChange={saveCanvas}
                 onSelectionChange={() => {}}
@@ -196,6 +198,7 @@ export default function StudioWorkspace() {
             <div className="inspector-label">COLORS & STROKE</div>
             <div className="color-control-row"><label>Fill <input type="color" value={fill} onChange={(event) => setFill(event.target.value)}/></label><label>Border <input type="color" value={stroke} onChange={(event) => setStroke(event.target.value)}/></label></div>
             <label className="range-label">Stroke width <span>{strokeWidth}px</span></label><input className="range-control" type="range" min="1" max="18" value={strokeWidth} onChange={(event) => setStrokeWidth(Number(event.target.value))}/>
+            <label className="range-label">Opacity <span>{Math.round(opacity * 100)}%</span></label><input className="range-control" type="range" min="10" max="100" value={Math.round(opacity * 100)} onChange={(event) => setOpacity(Number(event.target.value) / 100)}/>
             <button className={`quick-action ${shadowEnabled?"selected-effect":""}`} onClick={() => setShadowEnabled((value) => !value)}><Layers3 size={14}/> {shadowEnabled?"Shadow enabled":"Add soft shadow"}</button>
           </div>
           <div className="inspector-section">
