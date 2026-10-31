@@ -205,6 +205,11 @@ export default function StudioWorkspace() {
                 initialData={canvasDataBySlide[activeId]}
                 onChange={saveCanvas}
                 onSelectionChange={() => {}}
+                onTextChange={(name, value) => {
+                  if (name === "slide-title") { updateActive({ title: value }); setTitle(value); }
+                  if (name === "slide-eyebrow") updateActive({ eyebrow: value });
+                  if (name === "slide-body") updateActive({ body: value });
+                }}
               />
               </motion.div>
             </div>
