@@ -140,7 +140,7 @@ export default function DesignCanvas({
 
       canvas.on("mouse:down", (event: any) => {
         const currentTool = latestRef.current.tool;
-        if (event.target != null) return;
+        if (event.target != null && currentTool === "select") return;
         const pointer = canvas.getPointer(event.e);
         if (currentTool === "text") {
           const text = new fabric.IText("Double-click to edit", { left: pointer.x, top: pointer.y, fontFamily: latestRef.current.fontFamily, fontSize: latestRef.current.fontSize, fill: latestRef.current.fill, editable: true });
