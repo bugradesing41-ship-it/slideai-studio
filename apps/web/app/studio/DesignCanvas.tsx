@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
-type Tool = "select" | "draw" | "rect" | "circle" | "triangle" | "line" | "arrow" | "star" | "text";
+type Tool = "select" | "draw" | "rect" | "circle" | "triangle" | "line" | "arrow" | "star" | "diamond" | "hexagon" | "pentagon" | "heart" | "speech" | "text";
 type Props = {
   slideId: number;
   title: string;
@@ -123,7 +123,7 @@ export default function DesignCanvas({
           canvas.add(text); canvas.setActiveObject(text); text.enterEditing(); canvas.requestRenderAll(); save();
           return;
         }
-        if (!["rect", "circle", "triangle", "star", "line", "arrow"].includes(currentTool)) return;
+        if (!["rect", "circle", "triangle", "star", "diamond", "hexagon", "pentagon", "heart", "speech", "line", "arrow"].includes(currentTool)) return;
 
         drawStart = { x: pointer.x, y: pointer.y };
         const style = { fill: latestRef.current.fill, stroke: latestRef.current.stroke, strokeWidth: latestRef.current.strokeWidth };
@@ -137,6 +137,20 @@ export default function DesignCanvas({
             return { x: 70 + Math.cos(angle) * radius, y: 70 + Math.sin(angle) * radius };
           });
           drawingShape = new fabric.Polygon(points, { left: pointer.x, top: pointer.y, scaleX: 0.01, scaleY: 0.01, ...style });
+        }
+        if (["diamond", "hexagon", "pentagon", "speech"].includes(currentTool)) {
+          const points = currentTool === "diamond"
+            ? [{x:70,y:0},{x:140,y:70},{x:70,y:140},{x:0,y:70}]
+            : currentTool === "speech"
+              ? [{x:0,y:0},{x:140,y:0},{x:140,y:95},{x:86,y:95},{x:60,y:135},{x:56,y:95},{x:0,y:95}]
+              : Array.from({ length: currentTool === "hexagon" ? 6 : 5 }, (_, index, list) => {
+                  const angle = (Math.PI * 2 * index) / list.length - Math.PI / 2;
+                  return { x: 70 + Math.cos(angle) * 70, y: 70 + Math.sin(angle) * 70 };
+                });
+          drawingShape = new fabric.Polygon(points, { left: pointer.x, top: pointer.y, scaleX: 0.01, scaleY: 0.01, ...style });
+        }
+        if (currentTool === "heart") {
+          drawingShape = new fabric.Path("M 70 128 C 54 112 8 80 8 43 C 8 4 57 -8 70 28 C 83 -8 132 4 132 43 C 132 80 86 112 70 128 Z", { left: pointer.x, top: pointer.y, scaleX: 0.01, scaleY: 0.01, ...style });
         }
         if (currentTool === "line") drawingShape = new fabric.Line([pointer.x, pointer.y, pointer.x, pointer.y], { stroke: latestRef.current.stroke, strokeWidth: Math.max(2, latestRef.current.strokeWidth) });
         if (currentTool === "arrow") {
@@ -163,7 +177,7 @@ export default function DesignCanvas({
         const currentTool = latestRef.current.tool;
         if (currentTool === "rect" || currentTool === "triangle") drawingShape.set({ left, top, width, height });
         if (currentTool === "circle") drawingShape.set({ left, top, rx: width / 2, ry: height / 2 });
-        if (currentTool === "star") drawingShape.set({ left, top, scaleX: width / 140, scaleY: height / 140 });
+        if (["star", "diamond", "hexagon", "pentagon", "heart", "speech"].includes(currentTool)) drawingShape.set({ left, top, scaleX: width / 140, scaleY: height / 140 });
         if (currentTool === "line") drawingShape.set({ x1: drawStart.x, y1: drawStart.y, x2: pointer.x, y2: pointer.y });
         if (currentTool === "arrow") {
           drawingShape.set({ left, top, scaleX: width / 165, scaleY: Math.max(0.2, height / 30) });
