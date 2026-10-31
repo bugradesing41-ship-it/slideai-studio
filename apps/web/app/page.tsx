@@ -46,7 +46,7 @@ export default function Home() {
         <a className="new-button" href="/studio">
           <Plus size={17} /> New presentation
           <span className="shortcut">⌘ K</span>
-        </button>
+        </a>
 
         <div className="nav-label">WORKSPACE</div>
         <nav className="side-nav">
