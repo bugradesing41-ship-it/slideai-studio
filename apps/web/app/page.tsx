@@ -44,7 +44,7 @@ export default function Home() {
           <span>slideai<span className="brand-light">studio</span></span>
         </a>
 
-        <button className="new-button">
+        <a className="new-button" href="/studio">
           <Plus size={17} /> New presentation
           <span className="shortcut">⌘ K</span>
         </button>
@@ -86,7 +86,7 @@ export default function Home() {
           <section className="create-panel">
             <div className="create-heading"><div className="ai-orb"><WandSparkles size={19} /></div><div><strong>What are we creating today?</strong><span>Describe your idea. Let AI shape the story.</span></div></div>
             <textarea aria-label="Presentation idea" placeholder="e.g. Create a 10-slide presentation about the future of renewable energy..." />
-            <div className="create-footer"><span><Sparkles size={14} /> AI-powered creation</span><button className="create-button">Create presentation <ArrowUpRight size={16} /></button></div>
+            <div className="create-footer"><span><Sparkles size={14} /> AI-powered creation</span><a className="create-button" href="/studio">Create presentation <ArrowUpRight size={16} /></a></div>
           </section>
 
           <section className="quick-start">
