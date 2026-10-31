@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import {
   ArrowLeft, ArrowUpRight, Check, ChevronDown, Download, ImagePlus,
   LayoutTemplate, MessageSquare, MoreHorizontal, Plus, Send, Settings2,
-  Sparkles, Type, WandSparkles, X, ZoomIn, ZoomOut
+  Sparkles, Type, WandSparkles, ZoomIn, ZoomOut
 } from "lucide-react";
 
 type Slide = { id: number; title: string; eyebrow: string; body: string; kind: "cover" | "content" | "stats" | "quote" };
