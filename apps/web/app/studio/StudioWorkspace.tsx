@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
 import DesignCanvas, { type Tool } from "./DesignCanvas";
 import { sampleDeck, validateDeck, type DeckTheme, type SlideSpec } from "@slideai/shared";
@@ -39,6 +39,27 @@ export default function StudioWorkspace() {
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const activeSlide = useMemo(() => slides.find((slide) => slide.id === activeId) ?? slides[0], [slides, activeId]);
+  useEffect(() => {
+    function handleEditorShortcut(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      const isTyping = target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable;
+      if (isTyping) return;
+      const modifier = event.ctrlKey || event.metaKey;
+      if (modifier && event.key.toLowerCase() === "z") {
+        event.preventDefault();
+        setCanvasCommand((current) => ({ action: event.shiftKey ? "redo" : "undo", token: current.token + 1 }));
+      } else if (modifier && event.key.toLowerCase() === "d" && hasSelection) {
+        event.preventDefault();
+        setCanvasCommand((current) => ({ action: "duplicate", token: current.token + 1 }));
+      } else if ((event.key === "Delete" || event.key === "Backspace") && hasSelection) {
+        event.preventDefault();
+        setCanvasCommand((current) => ({ action: "delete", token: current.token + 1 }));
+      }
+    }
+    window.addEventListener("keydown", handleEditorShortcut);
+    return () => window.removeEventListener("keydown", handleEditorShortcut);
+  }, [hasSelection]);
+
 
   function updateActive(patch: Partial<Slide>) {
     setSlides((current) => {
