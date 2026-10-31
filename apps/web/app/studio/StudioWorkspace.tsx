@@ -2,14 +2,15 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
+import Link from "next/link";
 import DesignCanvas, { type Tool } from "./DesignCanvas";
 import { sampleDeck, validateDeck, type SlideSpec } from "@slideai/shared";
 import {
-  ArrowLeft, ArrowUpRight, Check, ChevronDown, ChevronDown as MoveDown, ChevronUp as MoveUp, Copy, Download, ImagePlus,
-  LayoutTemplate, MessageSquare, MoreHorizontal, Plus, Send, Settings2,
+  ArrowLeft, ArrowUpRight, Check, ChevronDown, ChevronDown as MoveDown, ChevronUp as MoveUp, Copy, Download,
+  LayoutTemplate, MoreHorizontal, Plus, Send, Settings2,
   Sparkles, Trash2, Type, WandSparkles, ZoomIn, ZoomOut, MousePointer2,
   Pencil, Square, Circle as CircleIcon, Triangle as TriangleIcon, Minus,
-  MoveUpRight, Star, Undo2, Redo2, Layers3, Paintbrush, Diamond, Hexagon, Pentagon, Heart, MessageSquareText
+  MoveUpRight, Star, Undo2, Redo2, Layers3, Diamond, Hexagon, Pentagon, Heart, MessageSquareText
 } from "lucide-react";
 
 type Slide = SlideSpec;
@@ -149,7 +150,7 @@ export default function StudioWorkspace() {
   return (
     <main className="studio-shell">
       <header className="studio-topbar">
-        <a className="studio-back" href="/"><ArrowLeft size={16} /><span>Back to workspace</span></a>
+        <Link className="studio-back" href="/"><ArrowLeft size={16} /><span>Back to workspace</span></Link>
         <div className="studio-doc-title"><span className="doc-icon"><LayoutTemplate size={15} /></span><span>{title}</span><span className="saved-pill"><Check size={12} /> Saved</span></div>
         <div className="studio-top-actions"><button className="icon-button" aria-label="More options"><MoreHorizontal size={18}/></button><button className="share-button">Share <ArrowUpRight size={14}/></button><button className="export-button"><Download size={14}/> Export</button></div>
       </header>
