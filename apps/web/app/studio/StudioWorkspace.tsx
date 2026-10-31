@@ -3,9 +3,9 @@
 import { useMemo, useState } from "react";
 import { sampleDeck, validateDeck, type DeckTheme, type SlideSpec } from "@slideai/shared";
 import {
-  ArrowLeft, ArrowUpRight, Check, ChevronDown, Download, ImagePlus,
+  ArrowLeft, ArrowUpRight, Check, ChevronDown, ChevronDown as MoveDown, ChevronUp as MoveUp, Copy, Download, ImagePlus,
   LayoutTemplate, MessageSquare, MoreHorizontal, Plus, Send, Settings2,
-  Sparkles, Type, WandSparkles, ZoomIn, ZoomOut
+  Sparkles, Trash2, Type, WandSparkles, ZoomIn, ZoomOut
 } from "lucide-react";
 
 type Slide = SlideSpec;
@@ -39,6 +39,42 @@ export default function StudioWorkspace() {
       return validation.success ? validation.data.slides : current;
     });
     setActiveId(id);
+  }
+
+  function duplicateSlide() {
+    const source = activeSlide;
+    if (!source) return;
+    const id = Math.max(...slides.map((slide) => slide.id)) + 1;
+    const duplicate: Slide = { ...source, id, title: `${source.title} (copy)` };
+    const sourceIndex = slides.findIndex((slide) => slide.id === activeId);
+    const nextSlides = [...slides];
+    nextSlides.splice(sourceIndex + 1, 0, duplicate);
+    const validation = validateDeck({ ...sampleDeck, title, theme, slides: nextSlides });
+    if (validation.success) {
+      setSlides(validation.data.slides);
+      setActiveId(id);
+    }
+  }
+
+  function deleteSlide() {
+    if (slides.length <= 1) return;
+    const index = slides.findIndex((slide) => slide.id === activeId);
+    const nextSlides = slides.filter((slide) => slide.id !== activeId);
+    const validation = validateDeck({ ...sampleDeck, title, theme, slides: nextSlides });
+    if (validation.success) {
+      setSlides(validation.data.slides);
+      setActiveId(nextSlides[Math.max(0, index - 1)].id);
+    }
+  }
+
+  function moveSlide(direction: -1 | 1) {
+    const index = slides.findIndex((slide) => slide.id === activeId);
+    const target = index + direction;
+    if (index < 0 || target < 0 || target >= slides.length) return;
+    const nextSlides = [...slides];
+    [nextSlides[index], nextSlides[target]] = [nextSlides[target], nextSlides[index]];
+    const validation = validateDeck({ ...sampleDeck, title, theme, slides: nextSlides });
+    if (validation.success) setSlides(validation.data.slides);
   }
 
   function sendPrompt() {
@@ -85,7 +121,7 @@ export default function StudioWorkspace() {
           <div className="filmstrip"><div className="filmstrip-label">SLIDES <span>{slides.length}</span></div><div className="thumbnail-list">{slides.map((slide,index) => <button className={`thumbnail ${activeId===slide.id?"selected":""}`} key={slide.id} onClick={() => setActiveId(slide.id)}><div className={`thumbnail-art thumb-${slide.kind}`}><small>{slide.eyebrow}</small><strong>{slide.title}</strong><i/><i/></div><span>{String(index+1).padStart(2,"0")}</span></button>)}<button className="add-slide" onClick={addSlide}><Plus size={18}/><span>Add slide</span></button></div></div>
         </section>
 
-        <aside className="inspector-panel"><div className="inspector-heading"><strong>Design</strong><button className="icon-button"><Settings2 size={16}/></button></div><div className="inspector-section"><div className="inspector-label">THEME <ChevronDown size={13}/></div><div className="theme-options"><button className={`theme-swatch violet-swatch ${theme==="violet"?"chosen":""}`} onClick={() => setTheme("violet")} aria-label="Violet theme"/><button className={`theme-swatch blue-swatch ${theme==="blue"?"chosen":""}`} onClick={() => setTheme("blue")} aria-label="Blue theme"/><button className={`theme-swatch light-swatch ${theme==="light"?"chosen":""}`} onClick={() => setTheme("light")} aria-label="Light theme"/></div><p className="inspector-hint">Choose a visual direction for your deck.</p></div><div className="inspector-section"><div className="inspector-label">SLIDE CONTENT <ChevronDown size={13}/></div><label className="field-label">Slide title</label><input className="inspector-input" value={activeSlide.title} onChange={(event) => updateActive({title:event.target.value})}/><label className="field-label">Description</label><textarea className="inspector-textarea" value={activeSlide.body} onChange={(event) => updateActive({body:event.target.value})}/></div><div className="inspector-section"><div className="inspector-label">QUICK ACTIONS</div><button className="quick-action" onClick={() => updateActive({kind:"quote"})}><MessageSquare size={14}/> Turn into a quote</button><button className="quick-action" onClick={() => updateActive({kind:"content"})}><Type size={14}/> Standard content layout</button></div><div className="inspector-tip"><Sparkles size={15}/><div><strong>Design tip</strong><p>Keep one clear message per slide. Let the layout support your story.</p></div></div></aside>
+        <aside className="inspector-panel"><div className="inspector-heading"><strong>Design</strong><button className="icon-button"><Settings2 size={16}/></button></div><div className="inspector-section"><div className="inspector-label">THEME <ChevronDown size={13}/></div><div className="theme-options"><button className={`theme-swatch violet-swatch ${theme==="violet"?"chosen":""}`} onClick={() => setTheme("violet")} aria-label="Violet theme"/><button className={`theme-swatch blue-swatch ${theme==="blue"?"chosen":""}`} onClick={() => setTheme("blue")} aria-label="Blue theme"/><button className={`theme-swatch light-swatch ${theme==="light"?"chosen":""}`} onClick={() => setTheme("light")} aria-label="Light theme"/></div><p className="inspector-hint">Choose a visual direction for your deck.</p></div><div className="inspector-section"><div className="inspector-label">SLIDE CONTENT <ChevronDown size={13}/></div><label className="field-label">Slide title</label><input className="inspector-input" value={activeSlide.title} onChange={(event) => updateActive({title:event.target.value})}/><label className="field-label">Description</label><textarea className="inspector-textarea" value={activeSlide.body} onChange={(event) => updateActive({body:event.target.value})}/></div><div className="inspector-section"><div className="inspector-label">SLIDE ACTIONS</div><button className="quick-action" onClick={duplicateSlide}><Copy size={14}/> Duplicate slide</button><button className="quick-action" onClick={() => moveSlide(-1)} disabled={slides.findIndex((slide) => slide.id === activeId) === 0}><MoveUp size={14}/> Move slide up</button><button className="quick-action" onClick={() => moveSlide(1)} disabled={slides.findIndex((slide) => slide.id === activeId) === slides.length - 1}><MoveDown size={14}/> Move slide down</button><button className="quick-action danger-action" onClick={deleteSlide} disabled={slides.length <= 1}><Trash2 size={14}/> Delete slide</button><div className="inspector-label action-subheading">QUICK ACTIONS</div><button className="quick-action" onClick={() => updateActive({kind:"quote",layout:"featured-quote"})}><MessageSquare size={14}/> Turn into a quote</button><button className="quick-action" onClick={() => updateActive({kind:"content",layout:"title-and-body"})}><Type size={14}/> Standard content layout</button></div><div className="inspector-tip"><Sparkles size={15}/><div><strong>Design tip</strong><p>Keep one clear message per slide. Let the layout support your story.</p></div></div></aside>
       </div>
     </main>
   );
