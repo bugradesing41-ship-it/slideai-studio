@@ -34,8 +34,10 @@ export default function StudioWorkspace() {
   const [opacity, setOpacity] = useState(1);
   const [canvasDataBySlide, setCanvasDataBySlide] = useState<Record<number, string>>({});
   const [transitionPreset, setTransitionPreset] = useState("fade");
-  const [history, setHistory] = useState<Record<number, string[]>>({});
-  const [historyIndex, setHistoryIndex] = useState<Record<number, number>>({});
+  const [canvasCommand, setCanvasCommand] = useState({ action: "", token: 0 });
+  const [hasSelection, setHasSelection] = useState(false);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
   const activeSlide = useMemo(() => slides.find((slide) => slide.id === activeId) ?? slides[0], [slides, activeId]);
 
   function updateActive(patch: Partial<Slide>) {
@@ -95,12 +97,10 @@ export default function StudioWorkspace() {
 
   function saveCanvas(json: string) {
     setCanvasDataBySlide((current) => ({ ...current, [activeId]: json }));
-    setHistory((current) => {
-      const entries = current[activeId] ?? [];
-      if (entries[entries.length - 1] === json) return current;
-      return { ...current, [activeId]: [...entries.slice(-29), json] };
-    });
-    setHistoryIndex((current) => ({ ...current, [activeId]: (current[activeId] ?? 0) + 1 }));
+  }
+
+  function issueCanvasCommand(action: string) {
+    setCanvasCommand((current) => ({ action, token: current.token + 1 }));
   }
 
   function applyStylePreset(preset: "violet" | "glass" | "neon" | "outline" | "sunset") {
@@ -163,6 +163,9 @@ export default function StudioWorkspace() {
             <div className="toolbar-left toolbar-tools">
               <span className="toolbar-label">SLIDE {String(slides.findIndex((slide) => slide.id === activeId) + 1).padStart(2,"0")} <i>/ {String(slides.length).padStart(2,"0")}</i></span>
               <span className="toolbar-divider"/>
+              <button className="tool-button" onClick={() => issueCanvasCommand("undo")} disabled={!canUndo} title="Undo"><Undo2 size={15}/></button>
+              <button className="tool-button" onClick={() => issueCanvasCommand("redo")} disabled={!canRedo} title="Redo"><Redo2 size={15}/></button>
+              <span className="toolbar-divider"/>
               <button className={`tool-button ${tool==="select"?"active-tool":""}`} onClick={() => setTool("select")} title="Select"><MousePointer2 size={15}/></button>
               <button className={`tool-button ${tool==="draw"?"active-tool":""}`} onClick={() => setTool("draw")} title="Free draw"><Pencil size={15}/></button>
               <button className={`tool-button ${tool==="rect"?"active-tool":""}`} onClick={() => setTool("rect")} title="Rectangle"><Square size={15}/></button>
@@ -204,7 +207,9 @@ export default function StudioWorkspace() {
                 opacity={opacity}
                 initialData={canvasDataBySlide[activeId]}
                 onChange={saveCanvas}
-                onSelectionChange={() => {}}
+                onSelectionChange={setHasSelection}
+                command={canvasCommand}
+                onHistoryChange={(undo, redo) => { setCanUndo(undo); setCanRedo(redo); }}
                 onTextChange={(name, value) => {
                   if (name === "slide-title") { updateActive({ title: value }); setTitle(value); }
                   if (name === "slide-eyebrow") updateActive({ eyebrow: value });
@@ -272,7 +277,12 @@ export default function StudioWorkspace() {
             <label className="field-label">Description</label><textarea className="inspector-textarea" value={activeSlide.body} onChange={(event) => updateActive({body:event.target.value})}/>
           </div>
           <div className="inspector-section">
-            <div className="inspector-label">OBJECT ACTIONS</div>
+            <div className="inspector-label">SELECTED OBJECT</div>
+            <button className="quick-action" onClick={() => issueCanvasCommand("duplicate")} disabled={!hasSelection}><Copy size={14}/> Duplicate object</button>
+            <button className="quick-action" onClick={() => issueCanvasCommand("front")} disabled={!hasSelection}><MoveUp size={14}/> Bring to front</button>
+            <button className="quick-action" onClick={() => issueCanvasCommand("back")} disabled={!hasSelection}><MoveDown size={14}/> Send to back</button>
+            <button className="quick-action danger-action" onClick={() => issueCanvasCommand("delete")} disabled={!hasSelection}><Trash2 size={14}/> Delete object</button>
+            <div className="inspector-label action-subheading">SLIDE ACTIONS</div>
             <button className="quick-action" onClick={duplicateSlide}><Copy size={14}/> Duplicate slide</button>
             <button className="quick-action" onClick={() => moveSlide(-1)} disabled={slides.findIndex((slide) => slide.id === activeId) === 0}><MoveUp size={14}/> Move slide up</button>
             <button className="quick-action" onClick={() => moveSlide(1)} disabled={slides.findIndex((slide) => slide.id === activeId) === slides.length - 1}><MoveDown size={14}/> Move slide down</button>
