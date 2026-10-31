@@ -72,7 +72,7 @@ export default function DesignCanvas({
       canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
 
       const save = () => {
-        const json = JSON.stringify(canvas.toJSON(["name", "animationPreset"]));
+        const json = JSON.stringify(canvas.toObject(["name", "animationPreset"]));
         if (restoringRef.current) return;
         latestRef.current.onChange(json);
         const current = historyRef.current;
@@ -175,14 +175,16 @@ export default function DesignCanvas({
           drawingShape = new fabric.Polygon(points, { left: pointer.x, top: pointer.y, scaleX: 0.01, scaleY: 0.01, ...style });
         }
         if (["diamond", "hexagon", "pentagon", "speech"].includes(currentTool)) {
+          const sides = currentTool === "hexagon" ? 6 : 5;
+          const polygonPoints = Array.from({ length: sides }, (_, index) => {
+            const angle = (Math.PI * 2 * index) / sides - Math.PI / 2;
+            return { x: 70 + Math.cos(angle) * 70, y: 70 + Math.sin(angle) * 70 };
+          });
           const points = currentTool === "diamond"
             ? [{x:70,y:0},{x:140,y:70},{x:70,y:140},{x:0,y:70}]
             : currentTool === "speech"
               ? [{x:0,y:0},{x:140,y:0},{x:140,y:95},{x:86,y:95},{x:60,y:135},{x:56,y:95},{x:0,y:95}]
-              : Array.from({ length: currentTool === "hexagon" ? 6 : 5 }, (_, index, list) => {
-                  const angle = (Math.PI * 2 * index) / list.length - Math.PI / 2;
-                  return { x: 70 + Math.cos(angle) * 70, y: 70 + Math.sin(angle) * 70 };
-                });
+              : polygonPoints;
           drawingShape = new fabric.Polygon(points, { left: pointer.x, top: pointer.y, scaleX: 0.01, scaleY: 0.01, ...style });
         }
         if (currentTool === "heart") {
@@ -273,7 +275,7 @@ export default function DesignCanvas({
     const active = canvas.getActiveObject();
     if (!active) return;
     const recordCommand = () => {
-      const json = JSON.stringify(canvas.toJSON(["name", "animationPreset"]));
+      const json = JSON.stringify(canvas.toObject(["name", "animationPreset"]));
       latestRef.current.onChange(json);
       const current = historyRef.current;
       if (current.items[current.index] !== json) {
@@ -333,7 +335,7 @@ export default function DesignCanvas({
           shadow: current.shadowEnabled ? new Shadow({ color: "rgba(0,0,0,0.32)", blur: 24, offsetX: 8, offsetY: 12 }) : null,
         });
         canvas.requestRenderAll();
-        current.onChange(JSON.stringify(canvas.toJSON(["name", "animationPreset"])));
+        current.onChange(JSON.stringify(canvas.toObject(["name", "animationPreset"])));
       });
     }
   }, [fill, stroke, strokeWidth, fontFamily, fontSize, shadowEnabled, opacity]);
@@ -350,7 +352,7 @@ export default function DesignCanvas({
     if (bodyObject) bodyObject.set("text", current.body);
     canvas.backgroundColor = current.theme === "light" ? "#f1eee7" : current.theme === "blue" ? "#102333" : "#171525";
     canvas.requestRenderAll();
-    current.onChange(JSON.stringify(canvas.toJSON(["name", "animationPreset"])));
+    current.onChange(JSON.stringify(canvas.toObject(["name", "animationPreset"])));
   }, [title, eyebrow, body, theme]);
 
   return <div className="design-canvas-shell"><canvas ref={elementRef} /></div>;
