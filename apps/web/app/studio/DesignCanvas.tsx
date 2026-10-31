@@ -49,6 +49,7 @@ export default function DesignCanvas({
         fireRightClick: false,
       });
       canvasRef.current = canvas;
+      canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
 
       const save = () => latestRef.current.onChange(JSON.stringify(canvas.toJSON(["name", "animationPreset"])));
       const selection = () => latestRef.current.onSelectionChange(Boolean(canvas.getActiveObject()));
@@ -242,6 +243,7 @@ export default function DesignCanvas({
     if (bodyObject) bodyObject.set("text", current.body);
     canvas.backgroundColor = current.theme === "light" ? "#f1eee7" : current.theme === "blue" ? "#102333" : "#171525";
     canvas.requestRenderAll();
+    current.onChange(JSON.stringify(canvas.toJSON(["name", "animationPreset"])));
   }, [title, eyebrow, body, theme]);
 
   return <div className="design-canvas-shell"><canvas ref={elementRef} /></div>;
