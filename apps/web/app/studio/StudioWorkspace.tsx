@@ -151,7 +151,7 @@ export default function StudioWorkspace() {
           </div>
 
           <div className="canvas-stage advanced-canvas-stage">
-            <motion.div key={activeId + transitionPreset} className="canvas-motion-frame" initial={transitionPreset==="rise"?{opacity:0,y:24}:transitionPreset==="zoom"?{opacity:0,scale:.94}:transitionPreset==="slide"?{opacity:0,x:28}:{opacity:0}} animate={{opacity:1,x:0,y:0,scale:1}} transition={{duration:.32,ease:"easeOut"}}>
+            <motion.div key={activeId + transitionPreset} className="canvas-motion-frame" style={{ transform: `scale(${zoom / 100})` }} initial={transitionPreset==="rise"?{opacity:0,y:24}:transitionPreset==="zoom"?{opacity:0,scale:.94}:transitionPreset==="slide"?{opacity:0,x:28}:{opacity:0}} animate={{opacity:1,x:0,y:0,scale:1}} transition={{duration:.32,ease:"easeOut"}}>
               <DesignCanvas
                 slideId={activeId}
                 title={activeSlide.title}
