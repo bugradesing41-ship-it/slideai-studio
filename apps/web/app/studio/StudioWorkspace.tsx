@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
 import DesignCanvas, { type Tool } from "./DesignCanvas";
-import { sampleDeck, validateDeck, type DeckTheme, type SlideSpec } from "@slideai/shared";
+import { sampleDeck, validateDeck, type SlideSpec } from "@slideai/shared";
 import {
   ArrowLeft, ArrowUpRight, Check, ChevronDown, ChevronDown as MoveDown, ChevronUp as MoveUp, Copy, Download, ImagePlus,
   LayoutTemplate, MessageSquare, MoreHorizontal, Plus, Send, Settings2,
@@ -23,7 +23,7 @@ export default function StudioWorkspace() {
   ]);
   const [title, setTitle] = useState(sampleDeck.title);
   const [zoom, setZoom] = useState(82);
-  const [theme, setTheme] = useState<DeckTheme>("violet");
+  const [theme, setTheme] = useState<"violet" | "blue" | "light">("violet");
   const [tool, setTool] = useState<Tool>("select");
   const [fill, setFill] = useState("#a78bfa");
   const [stroke, setStroke] = useState("#d8ccff");
@@ -122,20 +122,6 @@ export default function StudioWorkspace() {
 
   function issueCanvasCommand(action: string) {
     setCanvasCommand((current) => ({ action, token: current.token + 1 }));
-  }
-
-  function applyStylePreset(preset: "violet" | "glass" | "neon" | "outline" | "sunset") {
-    const presets = {
-      violet: { fill: "#8b5cf6", stroke: "#c4b5fd", shadow: true },
-      glass: { fill: "rgba(255,255,255,0.16)", stroke: "rgba(255,255,255,0.72)", shadow: false },
-      neon: { fill: "#211338", stroke: "#e879f9", shadow: true },
-      outline: { fill: "rgba(0,0,0,0)", stroke: "#a78bfa", shadow: false },
-      sunset: { fill: "#f97316", stroke: "#fed7aa", shadow: true },
-    };
-    const selected = presets[preset];
-    setFill(selected.fill);
-    setStroke(selected.stroke);
-    setShadowEnabled(selected.shadow);
   }
 
   function applyStylePreset(preset: string) {
