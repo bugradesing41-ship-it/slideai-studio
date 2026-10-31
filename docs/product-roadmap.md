@@ -16,7 +16,8 @@ SlideAI Studio is an AI-native presentation workspace. A user should be able to 
 - [x] Local per-slide undo and redo history
 - [ ] Autosave state and recover unsaved work
 - [ ] Confirm destructive actions and improve empty/error states
-- [ ] Keyboard shortcuts and accessible editor controls
+- [x] Keyboard shortcuts for undo/redo, duplicate and delete
+- [ ] Full accessibility audit and keyboard navigation for every control
 
 ## Stage 2 — Presentation creation workflow
 
