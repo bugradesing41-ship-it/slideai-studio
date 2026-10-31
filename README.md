@@ -9,6 +9,7 @@ An AI-assisted presentation workspace built around conversational creation and a
 - Premium dark workspace dashboard
 - Three-panel Studio layout: AI chat, slide canvas and design inspector
 - Select slides from the filmstrip and add new slides
+- Duplicate, delete and reorder slides from the design inspector
 - Edit slide title, eyebrow and body text directly on the canvas or in the inspector
 - Switch between violet, blue and light slide themes
 - Adjust canvas zoom
@@ -49,12 +50,7 @@ docs/
 
 ## Roadmap
 
-1. Finish the Studio interaction model and design system.
-2. Define a versioned DeckSpec schema and slide layout contracts.
-3. Add FastAPI backend, database persistence and project history.
-4. Integrate model-provider adapters and structured generation.
-5. Add validated slide layouts, image/chart support and quality checks.
-6. Implement and test PPTX/PDF export.
+See [docs/product-roadmap.md](docs/product-roadmap.md) for the staged product plan and implementation status.
 
 ## Security
 
