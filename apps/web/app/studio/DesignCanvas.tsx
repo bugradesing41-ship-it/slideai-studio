@@ -188,16 +188,19 @@ export default function DesignCanvas({
     const current = latestRef.current;
     const object = canvas.getActiveObject();
     if (object) {
-      object.set({
-        fill: current.fill,
-        stroke: current.stroke,
-        strokeWidth: current.strokeWidth,
-        fontFamily: current.fontFamily,
-        fontSize: current.fontSize,
-        shadow: current.shadowEnabled ? new (await import("fabric")).Shadow({ color: "rgba(0,0,0,0.32)", blur: 24, offsetX: 8, offsetY: 12 }) : null,
+      void import("fabric").then(({ Shadow }) => {
+        if (!canvasRef.current) return;
+        object.set({
+          fill: current.fill,
+          stroke: current.stroke,
+          strokeWidth: current.strokeWidth,
+          fontFamily: current.fontFamily,
+          fontSize: current.fontSize,
+          shadow: current.shadowEnabled ? new Shadow({ color: "rgba(0,0,0,0.32)", blur: 24, offsetX: 8, offsetY: 12 }) : null,
+        });
+        canvas.requestRenderAll();
+        current.onChange(JSON.stringify(canvas.toJSON(["name", "animationPreset"])));
       });
-      canvas.requestRenderAll();
-      current.onChange(JSON.stringify(canvas.toJSON(["name", "animationPreset"])));
     }
   }, [fill, stroke, strokeWidth, fontFamily, fontSize, shadowEnabled]);
 
