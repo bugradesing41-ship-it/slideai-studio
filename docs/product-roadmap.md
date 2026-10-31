@@ -1,0 +1,73 @@
+# SlideAI Studio — Product Roadmap
+
+This roadmap prioritizes a dependable presentation workflow before adding advanced AI capabilities. Items are grouped by delivery stage; a listed item is planned, not necessarily implemented.
+
+## Product direction
+
+SlideAI Studio is an AI-native presentation workspace. A user should be able to describe an outcome, review a coherent slide plan, refine individual slides in natural language, and export a presentation that remains useful outside the product.
+
+## Stage 1 — Reliable editing foundation
+
+- [x] Versioned DeckSpec contract with Zod validation
+- [x] Shared sample deck and typed slide model
+- [x] Select and edit slides from the canvas and inspector
+- [x] Add a new slide
+- [x] Duplicate, delete and reorder slides
+- [ ] Undo and redo history
+- [ ] Autosave state and recover unsaved work
+- [ ] Confirm destructive actions and improve empty/error states
+- [ ] Keyboard shortcuts and accessible editor controls
+
+## Stage 2 — Presentation creation workflow
+
+- [ ] New-deck brief: topic, audience, purpose, language, length and tone
+- [ ] AI-generated outline before slide rendering
+- [ ] User approval and editable outline
+- [ ] Structured slide generation that must pass DeckSpec validation
+- [ ] Regenerate one slide without rewriting the whole deck
+- [ ] Rewrite, shorten, expand, translate and change tone actions
+- [ ] Background generation jobs with progress and retry states
+
+## Stage 3 — Design and visual storytelling
+
+- [ ] Layout catalog with validated layout-specific data contracts
+- [ ] Design systems for editorial, technology, corporate, education, pitch and creative decks
+- [ ] Automatic typography, spacing, contrast and overflow checks
+- [ ] Image search/provider adapter and image crop controls
+- [ ] Editable charts, tables, comparisons and timelines
+- [ ] Slide-level speaker notes and presenter view
+
+## Stage 4 — Accounts and persistence
+
+- [ ] Authentication and user workspaces
+- [ ] PostgreSQL persistence for decks, slides and versions
+- [ ] Autosave with conflict-safe updates
+- [ ] Search, duplicate, rename, archive and delete presentations
+- [ ] Version history and restore
+- [ ] Secure file storage and upload validation
+
+## Stage 5 — Export and sharing
+
+- [ ] PPTX export with editable text and shapes
+- [ ] PDF export with visual regression checks
+- [ ] Read-only web presentation and share links
+- [ ] Export queue, progress, retry and downloadable artifacts
+- [ ] Import existing PPTX as a later compatibility milestone
+
+## Stage 6 — Differentiating intelligence
+
+- [ ] Source-grounded research with citations
+- [ ] Spreadsheet/document-to-presentation workflows
+- [ ] Audience and objective-aware storytelling suggestions
+- [ ] Presentation quality review and factual consistency checks
+- [ ] Translation and localization across languages
+- [ ] Rehearsal coach, timing guidance and presenter feedback
+- [ ] Team comments and collaborative editing
+
+## Engineering principles
+
+1. AI output is structured data, never arbitrary executable markup.
+2. Validate every generated or edited deck against the shared schema.
+3. Keep model providers behind an adapter so providers can be changed.
+4. Treat export fidelity, accessibility, privacy and security as product requirements.
+5. Do not mark a roadmap item complete until it is implemented and verified.
