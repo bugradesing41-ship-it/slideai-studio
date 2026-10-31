@@ -8,11 +8,14 @@ An AI-assisted presentation workspace built around conversational creation and a
 
 - Premium dark workspace dashboard
 - Three-panel Studio layout: AI chat, slide canvas and design inspector
-- Select slides from the filmstrip and add new slides
-- Duplicate, delete and reorder slides from the design inspector
-- Edit slide title, eyebrow and body text directly on the canvas or in the inspector
-- Switch between violet, blue and light slide themes
-- Adjust canvas zoom
+- Select slides from the filmstrip and add, duplicate, delete and reorder slides
+- Fabric.js canvas with object selection, move, resize and rotate controls
+- Freehand pencil drawing and drag-to-size shapes: rectangle, ellipse, triangle, line, arrow, star, diamond, pentagon, hexagon, heart and speech bubble
+- Editable canvas text with seven locally bundled font families
+- Fill, stroke, stroke width, opacity, soft shadow and visual style presets
+- Object duplicate, delete and layer-order actions
+- Per-slide canvas JSON state and local undo/redo history
+- Motion-powered slide-switch preview transitions
 - Responsive editor layout
 
 ## Tech stack
@@ -50,7 +53,7 @@ docs/
 
 ## Roadmap
 
-See [docs/product-roadmap.md](docs/product-roadmap.md) for the staged product plan and implementation status.
+See [docs/product-roadmap.md](docs/product-roadmap.md) for the staged product plan and [docs/editor-assets.md](docs/editor-assets.md) for editor packages and license policy.
 
 ## Security
 
