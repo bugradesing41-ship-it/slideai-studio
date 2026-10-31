@@ -37,7 +37,7 @@ export default function DesignCanvas({
   const historyRef = useRef<{ items: string[]; index: number }>({ items: [], index: -1 });
   const restoringRef = useRef(false);
   const latestRef = useRef({ title, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontSize, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, onHistoryChange });
-  latestRef.current = { title, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontSize, initialData, onChange, onSelectionChange };
+  latestRef.current = { title, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontSize, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, onHistoryChange };
 
   useEffect(() => {
     let disposed = false;
