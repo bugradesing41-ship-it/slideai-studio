@@ -13,7 +13,7 @@ SlideAI Studio is an AI-native presentation workspace. A user should be able to 
 - [x] Select and edit slides from the canvas and inspector
 - [x] Add a new slide
 - [x] Duplicate, delete and reorder slides
-- [ ] Undo and redo history
+- [x] Local per-slide undo and redo history
 - [ ] Autosave state and recover unsaved work
 - [ ] Confirm destructive actions and improve empty/error states
 - [ ] Keyboard shortcuts and accessible editor controls
@@ -30,6 +30,9 @@ SlideAI Studio is an AI-native presentation workspace. A user should be able to 
 
 ## Stage 3 — Design and visual storytelling
 
+- [x] Canvas object engine with freehand drawing, shape tools and transforms
+- [x] Object styling controls, bundled font families and visual presets
+- [x] Motion-powered slide transition previews
 - [ ] Layout catalog with validated layout-specific data contracts
 - [ ] Design systems for editorial, technology, corporate, education, pitch and creative decks
 - [ ] Automatic typography, spacing, contrast and overflow checks
