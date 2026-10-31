@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { sampleDeck, type DeckTheme, type SlideSpec } from "@slideai/shared";
+import { sampleDeck, validateDeck, type DeckTheme, type SlideSpec } from "@slideai/shared";
 import {
   ArrowLeft, ArrowUpRight, Check, ChevronDown, Download, ImagePlus,
   LayoutTemplate, MessageSquare, MoreHorizontal, Plus, Send, Settings2,
@@ -23,13 +23,21 @@ export default function StudioWorkspace() {
   const activeSlide = useMemo(() => slides.find((slide) => slide.id === activeId) ?? slides[0], [slides, activeId]);
 
   function updateActive(patch: Partial<Slide>) {
-    setSlides((current) => current.map((slide) => slide.id === activeId ? { ...slide, ...patch } : slide));
+    setSlides((current) => {
+      const nextSlides = current.map((slide) => slide.id === activeId ? { ...slide, ...patch } : slide);
+      const validation = validateDeck({ ...sampleDeck, title, theme, slides: nextSlides });
+      return validation.success ? validation.data.slides : current;
+    });
   }
 
   function addSlide() {
     const id = Math.max(...slides.map((slide) => slide.id)) + 1;
     const next: Slide = { id, title: "A new perspective", eyebrow: "04 — EXPLORE", body: "Add your key message here. Keep the idea focused, clear and memorable.", kind: "content", layout: "title-and-body" };
-    setSlides((current) => [...current, next]);
+    setSlides((current) => {
+      const nextSlides = [...current, next];
+      const validation = validateDeck({ ...sampleDeck, title, theme, slides: nextSlides });
+      return validation.success ? validation.data.slides : current;
+    });
     setActiveId(id);
   }
 
