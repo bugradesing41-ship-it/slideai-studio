@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 
 type Tool = "select" | "draw" | "rect" | "circle" | "triangle" | "line" | "arrow" | "star" | "diamond" | "hexagon" | "pentagon" | "heart" | "speech" | "text";
+type CanvasCommand = { action: string; token: number };
 type Props = {
   slideId: number;
   title: string;
@@ -21,22 +22,27 @@ type Props = {
   onChange: (json: string) => void;
   onSelectionChange: (selected: boolean) => void;
   onTextChange: (name: string, value: string) => void;
+  command: CanvasCommand;
+  onHistoryChange: (canUndo: boolean, canRedo: boolean) => void;
 };
 
 export type { Tool };
 
 export default function DesignCanvas({
   slideId, title, eyebrow, body, theme, tool, fill, stroke, strokeWidth,
-  fontFamily, fontSize, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange
+  fontFamily, fontSize, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, onHistoryChange
 }: Props) {
   const elementRef = useRef<HTMLCanvasElement>(null);
   const canvasRef = useRef<any>(null);
-  const latestRef = useRef({ title, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontSize, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange });
+  const historyRef = useRef<{ items: string[]; index: number }>({ items: [], index: -1 });
+  const restoringRef = useRef(false);
+  const latestRef = useRef({ title, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontSize, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, onHistoryChange });
   latestRef.current = { title, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontSize, initialData, onChange, onSelectionChange };
 
   useEffect(() => {
     let disposed = false;
     let cleanup: (() => void) | undefined;
+    historyRef.current = { items: [], index: -1 };
 
     async function mount() {
       const fabric = await import("fabric");
@@ -53,7 +59,16 @@ export default function DesignCanvas({
       canvasRef.current = canvas;
       canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
 
-      const save = () => latestRef.current.onChange(JSON.stringify(canvas.toJSON(["name", "animationPreset"])));
+      const save = () => {
+        const json = JSON.stringify(canvas.toJSON(["name", "animationPreset"]));
+        if (restoringRef.current) return;
+        latestRef.current.onChange(json);
+        const current = historyRef.current;
+        if (current.items[current.index] === json) return;
+        const items = [...current.items.slice(0, current.index + 1), json].slice(-60);
+        historyRef.current = { items, index: items.length - 1 };
+        latestRef.current.onHistoryChange(items.length > 1, false);
+      };
       const selection = () => latestRef.current.onSelectionChange(Boolean(canvas.getActiveObject()));
       const syncText = () => {
         const current = latestRef.current;
@@ -210,6 +225,7 @@ export default function DesignCanvas({
         canvas.freeDrawingBrush.color = latestRef.current.stroke;
         canvas.freeDrawingBrush.width = Math.max(1, latestRef.current.strokeWidth);
       }
+      save();
       cleanup = () => {
         canvas.dispose();
         canvasRef.current = null;
@@ -219,6 +235,51 @@ export default function DesignCanvas({
     void mount();
     return () => { disposed = true; cleanup?.(); };
   }, [slideId]);
+
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || command.token === 0) return;
+    const action = command.action;
+    if (action === "undo" || action === "redo") {
+      const history = historyRef.current;
+      const nextIndex = action === "undo" ? history.index - 1 : history.index + 1;
+      if (nextIndex < 0 || nextIndex >= history.items.length) return;
+      history.index = nextIndex;
+      const json = history.items[nextIndex];
+      restoringRef.current = true;
+      void canvas.loadFromJSON(JSON.parse(json)).then(() => {
+        if (!canvasRef.current) return;
+        canvas.requestRenderAll();
+        restoringRef.current = false;
+        latestRef.current.onChange(json);
+        latestRef.current.onHistoryChange(history.index > 0, history.index < history.items.length - 1);
+      });
+      return;
+    }
+
+    const active = canvas.getActiveObject();
+    if (!active) return;
+    if (action === "delete") {
+      canvas.remove(active);
+      canvas.discardActiveObject();
+    } else if (action === "duplicate") {
+      void active.clone().then((copy: any) => {
+        copy.set({ left: (active.left ?? 0) + 24, top: (active.top ?? 0) + 24, name: undefined });
+        canvas.add(copy);
+        canvas.setActiveObject(copy);
+        canvas.requestRenderAll();
+        latestRef.current.onChange(JSON.stringify(canvas.toJSON(["name", "animationPreset"])));
+      });
+      return;
+    } else if (action === "front") {
+      canvas.bringObjectToFront(active);
+    } else if (action === "back") {
+      canvas.sendObjectToBack(active);
+    }
+    canvas.requestRenderAll();
+    latestRef.current.onChange(JSON.stringify(canvas.toJSON(["name", "animationPreset"])));
+  }, [command.token]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
