@@ -15,6 +15,7 @@ type Props = {
   strokeWidth: number;
   fontFamily: string;
   fontSize: number;
+  shadowEnabled: boolean;
   initialData?: string;
   onChange: (json: string) => void;
   onSelectionChange: (selected: boolean) => void;
@@ -24,11 +25,11 @@ export type { Tool };
 
 export default function DesignCanvas({
   slideId, title, eyebrow, body, theme, tool, fill, stroke, strokeWidth,
-  fontFamily, fontSize, initialData, onChange, onSelectionChange
+  fontFamily, fontSize, shadowEnabled, initialData, onChange, onSelectionChange
 }: Props) {
   const elementRef = useRef<HTMLCanvasElement>(null);
   const canvasRef = useRef<any>(null);
-  const latestRef = useRef({ title, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontSize, initialData, onChange, onSelectionChange });
+  const latestRef = useRef({ title, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontSize, shadowEnabled, initialData, onChange, onSelectionChange });
   latestRef.current = { title, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontSize, initialData, onChange, onSelectionChange };
 
   useEffect(() => {
@@ -193,11 +194,12 @@ export default function DesignCanvas({
         strokeWidth: current.strokeWidth,
         fontFamily: current.fontFamily,
         fontSize: current.fontSize,
+        shadow: current.shadowEnabled ? new (await import("fabric")).Shadow({ color: "rgba(0,0,0,0.32)", blur: 24, offsetX: 8, offsetY: 12 }) : null,
       });
       canvas.requestRenderAll();
       current.onChange(JSON.stringify(canvas.toJSON(["name", "animationPreset"])));
     }
-  }, [fill, stroke, strokeWidth, fontFamily, fontSize]);
+  }, [fill, stroke, strokeWidth, fontFamily, fontSize, shadowEnabled]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
