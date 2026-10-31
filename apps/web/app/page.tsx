@@ -86,7 +86,7 @@ export default function Home() {
           <section className="create-panel">
             <div className="create-heading"><div className="ai-orb"><WandSparkles size={19} /></div><div><strong>What are we creating today?</strong><span>Describe your idea. Let AI shape the story.</span></div></div>
             <textarea aria-label="Presentation idea" placeholder="e.g. Create a 10-slide presentation about the future of renewable energy..." />
-            <div className="create-footer"><span><Sparkles size={14} /> AI-powered creation</span><a className="create-button" href="/studio">Create presentation <ArrowUpRight size={16} /></a></div>
+            <div className="create-footer"><span><Sparkles size={14} /> AI-powered creation</span><Link className="create-button" href="/studio">Create presentation <ArrowUpRight size={16} /></Link></div>
           </section>
 
           <section className="quick-start">
