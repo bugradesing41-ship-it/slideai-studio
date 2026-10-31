@@ -2,6 +2,17 @@
 
 import { useEffect, useRef } from "react";
 
+declare module "fabric" {
+  interface FabricObject {
+    name?: string;
+    animationPreset?: string;
+  }
+  interface SerializedObjectProps {
+    name?: string;
+    animationPreset?: string;
+  }
+}
+
 type Tool = "select" | "draw" | "rect" | "circle" | "triangle" | "line" | "arrow" | "star" | "diamond" | "hexagon" | "pentagon" | "heart" | "speech" | "text";
 type CanvasCommand = { action: string; token: number };
 type Props = {
@@ -46,6 +57,7 @@ export default function DesignCanvas({
 
     async function mount() {
       const fabric = await import("fabric");
+      fabric.FabricObject.customProperties = ["name", "animationPreset"];
       if (disposed || !elementRef.current) return;
       const canvas = new fabric.Canvas(elementRef.current, {
         width: 1280,
