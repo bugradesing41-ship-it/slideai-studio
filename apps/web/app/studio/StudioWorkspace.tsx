@@ -19,6 +19,9 @@ type Slide = SlideSpec;
 const TEXT_ANIMATIONS=["Fade in","Typewriter","Rise up","Slide from left","Slide from right","Zoom in","Pop","Bounce","Elastic","Soft focus","Flip X","Flip Y","Rotate in","Float up","Drop in","Stretch","Swing","Wave","Pulse","Glitch","Tracking reveal","Slide reveal","Focus in","Overshoot","Spring settle"];
 const ITEM_ANIMATIONS=["Fade","Scale in","Pop","Bounce","Elastic","Spin in","Flip horizontal","Flip vertical","Slide left","Slide right","Slide up","Slide down","Float","Drift","Swing","Wobble","Pulse","Heartbeat","Shake","Jelly","Rubber band","Zoom through","Arc in","Drop","Spring"];
 const SLIDE_ANIMATIONS=["Fade","Slide left","Slide right","Rise","Zoom","Flip","Blur","Wipe","Rotate","Bounce"];
+const FONT_WEIGHT_OPTIONS: Record<string, number[]> = {
+  "Inter Variable":[300,400,500,600,700,800], "DM Sans Variable":[300,400,500,600,700,800], "Manrope Variable":[300,400,500,600,700,800], "Space Grotesk Variable":[300,400,500,600,700], "Outfit Variable":[300,400,500,600,700,800], "Roboto Variable":[300,400,500,600,700,800], "Nunito Sans Variable":[300,400,500,600,700,800], "Playfair Display Variable":[400,500,600,700,800], "Montserrat Variable":[300,400,500,600,700,800], "Lora":[400,700], "Poppins":[400,500,600,700], "Oswald":[400,500,700], "Merriweather":[400,700], "Archivo":[400,500,700], "Bebas Neue":[400], "Caveat":[400,700]
+};
 const TEXT_EFFECTS=["Soft shadow","Deep shadow","Neon glow","Violet glow","Glass highlight","Frosted highlight","Outline","Double outline","Engraved","Wide tracking","Bold impact","Soft highlight","Glass text","Retro offset","3D depth","Metallic shadow","Underline accent","Overline accent","Pill highlight","Blur shadow","Long shadow","Warm glow","Cool glow","High contrast","Editorial italic"];
 const ITEM_EFFECTS=["Soft shadow","Deep shadow","Neon glow","Violet glow","Glass","Frosted glass","Outline","Double border","Dashed border","Dotted border","Inner depth","Emboss","3D lift","Long shadow","Soft blur shadow","Glow edge","Duotone tint","High contrast","Vintage fade","Pastel tint","Vivid color","Monochrome","Holographic feel","Sticker edge","Floating"];
 
@@ -314,10 +317,10 @@ export default function StudioWorkspace() {
           <div className="inspector-section">
             <div className="inspector-label">TYPOGRAPHY</div>
             <label className="field-label">Font family</label>
-            <select className="inspector-input" value={fontFamily} onChange={(event) => setFontFamily(event.target.value)}>
+            <select className="inspector-input" value={fontFamily} onChange={(event) => {const family=event.target.value;setFontFamily(family);if(!(FONT_WEIGHT_OPTIONS[family]??[400,700]).includes(Number(fontWeight)))setFontWeight("400");}}>
               <option>Inter Variable</option><option>DM Sans Variable</option><option>Manrope Variable</option><option>Space Grotesk Variable</option><option>Outfit Variable</option><option>Roboto Variable</option><option>Nunito Sans Variable</option><option>Playfair Display Variable</option><option>Montserrat Variable</option><option>Lora</option><option>Poppins</option><option>Oswald</option><option>Merriweather</option><option>Archivo</option><option>Bebas Neue</option><option>Caveat</option>
             </select>
-            <label className="range-label">Font weight <span>{fontWeight}</span></label><select className="inspector-input" value={fontWeight} onChange={(event) => setFontWeight(event.target.value)}><option value="300">Light 300</option><option value="400">Regular 400</option><option value="500">Medium 500</option><option value="600">Semi bold 600</option><option value="700">Bold 700</option><option value="800">Extra bold 800</option></select>
+            <label className="range-label">Font weight <span>{fontWeight}</span></label><select className="inspector-input" value={fontWeight} onChange={(event) => setFontWeight(event.target.value)}>{(FONT_WEIGHT_OPTIONS[fontFamily]??[400,700]).map((weight) => <option key={weight} value={String(weight)}>{weight===300?"Light":weight===400?"Regular":weight===500?"Medium":weight===600?"Semi bold":weight===700?"Bold":"Extra bold"} {weight}</option>)}</select>
             <label className="range-label">Font size <span>{fontSize}px</span></label><input className="range-control" type="range" min="12" max="100" value={fontSize} onChange={(event) => setFontSize(Number(event.target.value))}/>
           </div>
           <div className="inspector-section motion-library-section">
