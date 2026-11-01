@@ -32,14 +32,14 @@ SlideAI Studio is an AI-native presentation workspace. A user should be able to 
 ## Stage 3 — Design and visual storytelling
 
 - [x] Canvas object engine with freehand drawing, shape tools and transforms
-- [x] Object styling controls, 16 bundled Google Fonts families, adjustable font weight and visual presets
+- [x] Object styling controls, live Google Fonts catalogue with family-specific weights, Google Material Symbols and visual presets
 - [x] Per-slide background colors and adjustable object corner radius
 - [x] Rounded speech bubbles and character sticker insertion
 - [x] 25 text and 25 object animation presets with immediate, non-destructive selected-object preview
 - [x] Ten individually selectable, distinct slide entrance animations and Play all presentation preview
 - [x] Real slide-number overlays synchronized with slide order and total count
 - [x] 25 text effects and 25 item effects
-- [x] Searchable visual asset library with emoji stickers and 35+ Open Doodles character illustrations (CC0)
+- [x] Searchable visual asset library with Google Material Symbols, emoji stickers and 35+ Open Doodles character illustrations (CC0)
 - [x] Motion-powered slide transition previews
 - [ ] Layout catalog with validated layout-specific data contracts
 - [ ] Design systems for editorial, technology, corporate, education, pitch and creative decks
