@@ -325,7 +325,7 @@ export default function DesignCanvas({
         };
         const effectIndex = Number(index);
         const shadow = shadowMap[String(effectIndex)];
-        const common: Record<string,unknown> = {};
+        const common: Record<string,any> = {};
         if (shadow) common.shadow = new FabricShadow(shadow);
         if (kind === "text") {
           if (effectIndex === 6) common.stroke = "#ffffff";
