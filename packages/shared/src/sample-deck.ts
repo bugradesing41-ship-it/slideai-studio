@@ -6,6 +6,7 @@ export const sampleDeck: DeckSpec = {
   title: "The next era of artificial intelligence",
   description: "A field guide to the changing relationship between people and intelligent systems.",
   theme: "violet",
+  designType: "presentation",
   language: "en",
   metadata: { source: "manual" },
   slides: [
@@ -16,6 +17,7 @@ export const sampleDeck: DeckSpec = {
       body: "How intelligent systems are reshaping the way we live, work and create.",
       kind: "cover",
       layout: "title",
+      elements: [],
     },
     {
       id: 2,
@@ -24,6 +26,7 @@ export const sampleDeck: DeckSpec = {
       body: "AI is moving beyond automation. It is becoming a creative partner, a research assistant and an interface to knowledge.",
       kind: "content",
       layout: "title-and-body",
+      elements: [],
     },
     {
       id: 3,
@@ -32,6 +35,7 @@ export const sampleDeck: DeckSpec = {
       body: "From personal assistants to scientific discovery, intelligent tools are finding a place in everyday workflows.",
       kind: "stats",
       layout: "three-statistics",
+      elements: [],
     },
     {
       id: 4,
@@ -40,6 +44,7 @@ export const sampleDeck: DeckSpec = {
       body: "The most meaningful progress happens when human judgment meets machine capability.",
       kind: "quote",
       layout: "featured-quote",
+      elements: [],
     },
   ],
 };
