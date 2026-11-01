@@ -119,7 +119,7 @@ export default function DesignCanvas({
         canvas.add(
           new fabric.Textbox(current.eyebrow || "FIELD NOTES / 2026", {
             name: "slide-eyebrow", left: 84, top: 115, width: 900, fontSize: 18,
-            fontFamily: "Inter Variable", fontWeight: 600, charSpacing: 190;
+            fontFamily: "Inter Variable", fontWeight: 600, charSpacing: 190,
             fill: light ? "#7558bc" : current.theme === "blue" ? "#8bc7e7" : "#b39bff",
             editable: true,
           }),
@@ -185,18 +185,17 @@ export default function DesignCanvas({
           });
           drawingShape = new fabric.Polygon(points, { left: pointer.x, top: pointer.y, scaleX: 0.01, scaleY: 0.01, ...style });
         }
-        if (["diamond", "hexagon", "pentagon", "speech"].includes(currentTool)) {
+        if (["diamond", "hexagon", "pentagon"].includes(currentTool)) {
           const sides = currentTool === "hexagon" ? 6 : 5;
           const polygonPoints = Array.from({ length: sides }, (_, index) => {
             const angle = (Math.PI * 2 * index) / sides - Math.PI / 2;
             return { x: 70 + Math.cos(angle) * 70, y: 70 + Math.sin(angle) * 70 };
           });
-          const points = currentTool === "diamond"
-            ? [{x:70,y:0},{x:140,y:70},{x:70,y:140},{x:0,y:70}]
-            : currentTool === "speech"
-              ? [{x:0,y:0},{x:140,y:0},{x:140,y:95},{x:86,y:95},{x:60,y:135},{x:56,y:95},{x:0,y:95}]
-              : polygonPoints;
+          const points = currentTool === "diamond" ? [{x:70,y:0},{x:140,y:70},{x:70,y:140},{x:0,y:70}] : polygonPoints;
           drawingShape = new fabric.Polygon(points, { left: pointer.x, top: pointer.y, scaleX: 0.01, scaleY: 0.01, ...style });
+        }
+        if (currentTool === "speech") {
+          drawingShape = new fabric.Path("M 14 8 Q 14 0 24 0 L 116 0 Q 126 0 126 10 L 126 82 Q 126 92 116 92 L 66 92 L 42 122 L 46 92 L 24 92 Q 14 92 14 82 Z", { left:pointer.x, top:pointer.y, scaleX:.01, scaleY:.01, ...style });
         }
         if (currentTool === "heart") {
           drawingShape = new fabric.Path("M 70 128 C 54 112 8 80 8 43 C 8 4 57 -8 70 28 C 83 -8 132 4 132 43 C 132 80 86 112 70 128 Z", { left: pointer.x, top: pointer.y, scaleX: 0.01, scaleY: 0.01, ...style });
