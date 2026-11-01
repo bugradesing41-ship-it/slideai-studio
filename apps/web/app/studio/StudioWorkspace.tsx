@@ -274,7 +274,7 @@ export default function StudioWorkspace() {
                 opacity={opacity}
                 initialData={canvasDataBySlide[activeId]}
                 onChange={saveCanvas}
-                onSelectionChange={(selected, type) => {setHasSelection(selected);setSelectionType(type ?? "");}}
+                onSelectionChange={(selected, type, typography) => {setHasSelection(selected);setSelectionType(type ?? "");if(typography){if(typography.fontFamily)setFontFamily(typography.fontFamily);if(typography.fontSize)setFontSize(typography.fontSize);if(typography.fontWeight)setFontWeight(String(typography.fontWeight));}}}
                 command={canvasCommand}
                 assetCommand={assetCommand}
                 imageCommand={imageCommand}
