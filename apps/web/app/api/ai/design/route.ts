@@ -159,7 +159,7 @@ export async function POST(request: Request) {
     };
     return NextResponse.json({ message: result.data.message, deck, model: process.env.OPENAI_MODEL || "gpt-5.5" });
   } catch (error) {
-    if (error instanceof z.ZodError) {
+    if (error instanceof z.ZodError || error instanceof SyntaxError) {
       return NextResponse.json({ error: "İstek bilgileri geçersiz. Komut en fazla 3000 karakter olabilir." }, { status: 400 });
     }
     if (error instanceof OpenAI.APIError) {
