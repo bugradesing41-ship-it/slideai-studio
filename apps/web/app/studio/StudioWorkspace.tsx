@@ -4,9 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
 import Link from "next/link";
 import DesignCanvas, { type Tool } from "./DesignCanvas";
+import AssetLibrary, { type StudioAsset } from "./AssetLibrary";
 import { sampleDeck, validateDeck, type SlideSpec } from "@slideai/shared";
 import {
-  ArrowLeft, ArrowUpRight, Check, ChevronDown, ChevronDown as MoveDown, ChevronUp as MoveUp, Copy, Download,
+  ArrowLeft, ArrowUpRight, Check, ChevronDown, ChevronDown as MoveDown, ChevronUp as MoveUp, Copy, Download, ImagePlus,
   LayoutTemplate, MoreHorizontal, Plus, Send, Settings2,
   Sparkles, Trash2, Type, WandSparkles, ZoomIn, ZoomOut, MousePointer2,
   Pencil, Square, Circle as CircleIcon, Triangle as TriangleIcon, Minus,
@@ -39,6 +40,8 @@ export default function StudioWorkspace() {
   const [hasSelection, setHasSelection] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
+  const [assetLibraryOpen, setAssetLibraryOpen] = useState(false);
+  const [assetCommand, setAssetCommand] = useState({ symbol: "", label: "", token: 0 });
   const activeSlide = useMemo(() => slides.find((slide) => slide.id === activeId) ?? slides[0], [slides, activeId]);
   useEffect(() => {
     function handleEditorShortcut(event: KeyboardEvent) {
@@ -173,6 +176,7 @@ export default function StudioWorkspace() {
               <span className="toolbar-divider"/>
               <button className="tool-button" onClick={() => issueCanvasCommand("undo")} disabled={!canUndo} title="Undo"><Undo2 size={15}/></button>
               <button className="tool-button" onClick={() => issueCanvasCommand("redo")} disabled={!canRedo} title="Redo"><Redo2 size={15}/></button>
+              <button className="tool-button asset-launch-button" onClick={() => setAssetLibraryOpen(true)} title="Open asset library"><ImagePlus size={15}/><span>Assets</span></button>
               <span className="toolbar-divider"/>
               <button className={`tool-button ${tool==="select"?"active-tool":""}`} onClick={() => setTool("select")} title="Select"><MousePointer2 size={15}/></button>
               <button className={`tool-button ${tool==="draw"?"active-tool":""}`} onClick={() => setTool("draw")} title="Free draw"><Pencil size={15}/></button>
@@ -217,6 +221,7 @@ export default function StudioWorkspace() {
                 onChange={saveCanvas}
                 onSelectionChange={setHasSelection}
                 command={canvasCommand}
+                assetCommand={assetCommand}
                 onHistoryChange={(undo, redo) => { setCanUndo(undo); setCanRedo(redo); }}
                 onTextChange={(name, value) => {
                   if (name === "slide-title") { updateActive({ title: value }); setTitle(value); }
@@ -268,7 +273,7 @@ export default function StudioWorkspace() {
             <div className="inspector-label">TYPOGRAPHY</div>
             <label className="field-label">Font family</label>
             <select className="inspector-input" value={fontFamily} onChange={(event) => setFontFamily(event.target.value)}>
-              <option>Inter</option><option>DM Sans</option><option>Manrope</option><option>Space Grotesk</option><option>Playfair Display</option><option>Montserrat</option><option>Lora</option>
+              <option>Inter</option><option>DM Sans</option><option>Manrope</option><option>Space Grotesk</option><option>Playfair Display</option><option>Montserrat</option><option>Lora</option><option>Outfit</option><option>Poppins</option><option>Nunito Sans</option><option>Roboto</option><option>Oswald</option><option>Merriweather</option><option>Archivo</option><option>Bebas Neue</option><option>Caveat</option>
             </select>
             <label className="range-label">Font size <span>{fontSize}px</span></label><input className="range-control" type="range" min="12" max="100" value={fontSize} onChange={(event) => setFontSize(Number(event.target.value))}/>
           </div>
@@ -299,6 +304,7 @@ export default function StudioWorkspace() {
           <div className="inspector-tip"><Sparkles size={15}/><div><strong>Pro tip</strong><p>Select any shape or text on the canvas to resize, rotate, recolor and layer it.</p></div></div>
         </aside>
       </div>
+      {assetLibraryOpen && <AssetLibrary onClose={() => setAssetLibraryOpen(false)} onChoose={(asset: StudioAsset) => { setAssetCommand((current) => ({ symbol: asset.symbol, label: asset.label, token: current.token + 1 })); setAssetLibraryOpen(false); setTool("select"); }} />}
     </main>
   );
 }
