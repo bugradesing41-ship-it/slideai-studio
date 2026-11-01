@@ -51,6 +51,14 @@ type Props = {
 
 export type { Tool };
 
+function normalizeSerializedFonts(value:unknown, families:Set<string>) {
+  if (Array.isArray(value)) { value.forEach((item)=>normalizeSerializedFonts(item,families)); return; }
+  if (!value || typeof value !== "object") return;
+  const record=value as Record<string,unknown>;
+  if (typeof record.fontFamily === "string") { record.fontFamily=record.fontFamily.replace(/\\s+Variable$/i,""); families.add(record.fontFamily); }
+  Object.values(record).forEach((item)=>normalizeSerializedFonts(item,families));
+}
+
 async function loadGoogleFont(family:string, weights:number[], weight:number|string=400, size=32):Promise<boolean> {
   if (!family.trim()) return false;
   const safeFamily=family.trim().replace(/\s+Variable$/i,"");
@@ -134,7 +142,7 @@ export default function DesignCanvas({
         const eyebrowObject = canvas.getObjects().find((object: any) => object.name === "slide-eyebrow");
         const bodyObject = canvas.getObjects().find((object: any) => object.name === "slide-body");
         let numberObject = canvas.getObjects().find((object: any) => object.name === "slide-number");
-        if (!numberObject) { numberObject = new fabric.Textbox(current.slideNumber, { name:"slide-number", left:1050, top:650, width:150, fontSize:14, fontFamily:"Inter Variable", fontWeight:600, textAlign:"right", fill:current.theme === "light" ? "#777287" : "#aaa3c4", selectable:false, evented:false }); canvas.add(numberObject); }
+        if (!numberObject) { numberObject = new fabric.Textbox(current.slideNumber, { name:"slide-number", left:1050, top:650, width:150, fontSize:14, fontFamily:"DM Sans", fontWeight:600, textAlign:"right", fill:current.theme === "light" ? "#777287" : "#aaa3c4", selectable:false, evented:false }); canvas.add(numberObject); }
         numberObject.set({ text:current.slideNumber, fill:current.theme === "light" ? "#777287" : "#aaa3c4" });
         if (titleObject) titleObject.set("text", current.title);
         if (eyebrowObject) eyebrowObject.set("text", current.eyebrow);
@@ -146,7 +154,11 @@ export default function DesignCanvas({
 
       if (latestRef.current.initialData) {
         try {
-          await canvas.loadFromJSON(JSON.parse(latestRef.current.initialData));
+          const savedDocument=JSON.parse(latestRef.current.initialData);
+          const savedFamilies=new Set<string>();
+          normalizeSerializedFonts(savedDocument,savedFamilies);
+          await Promise.all([...savedFamilies].map((family)=>loadGoogleFont(family,[400],400,32)));
+          await canvas.loadFromJSON(savedDocument);
         } catch {
           canvas.clear();
         }
@@ -174,10 +186,10 @@ export default function DesignCanvas({
           }),
           new fabric.Textbox("THINK CLEARLY. CREATE BOLDLY.", {
             name: "slide-footer", left: 84, top: 650, width: 700, fontSize: 12,
-            fontFamily: "Inter", fontWeight: 600, charSpacing: 140,
+            fontFamily: "DM Sans", fontWeight: 600, charSpacing: 140,
             fill: light ? "#777287" : "#aaa3c4", selectable: false, evented: false,
           }),
-          new fabric.Textbox(latestRef.current.slideNumber, { name:"slide-number", left:1050, top:650, width:150, fontSize:14, fontFamily:"Inter Variable", fontWeight:600, textAlign:"right", fill:light ? "#777287" : "#aaa3c4", selectable:false, evented:false })
+          new fabric.Textbox(latestRef.current.slideNumber, { name:"slide-number", left:1050, top:650, width:150, fontSize:14, fontFamily:"DM Sans", fontWeight:600, textAlign:"right", fill:light ? "#777287" : "#aaa3c4", selectable:false, evented:false })
         );
       } else {
         syncText();
