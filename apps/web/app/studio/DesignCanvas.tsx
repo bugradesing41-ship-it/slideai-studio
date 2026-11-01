@@ -115,7 +115,7 @@ export default function DesignCanvas({
         const bodyObject = canvas.getObjects().find((object: any) => object.name === "slide-body");
         let numberObject = canvas.getObjects().find((object: any) => object.name === "slide-number");
         if (!numberObject) { numberObject = new fabric.Textbox(current.slideNumber, { name:"slide-number", left:1050, top:650, width:150, fontSize:14, fontFamily:"Inter Variable", fontWeight:600, textAlign:"right", fill:current.theme === "light" ? "#777287" : "#aaa3c4", selectable:false, evented:false }); canvas.add(numberObject); }
-        numberObject.set("text", current.slideNumber);
+        numberObject.set({ text:current.slideNumber, fill:current.theme === "light" ? "#777287" : "#aaa3c4" });
         if (titleObject) titleObject.set("text", current.title);
         if (eyebrowObject) eyebrowObject.set("text", current.eyebrow);
         if (bodyObject) bodyObject.set("text", current.body);
@@ -548,7 +548,7 @@ export default function DesignCanvas({
     const eyebrowObject = canvas.getObjects().find((object: any) => object.name === "slide-eyebrow");
     const bodyObject = canvas.getObjects().find((object: any) => object.name === "slide-body");
     const numberObject = canvas.getObjects().find((object: any) => object.name === "slide-number");
-    if (numberObject) numberObject.set("text", current.slideNumber);
+    if (numberObject) numberObject.set({ text:current.slideNumber, fill:current.theme === "light" ? "#777287" : "#aaa3c4" });
     if (titleObject) titleObject.set("text", current.title);
     if (eyebrowObject) eyebrowObject.set("text", current.eyebrow);
     if (bodyObject) bodyObject.set("text", current.body);
