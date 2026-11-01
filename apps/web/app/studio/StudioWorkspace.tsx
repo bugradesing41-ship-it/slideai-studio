@@ -269,7 +269,7 @@ export default function StudioWorkspace() {
 
       <div className="studio-body">
         <aside className="chat-panel">
-          <div className="panel-heading"><div className="panel-heading-icon"><Sparkles size={16}/></div><div><strong>AI assistant</strong><span>Your creative partner</span></div><button className="icon-button"><MoreHorizontal size={17}/></button></div>
+          <div className="panel-heading"><div className="panel-heading-icon"><Sparkles size={16}/></div><div><strong>Gemini assistant</strong><span>Your creative partner</span></div><button className="icon-button"><MoreHorizontal size={17}/></button></div>
           <div className="chat-context"><span className="context-dot"/> OPENAI DESIGN ENGINE · EDITABLE OUTPUT</div>
           <div className="chat-ai-controls">
             <label>DESIGN TYPE<select value={designType} onChange={(event)=>setDesignType(event.target.value as DesignType)}><option value="presentation">Presentation</option><option value="social-post">Social media</option><option value="advertisement">Advertisement</option><option value="product">Product design</option><option value="infographic">Infographic</option></select></label>
