@@ -18,6 +18,7 @@ type Slide = SlideSpec;
 
 const TEXT_ANIMATIONS=["Fade in","Typewriter","Rise up","Slide from left","Slide from right","Zoom in","Pop","Bounce","Elastic","Soft focus","Flip X","Flip Y","Rotate in","Float up","Drop in","Stretch","Swing","Wave","Pulse","Glitch","Tracking reveal","Slide reveal","Focus in","Overshoot","Spring settle"];
 const ITEM_ANIMATIONS=["Fade","Scale in","Pop","Bounce","Elastic","Spin in","Flip horizontal","Flip vertical","Slide left","Slide right","Slide up","Slide down","Float","Drift","Swing","Wobble","Pulse","Heartbeat","Shake","Jelly","Rubber band","Zoom through","Arc in","Drop","Spring"];
+const SLIDE_ANIMATIONS=["Fade","Slide left","Slide right","Rise","Zoom","Flip","Blur","Wipe","Rotate","Bounce"];
 const TEXT_EFFECTS=["Soft shadow","Deep shadow","Neon glow","Violet glow","Glass highlight","Frosted highlight","Outline","Double outline","Engraved","Wide tracking","Bold impact","Soft highlight","Glass text","Retro offset","3D depth","Metallic shadow","Underline accent","Overline accent","Pill highlight","Blur shadow","Long shadow","Warm glow","Cool glow","High contrast","Editorial italic"];
 const ITEM_EFFECTS=["Soft shadow","Deep shadow","Neon glow","Violet glow","Glass","Frosted glass","Outline","Double border","Dashed border","Dotted border","Inner depth","Emboss","3D lift","Long shadow","Soft blur shadow","Glow edge","Duotone tint","High contrast","Vintage fade","Pastel tint","Vivid color","Monochrome","Holographic feel","Sticker edge","Floating"];
 
@@ -36,12 +37,18 @@ export default function StudioWorkspace() {
   const [fill, setFill] = useState("#a78bfa");
   const [stroke, setStroke] = useState("#d8ccff");
   const [strokeWidth, setStrokeWidth] = useState(3);
-  const [fontFamily, setFontFamily] = useState("Manrope");
+  const [fontFamily, setFontFamily] = useState("Manrope Variable");
   const [fontSize, setFontSize] = useState(32);
+  const [fontWeight, setFontWeight] = useState("400");
+  const [cornerRadius, setCornerRadius] = useState(18);
+  const [slideBackgrounds, setSlideBackgrounds] = useState<Record<number,string>>({});
+  const [slideAnimations, setSlideAnimations] = useState<Record<number,string>>({});
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [selectionType, setSelectionType] = useState("");
   const [shadowEnabled, setShadowEnabled] = useState(false);
   const [opacity, setOpacity] = useState(1);
   const [canvasDataBySlide, setCanvasDataBySlide] = useState<Record<number, string>>({});
-  const [transitionPreset, setTransitionPreset] = useState("fade");
+  const [assetLibraryCategory, setAssetLibraryCategory] = useState("All assets");
   const [canvasCommand, setCanvasCommand] = useState({ action: "", token: 0 });
   const [hasSelection, setHasSelection] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
@@ -52,11 +59,23 @@ export default function StudioWorkspace() {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [textAnimation, setTextAnimation] = useState("Fade in");
   const [itemAnimation, setItemAnimation] = useState("Fade");
+  const activeSlideAnimation = slideAnimations[activeId] ?? "Fade";
+  const backgroundColor = slideBackgrounds[activeId] ?? (theme === "light" ? "#f1eee7" : theme === "blue" ? "#102333" : "#171525");
+  const isTextSelection = ["textbox","i-text","text"].includes(selectionType.toLowerCase());
+  const slideInitial = activeSlideAnimation === "Slide left" ? {opacity:0,x:90} : activeSlideAnimation === "Slide right" ? {opacity:0,x:-90} : activeSlideAnimation === "Rise" ? {opacity:0,y:60} : activeSlideAnimation === "Zoom" ? {opacity:0,scale:.72} : activeSlideAnimation === "Flip" ? {opacity:0,rotateY:80} : activeSlideAnimation === "Blur" ? {opacity:0,filter:"blur(18px)"} : activeSlideAnimation === "Wipe" ? {opacity:0,clipPath:"inset(0 100% 0 0)"} : activeSlideAnimation === "Rotate" ? {opacity:0,rotate:-12,scale:.9} : activeSlideAnimation === "Bounce" ? {opacity:0,y:-90,scale:.92} : {opacity:0};
   const [textEffect, setTextEffect] = useState("Soft shadow");
   const [itemEffect, setItemEffect] = useState("Soft shadow");
   const activeSlide = useMemo(() => slides.find((slide) => slide.id === activeId) ?? slides[0], [slides, activeId]);
   useEffect(() => {
+    if (!isPlaying) return;
+    const index = slides.findIndex((slide) => slide.id === activeId);
+    const timer = window.setTimeout(() => { if (index >= slides.length - 1) setIsPlaying(false); else setActiveId(slides[index + 1].id); }, 2300);
+    return () => window.clearTimeout(timer);
+  }, [isPlaying, activeId, slides]);
+
+  useEffect(() => {
     function handleEditorShortcut(event: KeyboardEvent) {
+      if (event.key === "Escape") setIsPlaying(false);
       const target = event.target as HTMLElement | null;
       const isTyping = target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable;
       if (isTyping) return;
@@ -188,7 +207,10 @@ export default function StudioWorkspace() {
               <span className="toolbar-divider"/>
               <button className="tool-button" onClick={() => issueCanvasCommand("undo")} disabled={!canUndo} title="Undo"><Undo2 size={15}/></button>
               <button className="tool-button" onClick={() => issueCanvasCommand("redo")} disabled={!canRedo} title="Redo"><Redo2 size={15}/></button>
-              <button className="tool-button asset-launch-button" onClick={() => setAssetLibraryOpen(true)} title="Open asset library"><ImagePlus size={15}/><span>Assets</span></button>
+              <button className="tool-button asset-launch-button" onClick={() => {setAssetLibraryCategory("All assets");setAssetLibraryOpen(true);}} title="Open asset library"><ImagePlus size={15}/><span>Assets</span></button>
+              <button className="tool-button" onClick={() => {setAssetLibraryCategory("Characters");setAssetLibraryOpen(true);}} title="Add a character"><span aria-hidden="true">🧑‍🎨</span><span>Characters</span></button>
+              <button className="tool-button" onClick={() => {setIsPlaying(true);setActiveId(slides[0].id);}} title="Play all slides"><span aria-hidden="true">▶</span><span>Play all</span></button>
+              {isPlaying && <button className="tool-button active-tool" onClick={() => setIsPlaying(false)} title="Stop presentation preview">■<span>Stop</span></button>}
               <button className="tool-button" onClick={() => imageInputRef.current?.click()} title="Add image from computer"><ImagePlus size={15}/><span>Image</span></button>
               <input ref={imageInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" hidden onChange={(event) => { const file=event.target.files?.[0]; if(!file)return; if(file.size>12*1024*1024){window.alert("Please choose an image smaller than 12 MB.");event.target.value="";return;} const reader=new FileReader(); reader.onload=()=>{if(typeof reader.result==="string")setImageCommand(current=>({dataUrl:reader.result as string,name:file.name,token:current.token+1}));}; reader.readAsDataURL(file); event.target.value=""; }} />
               <span className="toolbar-divider"/>
@@ -216,7 +238,7 @@ export default function StudioWorkspace() {
 
           <div className="canvas-stage advanced-canvas-stage">
             <div className="canvas-zoom-frame" style={{ transform: `scale(${zoom / 100})` }}>
-              <motion.div key={activeId + transitionPreset} className="canvas-motion-frame" initial={transitionPreset==="rise"?{opacity:0,y:24}:transitionPreset==="zoom"?{opacity:0,scale:.94}:transitionPreset==="slide"?{opacity:0,x:28}:{opacity:0}} animate={{opacity:1,x:0,y:0,scale:1}} transition={{duration:.32,ease:"easeOut"}}>
+              <motion.div key={activeId + activeSlideAnimation} className="canvas-motion-frame" initial={slideInitial} animate={{opacity:1,x:0,y:0,scale:1,rotate:0,rotateY:0,filter:"blur(0px)",clipPath:"inset(0 0% 0 0)"}} transition={{duration:activeSlideAnimation==="Bounce"?.72:.48,ease:activeSlideAnimation==="Bounce"?"backOut":"easeOut"}}>
               <DesignCanvas
                 slideId={activeId}
                 title={activeSlide.title}
@@ -229,11 +251,14 @@ export default function StudioWorkspace() {
                 strokeWidth={strokeWidth}
                 fontFamily={fontFamily}
                 fontSize={fontSize}
+                fontWeight={Number(fontWeight)}
+                cornerRadius={cornerRadius}
+                backgroundColor={backgroundColor}
                 shadowEnabled={shadowEnabled}
                 opacity={opacity}
                 initialData={canvasDataBySlide[activeId]}
                 onChange={saveCanvas}
-                onSelectionChange={setHasSelection}
+                onSelectionChange={(selected, type) => {setHasSelection(selected);setSelectionType(type ?? "");}}
                 command={canvasCommand}
                 assetCommand={assetCommand}
                 imageCommand={imageCommand}
@@ -262,7 +287,9 @@ export default function StudioWorkspace() {
             </div>
           </div>
           <div className="inspector-section">
-            <div className="inspector-label">COLORS & STROKE</div>
+            <div className="inspector-label">SLIDE BACKGROUND</div>
+            <div className="color-control-row"><label>Background <input type="color" value={backgroundColor} onChange={(event) => setSlideBackgrounds((current) => ({...current,[activeId]:event.target.value}))}/></label><button className="quick-action" onClick={() => setSlideBackgrounds((current) => {const next={...current};delete next[activeId];return next;})}>Reset background</button></div>
+            <div className="inspector-label preset-label">COLORS & STROKE</div>
             <div className="color-control-row"><label>Fill <input type="color" value={fill} onChange={(event) => setFill(event.target.value)}/></label><label>Border <input type="color" value={stroke} onChange={(event) => setStroke(event.target.value)}/></label></div>
             <label className="range-label">Stroke width <span>{strokeWidth}px</span></label><input className="range-control" type="range" min="1" max="18" value={strokeWidth} onChange={(event) => setStrokeWidth(Number(event.target.value))}/>
             <label className="range-label">Opacity <span>{Math.round(opacity * 100)}%</span></label><input className="range-control" type="range" min="10" max="100" value={Math.round(opacity * 100)} onChange={(event) => setOpacity(Number(event.target.value) / 100)}/>
@@ -288,18 +315,18 @@ export default function StudioWorkspace() {
             <div className="inspector-label">TYPOGRAPHY</div>
             <label className="field-label">Font family</label>
             <select className="inspector-input" value={fontFamily} onChange={(event) => setFontFamily(event.target.value)}>
-              <option>Inter</option><option>DM Sans</option><option>Manrope</option><option>Space Grotesk</option><option>Playfair Display</option><option>Montserrat</option><option>Lora</option><option>Outfit</option><option>Poppins</option><option>Nunito Sans</option><option>Roboto</option><option>Oswald</option><option>Merriweather</option><option>Archivo</option><option>Bebas Neue</option><option>Caveat</option>
+              <option>Inter Variable</option><option>DM Sans Variable</option><option>Manrope Variable</option><option>Space Grotesk Variable</option><option>Outfit Variable</option><option>Roboto Variable</option><option>Nunito Sans Variable</option><option>Playfair Display Variable</option><option>Montserrat</option><option>Lora</option><option>Poppins</option><option>Oswald</option><option>Merriweather</option><option>Archivo</option><option>Bebas Neue</option><option>Caveat</option>
             </select>
-            <label className="range-label">Font size <span>{fontSize}px</span></label><input className="range-control" type="range" min="12" max="100" value={fontSize} onChange={(event) => setFontSize(Number(event.target.value))}/>
+            <label className="range-label">Font weight <span>{fontWeight}</span></label><select className="inspector-input" value={fontWeight} onChange={(event) => setFontWeight(event.target.value)}><option value="300">Light 300</option><option value="400">Regular 400</option><option value="500">Medium 500</option><option value="600">Semi bold 600</option><option value="700">Bold 700</option><option value="800">Extra bold 800</option></select>
+            <label className="range-label">Font size <span>{fontSize}px</span></label><input className="range-control" type="range" min="12" max="100" value={fontSize} onChange={(event) => setFontSize(Number(event.target.value))}
           </div>
           <div className="inspector-section motion-library-section">
             <div className="inspector-label">TEXT ANIMATIONS <span>25 PRESETS</span></div>
-            <select className="inspector-input" value={textAnimation} onChange={event=>setTextAnimation(event.target.value)}>{TEXT_ANIMATIONS.map(name=><option key={name}>{name}</option>)}</select>
-            <button className="quick-action" onClick={()=>issueCanvasCommand("animation:text:"+textAnimation)} disabled={!hasSelection}>Apply to selected text</button>
+            <select className="inspector-input" value={textAnimation} disabled={!hasSelection || !isTextSelection} onChange={event=>{setTextAnimation(event.target.value);issueCanvasCommand("preview-animation:text:"+event.target.value);}}>{TEXT_ANIMATIONS.map(name=><option key={name}>{name}</option>)}</select>
+            <p className="inspector-hint">Select text, then choose an animation to preview it instantly. Nothing is permanently applied.</p>
             <div className="inspector-label preset-label">ITEM ANIMATIONS <span>25 PRESETS</span></div>
-            <select className="inspector-input" value={itemAnimation} onChange={event=>setItemAnimation(event.target.value)}>{ITEM_ANIMATIONS.map(name=><option key={name}>{name}</option>)}</select>
-            <button className="quick-action" onClick={()=>issueCanvasCommand("animation:item:"+itemAnimation)} disabled={!hasSelection}>Apply to selected item</button>
-            <button className="quick-action" onClick={()=>issueCanvasCommand("preview-animation")} disabled={!hasSelection}><WandSparkles size={14}/> Preview selected animation</button>
+            <select className="inspector-input" value={itemAnimation} disabled={!hasSelection || isTextSelection} onChange={event=>{setItemAnimation(event.target.value);issueCanvasCommand("preview-animation:item:"+event.target.value);}}>{ITEM_ANIMATIONS.map(name=><option key={name}>{name}</option>)}</select>
+            <p className="inspector-hint">Select a product, image or shape, then choose an animation for an instant preview.</p>
             <div className="inspector-label preset-label">TEXT EFFECTS <span>25 PRESETS</span></div>
             <select className="inspector-input" value={textEffect} onChange={event=>setTextEffect(event.target.value)}>{TEXT_EFFECTS.map(name=><option key={name}>{name}</option>)}</select>
             <button className="quick-action" onClick={()=>issueCanvasCommand("effect:text:"+TEXT_EFFECTS.indexOf(textEffect)+"-"+textEffect.toLowerCase().replace(/[^a-z0-9]+/g,"-"))} disabled={!hasSelection}>Apply text effect</button>
@@ -308,16 +335,19 @@ export default function StudioWorkspace() {
             <button className="quick-action" onClick={()=>issueCanvasCommand("effect:item:"+ITEM_EFFECTS.indexOf(itemEffect)+"-"+itemEffect.toLowerCase().replace(/[^a-z0-9]+/g,"-"))} disabled={!hasSelection}>Apply item effect</button>
           </div>
           <div className="inspector-section">
-            <div className="inspector-label">SLIDE TRANSITION</div>
-            <select className="inspector-input" value={transitionPreset} onChange={(event) => setTransitionPreset(event.target.value)}>
-              <option value="fade">Fade</option><option value="rise">Rise</option><option value="zoom">Zoom</option><option value="slide">Slide in</option>
-            </select>
-            <p className="inspector-hint">Preview transitions when switching between slides. Motion-powered.</p>
+            <div className="inspector-label">THIS SLIDE ANIMATION <span>10 OPTIONS</span></div>
+            <select className="inspector-input" value={activeSlideAnimation} onChange={(event) => setSlideAnimations((current) => ({...current,[activeId]:event.target.value}))}>{SLIDE_ANIMATIONS.map((name) => <option key={name}>{name}</option>)}</select>
+            <p className="inspector-hint">Each slide keeps its own entrance animation. Use Play all to preview the complete presentation.</p>
           </div>
           <div className="inspector-section">
             <div className="inspector-label">SLIDE CONTENT</div>
             <label className="field-label">Slide title</label><input className="inspector-input" value={activeSlide.title} onChange={(event) => { updateActive({title:event.target.value}); }}/>
             <label className="field-label">Description</label><textarea className="inspector-textarea" value={activeSlide.body} onChange={(event) => updateActive({body:event.target.value})}/>
+          </div>
+          <div className="inspector-section">
+            <div className="inspector-label">OBJECT CORNERS</div>
+            <label className="range-label">Corner radius <span>{cornerRadius}px</span></label><input className="range-control" type="range" min="0" max="80" value={cornerRadius} onChange={(event) => setCornerRadius(Number(event.target.value))} disabled={!hasSelection}/>
+            <p className="inspector-hint">Adjusts the selected shape, image or text container. Set to 0 for square corners.</p>
           </div>
           <div className="inspector-section">
             <div className="inspector-label">SELECTED OBJECT</div>
@@ -334,7 +364,7 @@ export default function StudioWorkspace() {
           <div className="inspector-tip"><Sparkles size={15}/><div><strong>Pro tip</strong><p>Select any shape or text on the canvas to resize, rotate, recolor and layer it.</p></div></div>
         </aside>
       </div>
-      {assetLibraryOpen && <AssetLibrary onClose={() => setAssetLibraryOpen(false)} onChoose={(asset: StudioAsset) => { setAssetCommand((current) => ({ symbol: asset.symbol, label: asset.label, token: current.token + 1 })); setAssetLibraryOpen(false); setTool("select"); }} />}
+      {assetLibraryOpen && <AssetLibrary initialCategory={assetLibraryCategory} onClose={() => setAssetLibraryOpen(false)} onChoose={(asset: StudioAsset) => { setAssetCommand((current) => ({ symbol: asset.symbol, label: asset.label, token: current.token + 1 })); setAssetLibraryOpen(false); setTool("select"); }} />}
     </main>
   );
 }
