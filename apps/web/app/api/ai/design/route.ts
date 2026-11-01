@@ -39,7 +39,7 @@ const slideSchema = {
     body: { type: "string" }, kind: { type: "string", enum: ["cover", "content", "stats", "quote"] },
     layout: { type: "string", enum: ["title", "title-and-body", "three-statistics", "featured-quote", "two-column", "image-focus", "comparison", "timeline"] },
     notes: { type: "string" },
-    elements: { type: "array", items: elementSchema, maxItems: 40 },
+    elements: { type: "array", items: elementSchema, minItems: 3, maxItems: 40 },
   },
   required: ["id", "title", "eyebrow", "body", "kind", "layout", "notes", "elements"],
   additionalProperties: false,
@@ -109,7 +109,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = requestSchema.parse(await request.json());
+    const rawBody = await request.text();
+    if (rawBody.length > 120_000) return NextResponse.json({ error: "Tasarım isteği çok büyük." }, { status: 413 });
+    const body = requestSchema.parse(JSON.parse(rawBody));
     const existingDeck = body.mode === "refine" ? deckSpecSchema.safeParse(body.existingDeck) : null;
     if (body.mode === "refine" && !existingDeck?.success) {
       return NextResponse.json({ error: "Düzenlenecek geçerli bir sunum bulunamadı. Önce yeni bir tasarım oluştur." }, { status: 400 });
@@ -128,7 +130,7 @@ export async function POST(request: Request) {
     const response = await openai.responses.create({
       model: process.env.OPENAI_MODEL || "gpt-5.5",
       store: false,
-      max_output_tokens: 9000,
+      max_output_tokens: 16000,
       instructions: systemInstructions,
       input: designBrief,
       text: {
@@ -136,7 +138,7 @@ export async function POST(request: Request) {
           type: "json_schema",
           name: "slideai_editable_design",
           strict: true,
-          schema: outputSchema,
+          schema: outputSchema as never,
         },
       },
     });
