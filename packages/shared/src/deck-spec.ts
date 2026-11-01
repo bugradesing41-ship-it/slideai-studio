@@ -24,6 +24,9 @@ export const designElementSchema = z.object({
   fontWeight: z.number().int().min(100).max(900),
   textAlign: z.enum(["left", "center", "right"]),
   opacity: z.number().min(0).max(1),
+}).superRefine((element, context) => {
+  if (element.x + element.width > 1280) context.addIssue({ code: z.ZodIssueCode.custom, path: ["width"], message: "Element exceeds the canvas width." });
+  if (element.y + element.height > 720) context.addIssue({ code: z.ZodIssueCode.custom, path: ["height"], message: "Element exceeds the canvas height." });
 });
 
 export const slideSpecSchema = z.object({
