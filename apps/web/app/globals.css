@@ -126,3 +126,9 @@ h1{font:700 clamp(34px,4vw,49px)/1.12 Manrope,sans-serif;letter-spacing:-2.4px;m
 .motion-library-section select{margin-bottom:7px}
 .motion-library-section .quick-action{margin-top:5px}
 .motion-library-section .preset-label{margin-top:17px}
+
+/* Live animation preview and presentation playback states */
+.playing-indicator{margin-left:10px;color:#a78bfa;font-style:normal;font-size:8px;letter-spacing:1px;animation:slideai-pulse 1.2s ease-in-out infinite}
+@keyframes slideai-pulse{50%{opacity:.35}}
+.motion-library-section .inspector-input:disabled{opacity:.4;cursor:not-allowed}
+.advanced-inspector .color-control-row .quick-action{width:auto;margin:0;white-space:nowrap;padding:6px 8px}
