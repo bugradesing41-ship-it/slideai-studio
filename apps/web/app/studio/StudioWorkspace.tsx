@@ -57,7 +57,7 @@ export default function StudioWorkspace() {
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [assetLibraryOpen, setAssetLibraryOpen] = useState(false);
-  const [assetCommand, setAssetCommand] = useState({ symbol: "", label: "", token: 0 });
+  const [assetCommand, setAssetCommand] = useState<{symbol:string;label:string;imageUrl?:string;token:number}>({ symbol: "", label: "", token: 0 });
   const [imageCommand, setImageCommand] = useState({ dataUrl: "", name: "", token: 0 });
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [textAnimation, setTextAnimation] = useState("Fade in");
@@ -65,7 +65,19 @@ export default function StudioWorkspace() {
   const activeSlideAnimation = slideAnimations[activeId] ?? "Fade";
   const backgroundColor = slideBackgrounds[activeId] ?? (theme === "light" ? "#f1eee7" : theme === "blue" ? "#102333" : "#171525");
   const isTextSelection = ["textbox","i-text","text"].includes(selectionType.toLowerCase());
-  const slideInitial = activeSlideAnimation === "Slide left" ? {opacity:0,x:90} : activeSlideAnimation === "Slide right" ? {opacity:0,x:-90} : activeSlideAnimation === "Rise" ? {opacity:0,y:60} : activeSlideAnimation === "Zoom" ? {opacity:0,scale:.72} : activeSlideAnimation === "Flip" ? {opacity:0,rotateY:80} : activeSlideAnimation === "Blur" ? {opacity:0,filter:"blur(18px)"} : activeSlideAnimation === "Wipe" ? {opacity:0,clipPath:"inset(0 100% 0 0)"} : activeSlideAnimation === "Rotate" ? {opacity:0,rotate:-12,scale:.9} : activeSlideAnimation === "Bounce" ? {opacity:0,y:-90,scale:.92} : {opacity:0};
+  const SLIDE_MOTION:Record<string,{initial:Record<string,unknown>;animate:Record<string,unknown>;transition:Record<string,unknown>}> = {
+    "Fade":{initial:{opacity:0},animate:{opacity:[0,1]},transition:{duration:.72,ease:"easeOut"}},
+    "Slide left":{initial:{x:760},animate:{x:[760,0]},transition:{duration:.78,ease:[.22,1,.36,1]}},
+    "Slide right":{initial:{x:-760},animate:{x:[-760,0]},transition:{duration:.78,ease:[.22,1,.36,1]}},
+    "Rise":{initial:{y:460,opacity:0},animate:{y:[460,0],opacity:[0,1]},transition:{duration:.8,ease:[.16,1,.3,1]}},
+    "Zoom":{initial:{scale:.28,opacity:0},animate:{scale:[.28,1.04,1],opacity:[0,1,1]},transition:{duration:.82,times:[0,.72,1],ease:"easeOut"}},
+    "Flip":{initial:{rotateY:-105,opacity:.35},animate:{rotateY:[-105,12,0],opacity:[.35,1,1]},transition:{duration:.86,times:[0,.78,1],ease:"easeOut"}},
+    "Blur":{initial:{filter:"blur(30px)",opacity:.15},animate:{filter:["blur(30px)","blur(0px)"],opacity:[.15,1]},transition:{duration:.9,ease:"easeOut"}},
+    "Wipe":{initial:{clipPath:"inset(0 100% 0 0)"},animate:{clipPath:["inset(0 100% 0 0)","inset(0 0% 0 0)"]},transition:{duration:.8,ease:[.65,0,.35,1]}},
+    "Rotate":{initial:{rotate:-24,scale:.78,opacity:0},animate:{rotate:[-24,5,0],scale:[.78,1.03,1],opacity:[0,1,1]},transition:{duration:.86,times:[0,.72,1],ease:"easeOut"}},
+    "Bounce":{initial:{y:-300,opacity:0},animate:{y:[-300,0,-28,0],opacity:[0,1,1,1]},transition:{duration:1.05,times:[0,.62,.82,1],ease:"easeOut"}}
+  };
+  const slideMotion = SLIDE_MOTION[activeSlideAnimation] ?? SLIDE_MOTION.Fade;
   const [textEffect, setTextEffect] = useState("Soft shadow");
   const [itemEffect, setItemEffect] = useState("Soft shadow");
   const activeSlide = useMemo(() => slides.find((slide) => slide.id === activeId) ?? slides[0], [slides, activeId]);
@@ -241,9 +253,10 @@ export default function StudioWorkspace() {
 
           <div className="canvas-stage advanced-canvas-stage">
             <div className="canvas-zoom-frame" style={{ transform: `scale(${zoom / 100})` }}>
-              <motion.div key={activeId + activeSlideAnimation} className="canvas-motion-frame" initial={slideInitial} animate={{opacity:1,x:0,y:0,scale:1,rotate:0,rotateY:0,filter:"blur(0px)",clipPath:"inset(0 0% 0 0)"}} transition={{duration:activeSlideAnimation==="Bounce"?.72:.48,ease:activeSlideAnimation==="Bounce"?"backOut":"easeOut"}}>
+              <motion.div key={activeId + activeSlideAnimation} className="canvas-motion-frame" style={{transformPerspective:1200}} initial={slideMotion.initial} animate={slideMotion.animate} transition={slideMotion.transition}>
               <DesignCanvas
                 slideId={activeId}
+                slideNumber={`${String(slides.findIndex((slide) => slide.id === activeId) + 1).padStart(2,"0")} / ${String(slides.length).padStart(2,"0")}`}
                 title={activeSlide.title}
                 eyebrow={activeSlide.eyebrow}
                 body={activeSlide.body}
@@ -367,7 +380,7 @@ export default function StudioWorkspace() {
           <div className="inspector-tip"><Sparkles size={15}/><div><strong>Pro tip</strong><p>Select any shape or text on the canvas to resize, rotate, recolor and layer it.</p></div></div>
         </aside>
       </div>
-      {assetLibraryOpen && <AssetLibrary initialCategory={assetLibraryCategory} onClose={() => setAssetLibraryOpen(false)} onChoose={(asset: StudioAsset) => { setAssetCommand((current) => ({ symbol: asset.symbol, label: asset.label, token: current.token + 1 })); setAssetLibraryOpen(false); setTool("select"); }} />}
+      {assetLibraryOpen && <AssetLibrary initialCategory={assetLibraryCategory} onClose={() => setAssetLibraryOpen(false)} onChoose={(asset: StudioAsset) => { setAssetCommand((current) => ({ symbol: asset.symbol, label: asset.label, imageUrl: asset.imageUrl, token: current.token + 1 })); setAssetLibraryOpen(false); setTool("select"); }} />}
     </main>
   );
 }
