@@ -53,7 +53,7 @@ export type { Tool };
 
 async function loadGoogleFont(family:string, weights:number[], weight:number|string=400, size=32):Promise<boolean> {
   if (!family.trim()) return false;
-  const safeFamily=family.trim();
+  const safeFamily=family.trim().replace(/\s+Variable$/i,"");
   const supportedWeights=weights.length?weights:[400];
   const id=`slideai-google-font-${safeFamily.toLowerCase().replace(/[^a-z0-9]+/g,"-")}-${supportedWeights.join("-")}`;
   let link=document.getElementById(id) as HTMLLinkElement|null;
@@ -115,7 +115,7 @@ export default function DesignCanvas({
         const active = canvas.getActiveObject();
         const rawWeight = active?.get("fontWeight");
         const parsedWeight = typeof rawWeight === "number" ? rawWeight : rawWeight === "bold" ? 700 : rawWeight === "normal" ? 400 : Number(rawWeight ?? 400);
-        const typography = active && "fontFamily" in active ? { fontFamily:String(active.get("fontFamily") ?? ""), fontSize:Number(active.get("fontSize") ?? 0), fontWeight:Number.isFinite(parsedWeight) ? parsedWeight : 400 } : undefined;
+        const typography = active && "fontFamily" in active ? { fontFamily:String(active.get("fontFamily") ?? "").replace(/\s+Variable$/i,""), fontSize:Number(active.get("fontSize") ?? 0), fontWeight:Number.isFinite(parsedWeight) ? parsedWeight : 400 } : undefined;
         latestRef.current.onSelectionChange(Boolean(active), active?.type ?? "", typography);
         if (active && latestRef.current.cornerRadius > 0) {
           void import("fabric").then(({ Rect }) => {
@@ -157,7 +157,7 @@ export default function DesignCanvas({
         canvas.add(
           new fabric.Textbox(current.eyebrow || "FIELD NOTES / 2026", {
             name: "slide-eyebrow", left: 84, top: 115, width: 900, fontSize: 18,
-            fontFamily: "Inter", fontWeight: 600, charSpacing: 190,
+            fontFamily: "DM Sans", fontWeight: 600, charSpacing: 190,
             fill: light ? "#7558bc" : current.theme === "blue" ? "#8bc7e7" : "#b39bff",
             editable: true,
           }),
