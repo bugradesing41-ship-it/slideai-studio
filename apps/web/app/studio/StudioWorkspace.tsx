@@ -12,24 +12,19 @@ import {
   ArrowLeft, ArrowUpRight, Check, ChevronDown, ChevronDown as MoveDown, ChevronUp as MoveUp, Copy, Download, ImagePlus,
   LayoutTemplate, MoreHorizontal, Plus, Settings2,
   Sparkles, Trash2, Type, ZoomIn, ZoomOut, MousePointer2,
-  Pencil, Square, Play, Users, Circle as CircleIcon, Triangle as TriangleIcon, Minus,
+  Pencil, Square, Play, Circle as CircleIcon, Triangle as TriangleIcon, Minus,
   MoveUpRight, Star, Undo2, Redo2, Layers3, Diamond, Hexagon, Pentagon, Heart, MessageSquareText
 } from "lucide-react";
 
 type Slide = SlideSpec;
 
 const DEFAULT_FONT_WEIGHTS=[400];
-const TEXT_ANIMATIONS=["Fade in","Typewriter","Rise up","Slide from left","Slide from right","Zoom in","Pop","Bounce","Elastic","Soft focus","Flip X","Flip Y","Rotate in","Float up","Drop in","Stretch","Swing","Wave","Pulse","Glitch","Tracking reveal","Slide reveal","Focus in","Overshoot","Spring settle"];
-const ITEM_ANIMATIONS=["Fade","Scale in","Pop","Bounce","Elastic","Spin in","Flip horizontal","Flip vertical","Slide left","Slide right","Slide up","Slide down","Float","Drift","Swing","Wobble","Pulse","Heartbeat","Shake","Jelly","Rubber band","Zoom through","Arc in","Drop","Spring"];
 const SLIDE_ANIMATIONS=["Fade","Slide left","Slide right","Rise","Zoom","Flip","Blur","Wipe","Rotate","Bounce"];
-const TEXT_EFFECTS=["Soft shadow","Deep shadow","Neon glow","Violet glow","Glass highlight","Frosted highlight","Outline","Double outline","Engraved","Wide tracking","Bold impact","Soft highlight","Glass text","Retro offset","3D depth","Metallic shadow","Underline accent","Overline accent","Pill highlight","Blur shadow","Long shadow","Warm glow","Cool glow","High contrast","Editorial italic"];
-const ITEM_EFFECTS=["Soft shadow","Deep shadow","Neon glow","Violet glow","Glass","Frosted glass","Outline","Double border","Dashed border","Dotted border","Inner depth","Emboss","3D lift","Long shadow","Soft blur shadow","Glow edge","Duotone tint","High contrast","Vintage fade","Pastel tint","Vivid color","Monochrome","Holographic feel","Sticker edge","Floating"];
 
 
 export default function StudioWorkspace() {
   const [slides, setSlides] = useState<Slide[]>(sampleDeck.slides);
   const [activeId, setActiveId] = useState(1);
-  const [canvasResetToken, setCanvasResetToken] = useState(0);
   const [title, setTitle] = useState(sampleDeck.title);
   const [zoom, setZoom] = useState(82);
   const [theme, setTheme] = useState<"violet" | "blue" | "light">("violet");
@@ -50,7 +45,6 @@ export default function StudioWorkspace() {
   const [slideAnimations, setSlideAnimations] = useState<Record<number,string>>({});
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackToken, setPlaybackToken] = useState(0);
-  const [selectionType, setSelectionType] = useState("");
   const [shadowEnabled, setShadowEnabled] = useState(false);
   const [opacity, setOpacity] = useState(1);
   const [canvasDataBySlide, setCanvasDataBySlide] = useState<Record<number, string>>({});
@@ -68,7 +62,6 @@ export default function StudioWorkspace() {
   const [motionSize, setMotionSize] = useState(34);
   const activeSlideAnimation = slideAnimations[activeId] ?? "Fade";
   const backgroundColor = slideBackgrounds[activeId] ?? (theme === "light" ? "#f1eee7" : theme === "blue" ? "#102333" : "#171525");
-  const isTextSelection = ["textbox","i-text","text"].includes(selectionType.toLowerCase());
   const SLIDE_MOTION:Record<string,{initial:TargetAndTransition;animate:TargetAndTransition;transition:Transition}> = {
     "Fade":{initial:{opacity:0},animate:{opacity:[0,1]},transition:{duration:.72,ease:"easeOut"}},
     "Slide left":{initial:{x:760},animate:{x:[760,0]},transition:{duration:.78,ease:"easeOut"}},
@@ -282,7 +275,7 @@ export default function StudioWorkspace() {
             <div className="canvas-zoom-frame" style={{ transform: `scale(${zoom / 100})` }}>
               <motion.div key={activeId + activeSlideAnimation + playbackToken} className="canvas-motion-frame" style={{transformPerspective:1200}} initial={slideMotion.initial} animate={slideMotion.animate} transition={slideMotion.transition}>
               <DesignCanvas
-                key={`${activeId}-${canvasResetToken}`}
+                key={`${activeId}`}
                 slideId={activeId}
                 slideNumber={`${String(slides.findIndex((slide) => slide.id === activeId) + 1).padStart(2,"0")} / ${String(slides.length).padStart(2,"0")}`}
                 title={activeSlide.title}
@@ -304,7 +297,7 @@ export default function StudioWorkspace() {
                 initialData={canvasDataBySlide[activeId]}
                 designElements={activeSlide.elements ?? []}
                 onChange={saveCanvas}
-                onSelectionChange={(selected, type, typography) => {setHasSelection(selected);setSelectionType(type ?? "");if(typography){if(typography.fontFamily)setFontFamily(typography.fontFamily);if(typography.fontSize)setFontSize(typography.fontSize);if(typography.fontWeight)setFontWeight(String(typography.fontWeight));}}}
+                onSelectionChange={(selected, type, typography) => {setHasSelection(selected);if(typography){if(typography.fontFamily)setFontFamily(typography.fontFamily);if(typography.fontSize)setFontSize(typography.fontSize);if(typography.fontWeight)setFontWeight(String(typography.fontWeight));}}}
                 command={canvasCommand}
                 assetCommand={assetCommand}
                 imageCommand={imageCommand}
