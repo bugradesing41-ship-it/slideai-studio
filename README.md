@@ -18,7 +18,7 @@ An AI-assisted presentation workspace built around conversational creation and a
 - Per-slide background color, adjustable corner radius for selected objects, rounded speech bubbles, and a quick-open character library
 - 10 distinct slide entrance animations (fade, directional slide, rise, zoom, 3D flip, blur, wipe, rotate and bounce) and a Play all control
 - Real slide numbering rendered on each slide (for example, 01 / 08), recalculated when slides are reordered or added
-- Searchable visual asset library with emoji stickers plus 35+ illustrated Open Doodles character SVGs, symbols, signs, arrows, badges and business/lifestyle elements
+- Searchable visual asset library with Google Material Symbols icons, emoji stickers, 35+ illustrated Open Doodles character SVGs, signs, arrows, badges and business/lifestyle elements
 - Fill, stroke, stroke width, opacity, soft shadow and visual style presets
 - Object duplicate, delete and layer-order actions
 - Per-slide canvas JSON state and local undo/redo history
