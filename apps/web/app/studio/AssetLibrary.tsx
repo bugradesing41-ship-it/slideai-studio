@@ -59,7 +59,7 @@ const CATEGORIES=["All assets","Characters","Google Icons","Symbols","Signs & ar
 export default function AssetLibrary({onChoose,onClose,initialCategory="All assets"}:{onChoose:(asset:StudioAsset)=>void;onClose:()=>void;initialCategory?:string}) {
   const [category,setCategory]=useState(initialCategory);
   const [query,setQuery]=useState("");
-  const filtered=useMemo(()=>[...GOOGLE_MATERIAL_ICONS,...CHARACTER_ART,...ASSETS].filter(asset=>(category==="All assets"||asset.category===category)&&(query.trim()===""||(asset.label+" "+asset.keywords+" "+asset.symbol).toLowerCase().includes(query.toLowerCase()))),[category,query]);
+  const filtered=useMemo(()=>([...GOOGLE_MATERIAL_ICONS,...CHARACTER_ART,...ASSETS] as StudioAsset[]).filter(asset=>(category==="All assets"||asset.category===category)&&(query.trim()===""||(asset.label+" "+asset.keywords+" "+asset.symbol).toLowerCase().includes(query.toLowerCase()))),[category,query]);
   return <div className="asset-library-backdrop" role="presentation" onMouseDown={event=>{if(event.target===event.currentTarget)onClose();}}>
     <section className="asset-library" role="dialog" aria-modal="true" aria-label="Asset library">
       <header className="asset-library-header"><div><span className="asset-library-mark"><Sparkles size={16}/></span><div><strong>Asset library</strong><small>Google Material Symbols, stickers and illustrated characters</small></div></div><button className="asset-close" onClick={onClose} aria-label="Close asset library"><X size={18}/></button></header>
