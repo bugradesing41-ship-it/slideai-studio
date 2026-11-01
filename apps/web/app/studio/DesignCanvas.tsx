@@ -102,6 +102,7 @@ export default function DesignCanvas({
             const height = Math.max(1, active.height ?? 1);
             active.set({ clipPath: new Rect({ width, height, rx: Math.min(latestRef.current.cornerRadius,width/2), ry: Math.min(latestRef.current.cornerRadius,height/2), originX:"center", originY:"center" }), rx:latestRef.current.cornerRadius, ry:latestRef.current.cornerRadius });
             canvas.requestRenderAll();
+            save();
           });
         }
       };
@@ -396,11 +397,11 @@ export default function DesignCanvas({
     const canvas=canvasRef.current;
     if (!canvas || !command.action.startsWith("preview-animation:")) return;
     const target=canvas.getActiveObject(); if(!target)return;
-    const original={left:target.left??0,top:target.top??0,scaleX:target.scaleX??1,scaleY:target.scaleY??1,angle:target.angle??0,opacity:target.opacity??1};
+    const original={left:target.left??0,top:target.top??0,scaleX:target.scaleX??1,scaleY:target.scaleY??1,angle:target.angle??0,opacity:target.opacity??1,text:target.text,charSpacing:target.charSpacing??0};
     const parts=command.action.split(":");const name=parts.length>=3?parts.slice(2).join(":"):(target.animationPreset??"item:Fade").split(":")[1]??"Fade";
     const map:Record<string,[number,number,number,number,number]>={"Fade in":[0,0,.8,.8,0],"Typewriter":[0,0,1,1,0],"Rise up":[0,-38,1,1,0],"Slide from left":[-90,0,1,1,0],"Slide from right":[90,0,1,1,0],"Zoom in":[0,0,.25,.25,0],"Pop":[0,0,.55,.55,0],"Bounce":[0,-28,.82,.82,0],"Elastic":[0,0,.35,.35,0],"Soft focus":[0,0,1.15,1.15,0],"Flip X":[0,0,1,.05,0],"Flip Y":[0,0,.05,1,0],"Rotate in":[0,0,.7,.7,-24],"Float up":[0,-24,1,1,0],"Drop in":[0,-70,1,1,0],"Stretch":[0,0,1.3,.7,0],"Swing":[0,0,1,1,-14],"Wave":[0,-10,1,1,7],"Pulse":[0,0,1.2,1.2,0],"Glitch":[8,0,1,1,3],"Tracking reveal":[0,0,.9,.9,0],"Slide reveal":[-18,0,1,1,0],"Focus in":[0,0,1.25,1.25,0],"Overshoot":[0,0,1.35,1.35,0],"Spring settle":[0,-18,.8,.8,0],"Fade":[0,0,1,1,0],"Scale in":[0,0,.25,.25,0],"Spin in":[0,0,.7,.7,-180],"Flip horizontal":[0,0,1,.05,0],"Flip vertical":[0,0,.05,1,0],"Slide left":[-90,0,1,1,0],"Slide right":[90,0,1,1,0],"Slide up":[0,-70,1,1,0],"Slide down":[0,70,1,1,0],"Float":[0,-20,1,1,0],"Drift":[18,-12,1,1,5],"Wobble":[0,0,1,1,10],"Heartbeat":[0,0,1.18,1.18,0],"Shake":[5,0,1,1,4],"Jelly":[0,0,1.22,.82,0],"Rubber band":[0,0,1.25,.78,0],"Zoom through":[0,0,1.8,1.8,0],"Arc in":[-50,-40,.7,.7,-18],"Drop":[0,-55,1,1,0],"Spring":[0,0,.65,.65,0]};
     const [dx,dy,sx,sy,angle]=map[name]??[0,0,.7,.7,0];const start=performance.now();let frame=0;
-    const tick=(now:number)=>{const t=Math.min(1,(now-start)/850),e=1-Math.pow(1-t,3);target.set({left:original.left+dx*(1-e),top:original.top+dy*(1-e),scaleX:original.scaleX*(sx+(1-sx)*e),scaleY:original.scaleY*(sy+(1-sy)*e),angle:original.angle+angle*(1-e),opacity:original.opacity*(name==="Fade"||name==="Fade in"?e:1)});canvas.requestRenderAll();if(t<1)frame=requestAnimationFrame(tick);else{target.set(original);canvas.requestRenderAll();}};
+    const tick=(now:number)=>{const t=Math.min(1,(now-start)/850),e=1-Math.pow(1-t,3);const update:any={left:original.left+dx*(1-e),top:original.top+dy*(1-e),scaleX:original.scaleX*(sx+(1-sx)*e),scaleY:original.scaleY*(sy+(1-sy)*e),angle:original.angle+angle*(1-e),opacity:original.opacity*(name==="Fade"||name==="Fade in"?e:1)};if(name==="Typewriter"&&typeof original.text==="string")update.text=original.text.slice(0,Math.ceil(original.text.length*e));if(name==="Tracking reveal")update.charSpacing=(original.charSpacing??0)+420*(1-e);if(name==="Glitch"&&t<.45)update.left=original.left+(Math.random()-.5)*22;target.set(update);canvas.requestRenderAll();if(t<1)frame=requestAnimationFrame(tick);else{target.set(original);canvas.requestRenderAll();}};
     frame=requestAnimationFrame(tick);return()=>{cancelAnimationFrame(frame);target.set(original);canvas.requestRenderAll();};
   }, [command.token, command.action]);
 
@@ -463,6 +464,7 @@ export default function DesignCanvas({
           strokeWidth: current.strokeWidth,
           fontFamily: current.fontFamily,
           fontSize: current.fontSize,
+          fontWeight: current.fontWeight,
           opacity: current.opacity,
           shadow: current.shadowEnabled ? new Shadow({ color: "rgba(0,0,0,0.32)", blur: 24, offsetX: 8, offsetY: 12 }) : null,
         });
