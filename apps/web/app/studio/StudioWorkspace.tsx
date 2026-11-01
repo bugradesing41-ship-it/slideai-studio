@@ -24,6 +24,8 @@ const SLIDE_ANIMATIONS=["Fade","Slide left","Slide right","Rise","Zoom","Flip","
 
 export default function StudioWorkspace() {
   const [slides, setSlides] = useState<Slide[]>(sampleDeck.slides);
+  const [localSaveState, setLocalSaveState] = useState("Restoring…");
+  const [isRestored, setIsRestored] = useState(false);
   const [activeId, setActiveId] = useState(1);
   const [title, setTitle] = useState(sampleDeck.title);
   const [zoom, setZoom] = useState(82);
@@ -76,6 +78,42 @@ export default function StudioWorkspace() {
   };
   const slideMotion = SLIDE_MOTION[activeSlideAnimation] ?? SLIDE_MOTION.Fade;
   const activeSlide = useMemo(() => slides.find((slide) => slide.id === activeId) ?? slides[0], [slides, activeId]);
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("slideai-studio-local-project-v1");
+      if (saved) {
+        const parsed = JSON.parse(saved) as { title?: string; theme?: "violet" | "blue" | "light"; slides?: Slide[]; canvasDataBySlide?: Record<number,string>; slideBackgrounds?: Record<number,string>; slideAnimations?: Record<number,string> };
+        if (Array.isArray(parsed.slides) && parsed.slides.length) {
+          const validation = validateDeck({ ...sampleDeck, title: parsed.title || sampleDeck.title, theme: parsed.theme || "violet", slides: parsed.slides });
+          if (validation.success) {
+            setSlides(validation.data.slides);
+            setTitle(parsed.title || sampleDeck.title);
+            setTheme(parsed.theme || "violet");
+            setCanvasDataBySlide(parsed.canvasDataBySlide || {});
+            setSlideBackgrounds(parsed.slideBackgrounds || {});
+            setSlideAnimations(parsed.slideAnimations || {});
+            setActiveId(validation.data.slides[0].id);
+          }
+        }
+      }
+      setLocalSaveState("Saved locally");
+    } catch {
+      setLocalSaveState("Local restore unavailable");
+    } finally {
+      setIsRestored(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isRestored) return;
+    try {
+      localStorage.setItem("slideai-studio-local-project-v1", JSON.stringify({ title, theme, slides, canvasDataBySlide, slideBackgrounds, slideAnimations }));
+      setLocalSaveState("Saved locally");
+    } catch {
+      setLocalSaveState("Export project to keep a backup");
+    }
+  }, [isRestored, title, theme, slides, canvasDataBySlide, slideBackgrounds, slideAnimations]);
+
   useEffect(() => {
     let cancelled = false;
     fetch("/api/fonts").then((response) => { if (!response.ok) throw new Error("Google Fonts kataloğu alınamadı"); return response.json(); }).then((data: {families?: string[];weightsByFamily?:Record<string,number[]>}) => { if (!cancelled && data.families?.length) { setFontCatalog(data.families); setFontWeightsByFamily(data.weightsByFamily??{}); setFontCatalogStatus(`${data.families.length.toLocaleString()} Google Fonts ailesi`); } }).catch(() => { if (!cancelled) { setFontCatalog(["Arimo","Archivo","Bebas Neue","Caveat","DM Sans","Inter","Lora","Manrope","Merriweather","Montserrat","Noto Sans","Open Sans","Oswald","Outfit","Playfair Display","Poppins","Roboto","Source Sans 3","Space Grotesk"]); setFontCatalogStatus("Çevrimdışı katalog · Google Fonts CDN"); } });
@@ -218,7 +256,8 @@ export default function StudioWorkspace() {
     pptx.company = "SlideAI Studio";
     for (const item of slides) {
       const slide = pptx.addSlide();
-      slide.background = { color: backgroundColor.replace("#", "") };
+      const slideBg = slideBackgrounds[item.id] ?? (theme === "light" ? "#f1eee7" : theme === "blue" ? "#102333" : "#171525");
+      slide.background = { color: slideBg.replace("#", "") };
       const light = theme === "light";
       const main = light ? "252333" : "F4F1FF";
       const muted = light ? "666174" : "BCB8CD";
@@ -241,7 +280,7 @@ export default function StudioWorkspace() {
     <main className="studio-shell">
       <header className="studio-topbar">
         <Link className="studio-back" href="/"><ArrowLeft size={16} /><span>Back to workspace</span></Link>
-        <div className="studio-doc-title"><span className="doc-icon"><LayoutTemplate size={15} /></span><span>{title}</span><span className="saved-pill"><Check size={12} /> Saved</span></div>
+        <div className="studio-doc-title"><span className="doc-icon"><LayoutTemplate size={15} /></span><span>{title}</span><span className="saved-pill"><Check size={12} /> {localSaveState}</span></div>
         <div className="studio-top-actions"><button className="icon-button" aria-label="More options"><MoreHorizontal size={18}/></button><button className="share-button" onClick={shareProject}>Share <ArrowUpRight size={14}/></button><button className="export-button" onClick={exportProject}><Download size={14}/> Export project</button></div>
       </header>
 
