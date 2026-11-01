@@ -5,7 +5,6 @@ import {
   Layers3,
   Plus,
   Sparkles,
-  WandSparkles,
 } from "lucide-react";
 
 const recentProjects = [
@@ -30,9 +29,9 @@ const recentProjects = [
 ];
 
 const prompts = [
-  "The future of sustainable cities",
-  "A pitch deck for a productivity startup",
-  "How modern teams use artificial intelligence",
+  "Start with a title slide",
+  "Build a product showcase",
+  "Create a clean data story",
 ];
 
 export default function Home() {
@@ -84,9 +83,8 @@ export default function Home() {
           </section>
 
           <section className="create-panel">
-            <div className="create-heading"><div className="ai-orb"><WandSparkles size={19} /></div><div><strong>What are we creating today?</strong><span>Describe your idea. Let AI shape the story.</span></div></div>
-            <textarea aria-label="Presentation idea" placeholder="e.g. Create a 10-slide presentation about the future of renewable energy..." />
-            <div className="create-footer"><span><Sparkles size={14} /> AI-powered creation</span><Link className="create-button" href="/studio">Create presentation <ArrowUpRight size={16} /></Link></div>
+            <div className="create-heading"><div className="ai-orb"><Layers3 size={19} /></div><div><strong>Build your next presentation</strong><span>Start with a blank slide and shape every detail in the editor.</span></div></div>
+            <div className="create-footer"><span><Layers3 size={14} /> Professional slide editor</span><Link className="create-button" href="/studio">Open editor <ArrowUpRight size={16} /></Link></div>
           </section>
 
           <section className="quick-start">
