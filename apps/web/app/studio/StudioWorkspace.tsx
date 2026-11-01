@@ -329,10 +329,11 @@ export default function StudioWorkspace() {
           </div>
           <div className="inspector-section">
             <div className="inspector-label">TYPOGRAPHY</div>
-            <label className="field-label">Font family</label>
+            <label className="field-label">Google Fonts family</label>
             <select className="inspector-input" value={fontFamily} onChange={(event) => {const family=event.target.value;setFontFamily(family);if(!(FONT_WEIGHT_OPTIONS[family]??[400,700]).includes(Number(fontWeight)))setFontWeight("400");}}>
               <option>Inter Variable</option><option>DM Sans Variable</option><option>Manrope Variable</option><option>Space Grotesk Variable</option><option>Outfit Variable</option><option>Roboto Variable</option><option>Nunito Sans Variable</option><option>Playfair Display Variable</option><option>Montserrat Variable</option><option>Lora</option><option>Poppins</option><option>Oswald</option><option>Merriweather</option><option>Archivo</option><option>Bebas Neue</option><option>Caveat</option>
             </select>
+            <div className="font-preview-sample" style={{fontFamily,fontWeight:Number(fontWeight)}}>Aa Bb Cc 123 · ÇĞİÖŞÜ</div>
             <label className="range-label">Font weight <span>{fontWeight}</span></label><select className="inspector-input" value={fontWeight} onChange={(event) => setFontWeight(event.target.value)}>{(FONT_WEIGHT_OPTIONS[fontFamily]??[400,700]).map((weight) => <option key={weight} value={String(weight)}>{weight===300?"Light":weight===400?"Regular":weight===500?"Medium":weight===600?"Semi bold":weight===700?"Bold":"Extra bold"} {weight}</option>)}</select>
             <label className="range-label">Font size <span>{fontSize}px</span></label><input className="range-control" type="range" min="12" max="100" value={fontSize} onChange={(event) => setFontSize(Number(event.target.value))}/>
           </div>
