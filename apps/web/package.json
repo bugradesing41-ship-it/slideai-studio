@@ -10,14 +10,14 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-                                "@slideai/shared": "*",
+    "@slideai/shared": "*",
     "fabric": "^6.7.1",
     "lucide-react": "^0.468.0",
     "motion": "^12.23.24",
     "next": "^15.1.6",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-                                                                          },
+    "react-dom": "^19.0.0"
+  },
   "devDependencies": {
     "@types/node": "^22.10.5",
     "@types/react": "^19.0.6",
