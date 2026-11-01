@@ -39,6 +39,8 @@ export default function StudioWorkspace() {
   const [strokeWidth, setStrokeWidth] = useState(3);
   const [fontFamily, setFontFamily] = useState("Manrope");
   const [fontCatalog, setFontCatalog] = useState<string[]>([]);
+  const [fontWeightsByFamily, setFontWeightsByFamily] = useState<Record<string,number[]>>({});
+  const fontWeights = fontWeightsByFamily[fontFamily] ?? [400,700];
   const [fontSearch, setFontSearch] = useState("");
   const [fontCatalogStatus, setFontCatalogStatus] = useState("Google Fonts kataloğu yükleniyor…");
   const [fontSize, setFontSize] = useState(32);
@@ -84,7 +86,7 @@ export default function StudioWorkspace() {
   const activeSlide = useMemo(() => slides.find((slide) => slide.id === activeId) ?? slides[0], [slides, activeId]);
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/fonts").then((response) => { if (!response.ok) throw new Error("Google Fonts kataloğu alınamadı"); return response.json(); }).then((data: {families?: string[]}) => { if (!cancelled && data.families?.length) { setFontCatalog(data.families); setFontCatalogStatus(`${data.families.length.toLocaleString()} Google Fonts ailesi`); } }).catch(() => { if (!cancelled) { setFontCatalog(["Arimo","Archivo","Bebas Neue","Caveat","DM Sans","Inter","Lora","Manrope","Merriweather","Montserrat","Noto Sans","Open Sans","Oswald","Outfit","Playfair Display","Poppins","Roboto","Source Sans 3","Space Grotesk"]); setFontCatalogStatus("Çevrimdışı katalog · Google Fonts CDN"); } });
+    fetch("/api/fonts").then((response) => { if (!response.ok) throw new Error("Google Fonts kataloğu alınamadı"); return response.json(); }).then((data: {families?: string[];weightsByFamily?:Record<string,number[]>}) => { if (!cancelled && data.families?.length) { setFontCatalog(data.families); setFontWeightsByFamily(data.weightsByFamily??{}); setFontCatalogStatus(`${data.families.length.toLocaleString()} Google Fonts ailesi`); } }).catch(() => { if (!cancelled) { setFontCatalog(["Arimo","Archivo","Bebas Neue","Caveat","DM Sans","Inter","Lora","Manrope","Merriweather","Montserrat","Noto Sans","Open Sans","Oswald","Outfit","Playfair Display","Poppins","Roboto","Source Sans 3","Space Grotesk"]); setFontCatalogStatus("Çevrimdışı katalog · Google Fonts CDN"); } });
     return () => { cancelled = true; };
   }, []);
 
@@ -273,6 +275,7 @@ export default function StudioWorkspace() {
                 stroke={stroke}
                 strokeWidth={strokeWidth}
                 fontFamily={fontFamily}
+                fontWeights={fontWeights}
                 fontSize={fontSize}
                 fontWeight={Number(fontWeight)}
                 cornerRadius={cornerRadius}
@@ -337,11 +340,11 @@ export default function StudioWorkspace() {
           <div className="inspector-section">
             <div className="inspector-label">TYPOGRAPHY <span>GOOGLE FONTS</span></div>
             <label className="field-label">Font ailesi ara</label>
-            <input className="inspector-input" list="google-font-catalog" value={fontSearch || fontFamily} onChange={(event) => {setFontSearch(event.target.value);const match=fontCatalog.find((family)=>family.toLowerCase()===event.target.value.trim().toLowerCase());if(match)setFontFamily(match);}} onBlur={()=>{if(fontSearch.trim())setFontFamily(fontCatalog.find((family)=>family.toLowerCase()===fontSearch.trim().toLowerCase())??fontSearch.trim());setFontSearch("");}} placeholder="Örn. Arimo, Arşiv, Inter…"/>
+            <input className="inspector-input" list="google-font-catalog" value={fontSearch || fontFamily} onChange={(event) => {setFontSearch(event.target.value);const match=fontCatalog.find((family)=>family.toLowerCase()===event.target.value.trim().toLowerCase());if(match){setFontFamily(match);setFontWeight(String((fontWeightsByFamily[match]??[400])[0]));}}} onBlur={()=>{if(fontSearch.trim()){const family=fontCatalog.find((item)=>item.toLowerCase()===fontSearch.trim().toLowerCase())??fontSearch.trim();setFontFamily(family);setFontWeight(String((fontWeightsByFamily[family]??[400])[0]));}setFontSearch("");}} placeholder="Örn. Arimo, Arşiv, Inter…"/>
             <datalist id="google-font-catalog">{fontCatalog.map((family)=><option key={family} value={family}/>)}</datalist>
             <p className="inspector-hint">{fontCatalogStatus}. Seçilen aile Google Fonts üzerinden yüklenir; katalog dışı isimlerde sistem fontuna geri dönülür.</p>
             <div className="font-preview-sample" style={{fontFamily:`"${fontFamily}", sans-serif`,fontWeight:Number(fontWeight)}}>Aa Bb Cc 123 · ÇĞİÖŞÜ</div>
-            <label className="range-label">Font weight <span>{fontWeight}</span></label><select className="inspector-input" value={fontWeight} onChange={(event) => setFontWeight(event.target.value)}>{[100,200,300,400,500,600,700,800,900].map((weight)=><option key={weight} value={String(weight)}>{weight===100?"Thin":weight===200?"Extra light":weight===300?"Light":weight===400?"Regular":weight===500?"Medium":weight===600?"Semi bold":weight===700?"Bold":weight===800?"Extra bold":"Black"} {weight}</option>)}</select>
+            <label className="range-label">Font weight <span>{fontWeight}</span></label><select className="inspector-input" value={fontWeight} onChange={(event) => setFontWeight(event.target.value)}>{fontWeights.map((weight)=><option key={weight} value={String(weight)}>{weight===100?"Thin":weight===200?"Extra light":weight===300?"Light":weight===400?"Regular":weight===500?"Medium":weight===600?"Semi bold":weight===700?"Bold":weight===800?"Extra bold":weight===900?"Black":`Weight ${weight}`} {weight}</option>)}</select>
             <label className="range-label">Font size <span>{fontSize}px</span></label><input className="range-control" type="range" min="12" max="100" value={fontSize} onChange={(event) => setFontSize(Number(event.target.value))}/>
           </div>
           <div className="inspector-section motion-library-section">
