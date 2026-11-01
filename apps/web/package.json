@@ -23,7 +23,16 @@
     "motion": "^12.23.24",
     "next": "^15.1.6",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "@fontsource/archivo": "^5.2.6",
+    "@fontsource/bebas-neue": "^5.2.6",
+    "@fontsource/caveat": "^5.2.6",
+    "@fontsource/merriweather": "^5.2.6",
+    "@fontsource/nunito-sans": "^5.2.6",
+    "@fontsource/oswald": "^5.2.6",
+    "@fontsource/outfit": "^5.2.6",
+    "@fontsource/poppins": "^5.2.6",
+    "@fontsource/roboto": "^5.2.6"
   },
   "devDependencies": {
     "@types/node": "^22.10.5",
