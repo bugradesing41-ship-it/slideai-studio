@@ -18,6 +18,7 @@ declare module "fabric" {
 
 type Tool = "select" | "draw" | "rect" | "circle" | "triangle" | "line" | "arrow" | "star" | "diamond" | "hexagon" | "pentagon" | "heart" | "speech" | "text";
 type CanvasCommand = { action: string; token: number };
+type AssetCommand = { symbol: string; label: string; token: number };
 type Props = {
   slideId: number;
   title: string;
@@ -37,6 +38,7 @@ type Props = {
   onSelectionChange: (selected: boolean) => void;
   onTextChange: (name: string, value: string) => void;
   command: CanvasCommand;
+  assetCommand: AssetCommand;
   onHistoryChange: (canUndo: boolean, canRedo: boolean) => void;
 };
 
@@ -44,13 +46,13 @@ export type { Tool };
 
 export default function DesignCanvas({
   slideId, title, eyebrow, body, theme, tool, fill, stroke, strokeWidth,
-  fontFamily, fontSize, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, onHistoryChange
+  fontFamily, fontSize, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, assetCommand, onHistoryChange
 }: Props) {
   const elementRef = useRef<HTMLCanvasElement>(null);
   const canvasRef = useRef<any>(null);
   const historyRef = useRef<{ items: string[]; index: number }>({ items: [], index: -1 });
   const restoringRef = useRef(false);
-  const latestRef = useRef({ title, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontSize, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, onHistoryChange });
+  const latestRef = useRef({ title, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontSize, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, assetCommand, onHistoryChange });
   latestRef.current = { title, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontSize, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, onHistoryChange };
 
   useEffect(() => {
@@ -309,6 +311,27 @@ export default function DesignCanvas({
     canvas.requestRenderAll();
     recordCommand();
   }, [command.token, command.action]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || assetCommand.token === 0) return;
+    void import("fabric").then(({ Textbox }) => {
+      if (!canvasRef.current) return;
+      const sticker = new Textbox(assetCommand.symbol, {
+        left: 500, top: 250, width: 190, fontFamily: "Noto Color Emoji, Segoe UI Emoji, Apple Color Emoji, sans-serif",
+        fontSize: 112, textAlign: "center", lineHeight: 1, editable: false,
+        name: `asset-${assetCommand.label.toLowerCase().replace(/[^a-z0-9]+/g,"-")}`,
+      });
+      canvas.add(sticker); canvas.setActiveObject(sticker); canvas.requestRenderAll();
+      const json = JSON.stringify(canvas.toObject(["name","animationPreset"]));
+      latestRef.current.onChange(json);
+      const history = historyRef.current;
+      const items = [...history.items.slice(0,history.index+1),json].slice(-60);
+      historyRef.current = {items,index:items.length-1};
+      latestRef.current.onHistoryChange(items.length>1,false);
+      latestRef.current.onSelectionChange(true);
+    });
+  }, [assetCommand.token]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
