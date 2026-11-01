@@ -18,7 +18,7 @@ declare module "fabric" {
 
 type Tool = "select" | "draw" | "rect" | "circle" | "triangle" | "line" | "arrow" | "star" | "diamond" | "hexagon" | "pentagon" | "heart" | "speech" | "text";
 type CanvasCommand = { action: string; token: number };
-type AssetCommand = { symbol: string; label: string; imageUrl?: string; token: number };
+type AssetCommand = { symbol: string; label: string; imageUrl?: string; fontFamily?: string; token: number };
 type ImageCommand = { dataUrl: string; name: string; token: number };
 type Props = {
   slideId: number;
@@ -50,6 +50,21 @@ type Props = {
 
 export type { Tool };
 
+async function loadGoogleFont(family:string, weight:number|string=400, size=32):Promise<boolean> {
+  if (!family.trim()) return false;
+  const safeFamily=family.trim();
+  const id=`slideai-google-font-${safeFamily.toLowerCase().replace(/[^a-z0-9]+/g,"-")}`;
+  let link=document.getElementById(id) as HTMLLinkElement|null;
+  if(!link){
+    link=document.createElement("link");link.id=id;link.rel="stylesheet";
+    link.href=`https://fonts.googleapis.com/css2?family=${encodeURIComponent(safeFamily).replace(/%20/g,"+")}&display=swap`;
+    document.head.appendChild(link);
+    await new Promise<void>((resolve)=>{link!.addEventListener("load",()=>resolve(),{once:true});link!.addEventListener("error",()=>resolve(),{once:true});window.setTimeout(resolve,4500);});
+  }
+  try { const faces=await document.fonts.load(`${weight} ${size}px "${safeFamily}"`,"SlideAI Studio ÇĞİÖŞÜ çğıöşü Aa 123");await document.fonts.ready;return faces.length>0; }
+  catch { return false; }
+}
+
 export default function DesignCanvas({
   slideId, slideNumber, title, eyebrow, body, theme, tool, fill, stroke, strokeWidth,
   fontFamily, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange
@@ -70,8 +85,7 @@ export default function DesignCanvas({
       const fabric = await import("fabric");
       fabric.FabricObject.customProperties = ["name", "animationPreset"];
       if (disposed || !elementRef.current) return;
-      await document.fonts.load(`${latestRef.current.fontWeight} ${latestRef.current.fontSize}px "${latestRef.current.fontFamily}"`, "SlideAI Studio ÇĞİÖŞÜ çğıöşü Aa 123");
-      await document.fonts.ready;
+      await loadGoogleFont(latestRef.current.fontFamily, latestRef.current.fontWeight, latestRef.current.fontSize);
       const canvas = new fabric.Canvas(elementRef.current, {
         width: 1280,
         height: 720,
@@ -140,24 +154,24 @@ export default function DesignCanvas({
         canvas.add(
           new fabric.Textbox(current.eyebrow || "FIELD NOTES / 2026", {
             name: "slide-eyebrow", left: 84, top: 115, width: 900, fontSize: 18,
-            fontFamily: "Inter Variable", fontWeight: 600, charSpacing: 190,
+            fontFamily: "Inter", fontWeight: 600, charSpacing: 190,
             fill: light ? "#7558bc" : current.theme === "blue" ? "#8bc7e7" : "#b39bff",
             editable: true,
           }),
           new fabric.Textbox(current.title || "Your presentation starts here", {
             name: "slide-title", left: 80, top: 205, width: 1030, height: 190,
-            fontSize: 66, fontFamily: "Manrope Variable", fontWeight: 600,
+            fontSize: 66, fontFamily: "Manrope", fontWeight: 600,
             lineHeight: 1.05, fill: light ? "#252333" : "#f4f1ff",
             editable: true,
           }),
           new fabric.Textbox(current.body || "Add a clear supporting message to make your story memorable.", {
             name: "slide-body", left: 84, top: 440, width: 800, height: 110,
-            fontSize: 25, fontFamily: "DM Sans Variable", fontWeight: 400, lineHeight: 1.35,
+            fontSize: 25, fontFamily: "DM Sans", fontWeight: 400, lineHeight: 1.35,
             fill: light ? "#666174" : "#bcb8cd", editable: true,
           }),
           new fabric.Textbox("THINK CLEARLY. CREATE BOLDLY.", {
             name: "slide-footer", left: 84, top: 650, width: 700, fontSize: 12,
-            fontFamily: "Inter Variable", fontWeight: 600, charSpacing: 140,
+            fontFamily: "Inter", fontWeight: 600, charSpacing: 140,
             fill: light ? "#777287" : "#aaa3c4", selectable: false, evented: false,
           }),
           new fabric.Textbox(latestRef.current.slideNumber, { name:"slide-number", left:1050, top:650, width:150, fontSize:14, fontFamily:"Inter Variable", fontWeight:600, textAlign:"right", fill:light ? "#777287" : "#aaa3c4", selectable:false, evented:false })
@@ -469,8 +483,13 @@ export default function DesignCanvas({
         } catch(error) { console.error("Could not load character illustration",error); }
         return;
       }
+      if (assetCommand.fontFamily === "Material Symbols Outlined") {
+        const link = document.getElementById("slideai-material-symbols") as HTMLLinkElement | null;
+        if (!link) { const stylesheet=document.createElement("link"); stylesheet.id="slideai-material-symbols"; stylesheet.rel="stylesheet"; stylesheet.href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"; document.head.appendChild(stylesheet); await new Promise<void>((resolve)=>{stylesheet.onload=()=>resolve();stylesheet.onerror=()=>resolve();}); }
+        await document.fonts.load(`112px "Material Symbols Outlined"`,assetCommand.symbol);
+      }
       const sticker = new Textbox(assetCommand.symbol, {
-        left: 500, top: 250, width: 190, fontFamily: "Noto Color Emoji, Segoe UI Emoji, Apple Color Emoji, sans-serif",
+        left: 500, top: 250, width: 190, fontFamily: assetCommand.fontFamily ?? "Noto Color Emoji, Segoe UI Emoji, Apple Color Emoji, sans-serif",
         fontSize: 112, textAlign: "center", lineHeight: 1, editable: false,
         name: `asset-${assetCommand.label.toLowerCase().replace(/[^a-z0-9]+/g,"-")}`,
       });
@@ -499,7 +518,7 @@ export default function DesignCanvas({
 
   useEffect(() => {
     const canvas=canvasRef.current;if(!canvas)return;let cancelled=false;const object=canvas.getActiveObject();
-    void(async()=>{try{const loaded=await document.fonts.load(`${fontWeight} ${fontSize}px "${fontFamily}"`,"SlideAI Studio ÇĞİÖŞÜ çğıöşü Aa 123");await document.fonts.ready;if(cancelled||!canvasRef.current)return;if(!loaded.length)throw new Error(`Font face unavailable: ${fontFamily}`);if(object && "fontFamily" in object){object.set({fontFamily,fontSize,fontWeight});object.setCoords();canvas.requestRenderAll();latestRef.current.onChange(JSON.stringify(canvas.toObject(["name","animationPreset"])));}}catch(error){console.error("Font load error",fontFamily,error);}})();
+    void(async()=>{const loaded=await loadGoogleFont(fontFamily,fontWeight,fontSize);if(cancelled||!canvasRef.current)return;if(!loaded)console.warn(`Google Font "${fontFamily}" bulunamadı; tarayıcı yedek font kullanacak.`);if(object && "fontFamily" in object){object.set({fontFamily,fontSize,fontWeight});object.setCoords();canvas.requestRenderAll();latestRef.current.onChange(JSON.stringify(canvas.toObject(["name","animationPreset"])));}})();
     return()=>{cancelled=true;};
   },[fontFamily,fontSize,fontWeight]);
 
