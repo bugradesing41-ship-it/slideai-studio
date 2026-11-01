@@ -67,3 +67,10 @@ See [docs/product-roadmap.md](docs/product-roadmap.md) for the staged product pl
 ## Security
 
 Do not commit API keys, tokens, passwords or production secrets. Keep local environment files out of Git.
+
+
+## Google design resources
+
+- Google Fonts are loaded on demand from the live Google Fonts CSS service; the Studio font picker is backed by the Google Fonts metadata catalogue, rather than a short hard-coded list of bundled families. This requires an internet connection. The former Fontsource family packages have been removed.
+- The asset library includes Google Material Symbols Outlined (Google Fonts Icons) alongside editable character/illustration assets.
+- Text, product/object and slide entrance animations remain separate preview systems powered by Motion and the Fabric canvas animation engine. Slide numbering is derived from the active slide order and shown on the canvas and thumbnails.
