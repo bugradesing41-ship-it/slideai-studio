@@ -43,7 +43,8 @@ const CHARACTER_ART: StudioAsset[] = [
   ["cheerful","Cheerful character","https://opendoodles.s3-us-west-1.amazonaws.com/cheerful.svg","happy smiling"],
   ["rollerskating","Roller skating","https://opendoodles.s3-us-west-1.amazonaws.com/rollerskating.svg","roller skating sport"],
 ].map(([id,label,imageUrl,keywords])=>({id:"open-doodles-"+id,label,symbol:"",category:"Characters",imageUrl,source:"Open Doodles · Pablo Stanley · CC0",keywords}));
-\nconst CATEGORIES=["All assets","Characters","Symbols","Signs & arrows","Badges & labels","Business & tech","Places & travel","Lifestyle & hobbies"];
+
+const CATEGORIES=["All assets","Characters","Symbols","Signs & arrows","Badges & labels","Business & tech","Places & travel","Lifestyle & hobbies"];
 
 export default function AssetLibrary({onChoose,onClose,initialCategory="All assets"}:{onChoose:(asset:StudioAsset)=>void;onClose:()=>void;initialCategory?:string}) {
   const [category,setCategory]=useState(initialCategory);
