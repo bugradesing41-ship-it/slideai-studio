@@ -1,4 +1,12 @@
 import type { Metadata } from "next";
+import "@fontsource-variable/inter";
+import "@fontsource-variable/dm-sans";
+import "@fontsource-variable/manrope";
+import "@fontsource-variable/space-grotesk";
+import "@fontsource-variable/outfit";
+import "@fontsource-variable/poppins";
+import "@fontsource-variable/roboto";
+import "@fontsource-variable/nunito-sans";
 import "@fontsource/inter/400.css";
 import "@fontsource/inter/600.css";
 import "@fontsource/inter/700.css";
