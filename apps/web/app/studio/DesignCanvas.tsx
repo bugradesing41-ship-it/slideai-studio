@@ -32,11 +32,14 @@ type Props = {
   strokeWidth: number;
   fontFamily: string;
   fontSize: number;
+  fontWeight: number;
+  cornerRadius: number;
+  backgroundColor: string;
   shadowEnabled: boolean;
   opacity: number;
   initialData?: string;
   onChange: (json: string) => void;
-  onSelectionChange: (selected: boolean) => void;
+  onSelectionChange: (selected: boolean, objectType?: string) => void;
   onTextChange: (name: string, value: string) => void;
   command: CanvasCommand;
   assetCommand: AssetCommand;
@@ -48,14 +51,14 @@ export type { Tool };
 
 export default function DesignCanvas({
   slideId, title, eyebrow, body, theme, tool, fill, stroke, strokeWidth,
-  fontFamily, fontSize, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange
+  fontFamily, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange
 }: Props) {
   const elementRef = useRef<HTMLCanvasElement>(null);
   const canvasRef = useRef<any>(null);
   const historyRef = useRef<{ items: string[]; index: number }>({ items: [], index: -1 });
   const restoringRef = useRef(false);
-  const latestRef = useRef({ title, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontSize, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange });
-  latestRef.current = { title, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontSize, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange };
+  const latestRef = useRef({ title, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange });
+  latestRef.current = { title, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange };
 
   useEffect(() => {
     let disposed = false;
@@ -70,7 +73,7 @@ export default function DesignCanvas({
       const canvas = new fabric.Canvas(elementRef.current, {
         width: 1280,
         height: 720,
-        backgroundColor: latestRef.current.theme === "light" ? "#f1eee7" : latestRef.current.theme === "blue" ? "#102333" : "#171525",
+        backgroundColor: latestRef.current.backgroundColor,
         preserveObjectStacking: true,
         selection: true,
         stopContextMenu: true,
@@ -89,7 +92,7 @@ export default function DesignCanvas({
         historyRef.current = { items, index: items.length - 1 };
         latestRef.current.onHistoryChange(items.length > 1, false);
       };
-      const selection = () => latestRef.current.onSelectionChange(Boolean(canvas.getActiveObject()));
+      const selection = () => { const active = canvas.getActiveObject(); latestRef.current.onSelectionChange(Boolean(active), active?.type ?? ""); };
       const syncText = () => {
         const current = latestRef.current;
         const titleObject = canvas.getObjects().find((object: any) => object.name === "slide-title");
@@ -98,7 +101,7 @@ export default function DesignCanvas({
         if (titleObject) titleObject.set("text", current.title);
         if (eyebrowObject) eyebrowObject.set("text", current.eyebrow);
         if (bodyObject) bodyObject.set("text", current.body);
-        canvas.backgroundColor = current.theme === "light" ? "#f1eee7" : current.theme === "blue" ? "#102333" : "#171525";
+        canvas.backgroundColor = current.backgroundColor;
         canvas.requestRenderAll();
         save();
       };
@@ -116,19 +119,19 @@ export default function DesignCanvas({
         canvas.add(
           new fabric.Textbox(current.eyebrow || "FIELD NOTES / 2026", {
             name: "slide-eyebrow", left: 84, top: 115, width: 900, fontSize: 18,
-            fontFamily: "Inter", fontWeight: "bold", charSpacing: 190,
+            fontFamily: "Inter Variable", fontWeight: 600, charSpacing: 190;
             fill: light ? "#7558bc" : current.theme === "blue" ? "#8bc7e7" : "#b39bff",
             editable: true,
           }),
           new fabric.Textbox(current.title || "Your presentation starts here", {
             name: "slide-title", left: 80, top: 205, width: 1030, height: 190,
-            fontSize: 66, fontFamily: "Manrope", fontWeight: "bold",
+            fontSize: 66, fontFamily: "Manrope Variable", fontWeight: 600,
             lineHeight: 1.05, fill: light ? "#252333" : "#f4f1ff",
             editable: true,
           }),
           new fabric.Textbox(current.body || "Add a clear supporting message to make your story memorable.", {
             name: "slide-body", left: 84, top: 440, width: 800, height: 110,
-            fontSize: 25, fontFamily: "DM Sans", lineHeight: 1.35,
+            fontSize: 25, fontFamily: "DM Sans Variable", fontWeight: 400, lineHeight: 1.35,
             fill: light ? "#666174" : "#bcb8cd", editable: true,
           }),
           new fabric.Textbox("THINK CLEARLY. CREATE BOLDLY.", {
@@ -171,7 +174,7 @@ export default function DesignCanvas({
 
         drawStart = { x: pointer.x, y: pointer.y };
         const style = { fill: latestRef.current.fill, stroke: latestRef.current.stroke, strokeWidth: latestRef.current.strokeWidth, opacity: latestRef.current.opacity, shadow: latestRef.current.shadowEnabled ? new fabric.Shadow({ color: "rgba(0,0,0,0.32)", blur: 24, offsetX: 8, offsetY: 12 }) : undefined };
-        if (currentTool === "rect") drawingShape = new fabric.Rect({ left: pointer.x, top: pointer.y, width: 1, height: 1, rx: 8, ry: 8, ...style });
+        if (currentTool === "rect") drawingShape = new fabric.Rect({ left: pointer.x, top: pointer.y, width: 1, height: 1, rx: latestRef.current.cornerRadius, ry: latestRef.current.cornerRadius, ...style });
         if (currentTool === "circle") drawingShape = new fabric.Ellipse({ left: pointer.x, top: pointer.y, rx: 1, ry: 1, ...style });
         if (currentTool === "triangle") drawingShape = new fabric.Triangle({ left: pointer.x, top: pointer.y, width: 1, height: 1, ...style });
         if (currentTool === "star") {
@@ -294,13 +297,6 @@ export default function DesignCanvas({
         latestRef.current.onHistoryChange(items.length > 1, false);
       }
     };
-    if (action.startsWith("animation:")) {
-      const [,kind,preset] = action.split(":");
-      active.set({ animationPreset: `${kind}:${preset}` });
-      canvas.requestRenderAll();
-      recordCommand();
-      return;
-    }
     if (action.startsWith("effect:")) {
       const [,kind,preset] = action.split(":");
       const index = preset.split("-")[0];
@@ -387,10 +383,10 @@ export default function DesignCanvas({
 
   useEffect(() => {
     const canvas=canvasRef.current;
-    if (!canvas || command.action !== "preview-animation") return;
+    if (!canvas || !command.action.startsWith("preview-animation:")) return;
     const target=canvas.getActiveObject(); if(!target)return;
     const original={left:target.left??0,top:target.top??0,scaleX:target.scaleX??1,scaleY:target.scaleY??1,angle:target.angle??0,opacity:target.opacity??1};
-    const name=(target.animationPreset??"item:Fade").split(":")[1]??"Fade";
+    const parts=command.action.split(":");const name=parts.length>=3?parts.slice(2).join(":"):(target.animationPreset??"item:Fade").split(":")[1]??"Fade";
     const map:Record<string,[number,number,number,number,number]>={"Fade in":[0,0,.8,.8,0],"Typewriter":[0,0,1,1,0],"Rise up":[0,-38,1,1,0],"Slide from left":[-90,0,1,1,0],"Slide from right":[90,0,1,1,0],"Zoom in":[0,0,.25,.25,0],"Pop":[0,0,.55,.55,0],"Bounce":[0,-28,.82,.82,0],"Elastic":[0,0,.35,.35,0],"Soft focus":[0,0,1.15,1.15,0],"Flip X":[0,0,1,.05,0],"Flip Y":[0,0,.05,1,0],"Rotate in":[0,0,.7,.7,-24],"Float up":[0,-24,1,1,0],"Drop in":[0,-70,1,1,0],"Stretch":[0,0,1.3,.7,0],"Swing":[0,0,1,1,-14],"Wave":[0,-10,1,1,7],"Pulse":[0,0,1.2,1.2,0],"Glitch":[8,0,1,1,3],"Tracking reveal":[0,0,.9,.9,0],"Slide reveal":[-18,0,1,1,0],"Focus in":[0,0,1.25,1.25,0],"Overshoot":[0,0,1.35,1.35,0],"Spring settle":[0,-18,.8,.8,0],"Fade":[0,0,1,1,0],"Scale in":[0,0,.25,.25,0],"Spin in":[0,0,.7,.7,-180],"Flip horizontal":[0,0,1,.05,0],"Flip vertical":[0,0,.05,1,0],"Slide left":[-90,0,1,1,0],"Slide right":[90,0,1,1,0],"Slide up":[0,-70,1,1,0],"Slide down":[0,70,1,1,0],"Float":[0,-20,1,1,0],"Drift":[18,-12,1,1,5],"Wobble":[0,0,1,1,10],"Heartbeat":[0,0,1.18,1.18,0],"Shake":[5,0,1,1,4],"Jelly":[0,0,1.22,.82,0],"Rubber band":[0,0,1.25,.78,0],"Zoom through":[0,0,1.8,1.8,0],"Arc in":[-50,-40,.7,.7,-18],"Drop":[0,-55,1,1,0],"Spring":[0,0,.65,.65,0]};
     const [dx,dy,sx,sy,angle]=map[name]??[0,0,.7,.7,0];const start=performance.now();let frame=0;
     const tick=(now:number)=>{const t=Math.min(1,(now-start)/850),e=1-Math.pow(1-t,3);target.set({left:original.left+dx*(1-e),top:original.top+dy*(1-e),scaleX:original.scaleX*(sx+(1-sx)*e),scaleY:original.scaleY*(sy+(1-sy)*e),angle:original.angle+angle*(1-e),opacity:original.opacity*(name==="Fade"||name==="Fade in"?e:1)});canvas.requestRenderAll();if(t<1)frame=requestAnimationFrame(tick);else{target.set(original);canvas.requestRenderAll();}};
@@ -399,7 +395,7 @@ export default function DesignCanvas({
 
   useEffect(() => {
     const canvas=canvasRef.current;if(!canvas||imageCommand.token===0)return;let cancelled=false;
-    void import("fabric").then(async({FabricImage})=>{if(cancelled||!canvasRef.current)return;try{const image=await FabricImage.fromURL(imageCommand.dataUrl);if(cancelled||!canvasRef.current)return;const scale=Math.min(760/(image.width||1),560/(image.height||1),1);image.set({left:260,top:80,scaleX:scale,scaleY:scale,name:imageCommand.name||"Imported image"});canvas.add(image);canvas.setActiveObject(image);canvas.requestRenderAll();const json=JSON.stringify(canvas.toObject(["name","animationPreset"]));latestRef.current.onChange(json);const h=historyRef.current,items=[...h.items.slice(0,h.index+1),json].slice(-60);historyRef.current={items,index:items.length-1};latestRef.current.onHistoryChange(items.length>1,false);latestRef.current.onSelectionChange(true);}catch(error){console.error("Could not add image",error);}});
+    void import("fabric").then(async({FabricImage})=>{if(cancelled||!canvasRef.current)return;try{const image=await FabricImage.fromURL(imageCommand.dataUrl);if(cancelled||!canvasRef.current)return;const scale=Math.min(760/(image.width||1),560/(image.height||1),1);image.set({left:260,top:80,scaleX:scale,scaleY:scale,name:imageCommand.name||"Imported image"});canvas.add(image);canvas.setActiveObject(image);canvas.requestRenderAll();const json=JSON.stringify(canvas.toObject(["name","animationPreset"]));latestRef.current.onChange(json);const h=historyRef.current,items=[...h.items.slice(0,h.index+1),json].slice(-60);historyRef.current={items,index:items.length-1};latestRef.current.onHistoryChange(items.length>1,false);latestRef.current.onSelectionChange(true, "image");}catch(error){console.error("Could not add image",error);}});
     return()=>{cancelled=true;};
   },[imageCommand.token]);
 
@@ -420,7 +416,7 @@ export default function DesignCanvas({
       const items = [...history.items.slice(0,history.index+1),json].slice(-60);
       historyRef.current = {items,index:items.length-1};
       latestRef.current.onHistoryChange(items.length>1,false);
-      latestRef.current.onSelectionChange(true);
+      latestRef.current.onSelectionChange(true, "textbox");
     });
   }, [assetCommand.token]);
 
@@ -438,9 +434,9 @@ export default function DesignCanvas({
 
   useEffect(() => {
     const canvas=canvasRef.current;if(!canvas)return;let cancelled=false;const object=canvas.getActiveObject();if(!object||!("fontFamily" in object))return;
-    void(async()=>{try{await document.fonts.load(`${fontSize}px "${fontFamily}"`);await document.fonts.ready;if(cancelled||!canvasRef.current)return;object.set({fontFamily,fontSize});object.setCoords();canvas.requestRenderAll();latestRef.current.onChange(JSON.stringify(canvas.toObject(["name","animationPreset"])));}catch(error){console.error("Font load error",fontFamily,error);}})();
+    void(async()=>{try{await document.fonts.load(`${fontSize}px "${fontFamily}"`);await document.fonts.ready;if(cancelled||!canvasRef.current)return;object.set({fontFamily,fontSize,fontWeight});object.setCoords();canvas.requestRenderAll();latestRef.current.onChange(JSON.stringify(canvas.toObject(["name","animationPreset"])));}catch(error){console.error("Font load error",fontFamily,error);}})();
     return()=>{cancelled=true;};
-  },[fontFamily,fontSize]);
+  },[fontFamily,fontSize,fontWeight]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -463,7 +459,23 @@ export default function DesignCanvas({
         current.onChange(JSON.stringify(canvas.toObject(["name", "animationPreset"])));
       });
     }
-  }, [fill, stroke, strokeWidth, fontFamily, fontSize, shadowEnabled, opacity]);
+  }, [fill, stroke, strokeWidth, fontFamily, fontSize, fontWeight, shadowEnabled, opacity]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const object = canvas.getActiveObject();
+    if (!object) return;
+    void import("fabric").then(({ Rect }) => {
+      if (!canvasRef.current) return;
+      const width = Math.max(1, object.width ?? 1);
+      const height = Math.max(1, object.height ?? 1);
+      object.set({ clipPath: cornerRadius > 0 ? new Rect({ width, height, rx: Math.min(cornerRadius,width/2), ry: Math.min(cornerRadius,height/2), originX:"center", originY:"center" }) : undefined, rx:cornerRadius, ry:cornerRadius });
+      object.setCoords();
+      canvas.requestRenderAll();
+      latestRef.current.onChange(JSON.stringify(canvas.toObject(["name","animationPreset"])));
+    });
+  }, [cornerRadius]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -478,7 +490,7 @@ export default function DesignCanvas({
     canvas.backgroundColor = current.theme === "light" ? "#f1eee7" : current.theme === "blue" ? "#102333" : "#171525";
     canvas.requestRenderAll();
     current.onChange(JSON.stringify(canvas.toObject(["name", "animationPreset"])));
-  }, [title, eyebrow, body, theme]);
+  }, [title, eyebrow, body, theme, backgroundColor]);
 
   return <div className="design-canvas-shell"><canvas ref={elementRef} /></div>;
 }
