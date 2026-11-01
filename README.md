@@ -11,7 +11,8 @@ An AI-assisted presentation workspace built around conversational creation and a
 - Select slides from the filmstrip and add, duplicate, delete and reorder slides
 - Fabric.js canvas with object selection, move, resize and rotate controls
 - Freehand pencil drawing and drag-to-size shapes: rectangle, ellipse, triangle, line, arrow, star, diamond, pentagon, hexagon, heart and speech bubble
-- Editable canvas text with seven locally bundled font families
+- Editable canvas text with 16 locally bundled Google Fonts families
+- Searchable visual asset library with 230+ curated cartoon-style character stickers, symbols, signs, arrows, badges and business/lifestyle elements
 - Fill, stroke, stroke width, opacity, soft shadow and visual style presets
 - Object duplicate, delete and layer-order actions
 - Per-slide canvas JSON state and local undo/redo history
@@ -46,6 +47,8 @@ apps/
       studio/
         page.tsx
         StudioWorkspace.tsx
+        DesignCanvas.tsx
+        AssetLibrary.tsx
 packages/       # shared packages planned
 docs/
   architecture.md
