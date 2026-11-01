@@ -22,6 +22,15 @@ The editor bundles these font families locally through Fontsource packages:
 - Playfair Display
 - Montserrat
 - Lora
+- Outfit
+- Poppins
+- Nunito Sans
+- Roboto
+- Oswald
+- Merriweather
+- Archivo
+- Bebas Neue
+- Caveat
 
 Bundling fonts locally avoids a runtime dependency on a third-party font stylesheet and makes font availability more predictable in production.
 
@@ -39,6 +48,10 @@ The current canvas implementation includes:
 - Object duplicate/delete/front/back actions
 - Per-slide canvas JSON state and local undo/redo history
 - Motion-powered slide-switch preview transitions
+
+## In-app visual asset library
+
+The editor includes a searchable, category-filtered starter library with 239 curated Unicode visual assets across characters and cartoon-style mascots, symbols, signs and arrows, badges and labels, business and technology, places and travel, and lifestyle and hobbies. Assets are inserted as editable canvas text objects and can be moved, resized, rotated, layered and deleted. Their exact emoji appearance depends on the operating system emoji font.
 
 ## Asset intake rules
 
