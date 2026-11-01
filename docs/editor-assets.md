@@ -42,11 +42,14 @@ The current canvas implementation includes:
 - Freehand pencil drawing
 - Drag-to-size rectangle, ellipse, triangle, line and arrow tools
 - Star, diamond, pentagon, hexagon, heart and speech-bubble shapes
-- Editable text objects, 16 locally bundled font families and font-load synchronization before Fabric canvas redraw
+- Editable text objects, 16 locally bundled Google Fonts families, variable weight faces and font-load synchronization before Fabric canvas redraw
+- Font-weight selection (300–800) so users can choose readable regular/light styles instead of being locked into bold text
 - Image insertion from local PNG, JPG, WEBP, GIF and SVG files, with a 12 MB per-file limit
-- Separate 25-preset text and object animation collections, plus selected-object animation preview
+- Separate 25-preset text and object animation collections; changing the selected preset immediately previews the selected object without persisting an animation assignment
+- Ten per-slide entrance animations and a Play all presentation preview
 - Separate 25-preset typography and visual-item effect collections
-- Fill, stroke, stroke width, opacity and soft shadow controls
+- Per-slide background color, adjustable corner radius for selected objects, fill, stroke, stroke width, opacity and soft shadow controls
+- Rounded speech-bubble drawing tool and direct access to character stickers
 - Quick visual presets: Violet, Glass, Neon, Outline and Sunset
 - Object duplicate/delete/front/back actions
 - Per-slide canvas JSON state and local undo/redo history
