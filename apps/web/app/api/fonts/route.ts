@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-type GoogleFontMeta = { family?: string; fonts?: Array<{ weight?: number; style?: string }>; axes?: Array<{ tag?: string; min?: number; max?: number }> };
+type GoogleFontMeta = { family?: string; variants?: string[]; fonts?: Record<string, unknown>; axes?: Array<{ tag?: string; min?: number; max?: number }> };
 
 export const revalidate = 86400;
 
@@ -20,7 +20,7 @@ export async function GET() {
     for (const item of items) {
       if (!item.family) continue;
       const axis = item.axes?.find((entry) => entry.tag === "wght");
-      const listed = (item.fonts ?? []).filter((font) => font.style !== "italic" && typeof font.weight === "number").map((font) => Number(font.weight));
+      const listed = (item.variants ?? Object.keys(item.fonts ?? {})).filter((variant) => !variant.toLowerCase().endsWith("italic")).map((variant) => variant.replace(/[^0-9]/g, "")).filter(Boolean).map(Number).filter(Number.isFinite);
       const weights = axis ? [100,200,300,400,500,600,700,800,900].filter((weight) => weight >= (axis.min ?? 100) && weight <= (axis.max ?? 900)) : [...new Set(listed)];
       weightsByFamily[item.family] = weights.length ? weights.sort((a,b)=>a-b) : [400];
     }
