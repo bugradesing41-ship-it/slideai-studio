@@ -83,3 +83,14 @@ SlideAI Studio is an AI-native presentation workspace. A user should be able to 
 3. Keep model providers behind an adapter so providers can be changed.
 4. Treat export fidelity, accessibility, privacy and security as product requirements.
 5. Do not mark a roadmap item complete until it is implemented and verified.
+
+## AI Design MVP
+
+- [x] Server-side OpenAI Responses API integration with strict JSON Schema output
+- [x] Extend shared DeckSpec with design categories and editable canvas elements
+- [x] Prompt-to-deck generation and refine-current-design modes
+- [x] Convert generated elements into separate editable Fabric.js objects
+- [x] Server-only API key configuration and request validation
+- [ ] OpenAI image generation and replaceable image assets
+- [ ] Authentication, durable quotas and project persistence
+- [ ] PDF/PPTX export and presentation playback export
