@@ -3,7 +3,7 @@ import { z } from "zod";
 import { deckSpecSchema, designTypeSchema } from "@slideai/shared";
 
 export const runtime = "nodejs";
-export const maxDuration = 90;
+export const maxDuration = 180;
 
 const requestSchema = z.object({
   prompt: z.string().trim().min(3).max(3000),
@@ -38,7 +38,7 @@ const slideSchema = {
     body: { type: "string" }, kind: { type: "string", enum: ["cover", "content", "stats", "quote"] },
     layout: { type: "string", enum: ["title", "title-and-body", "three-statistics", "featured-quote", "two-column", "image-focus", "comparison", "timeline"] },
     notes: { type: "string" },
-    elements: { type: "array", items: elementSchema, minItems: 3, maxItems: 14 },
+    elements: { type: "array", items: elementSchema, minItems: 3, maxItems: 8 },
   },
   required: ["id", "title", "eyebrow", "body", "kind", "layout", "notes", "elements"],
   additionalProperties: false,
@@ -84,7 +84,7 @@ const systemInstructions = `
 You are SlideAI Studio's senior art director, presentation strategist and graphic designer.
 Create professional, production-ready visual layouts, not generic text outlines.
 Return only the requested structured design object. The canvas is exactly 1280 x 720 pixels.
-Every slide must contain 3-14 meaningful, editable Fabric.js elements. Use text, rect, ellipse, line, triangle and image-placeholder elements only.
+Every slide must contain 3-8 meaningful, editable Fabric.js elements. Use text, rect, ellipse, line, triangle and image-placeholder elements only.
 All coordinates must stay inside the 1280x720 canvas; keep a 56px safe margin. Element dimensions must be positive.
 Use a clear typographic hierarchy, intentional negative space, strong alignment, contrast and a consistent palette.
 Use Google Fonts family names such as Manrope, DM Sans, Space Grotesk, Playfair Display or Montserrat; use common available families.
@@ -140,11 +140,11 @@ export async function POST(request: Request) {
           generationConfig: {
             responseMimeType: "application/json",
             responseJsonSchema: outputSchema,
-            maxOutputTokens: 16000,
-            temperature: 0.7,
+            maxOutputTokens: Math.min(12000, 1800 + (body.designType === "presentation" ? body.slideCount : 1) * 850),
+            thinkingConfig: { thinkingLevel: "low" },
           },
         }),
-        signal: AbortSignal.timeout(85_000),
+        signal: AbortSignal.timeout(170_000),
         cache: "no-store",
       },
     );
@@ -178,6 +178,10 @@ export async function POST(request: Request) {
     };
     return NextResponse.json({ message: result.data.message, deck, model });
   } catch (error) {
+    if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) {
+      console.error("Gemini design request timed out:", error);
+      return NextResponse.json({ error: "Gemini tasarımı zamanında tamamlayamadı. Daha kısa bir istek veya daha az slaytla tekrar dene." }, { status: 504 });
+    }
     if (error instanceof z.ZodError || error instanceof SyntaxError) {
       return NextResponse.json({ error: "İstek bilgileri geçersiz. Komut en fazla 3000 karakter olabilir." }, { status: 400 });
     }
