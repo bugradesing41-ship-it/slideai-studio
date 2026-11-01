@@ -300,7 +300,7 @@ export default function StudioWorkspace() {
             </div>
           </div>
 
-          <div className="filmstrip"><div className="filmstrip-label">SLIDES <span>{slides.length}</span></div><div className="thumbnail-list">{slides.map((slide,index) => <button className={`thumbnail ${activeId===slide.id?"selected":""}`} key={slide.id} onClick={() => setActiveId(slide.id)}><div className={`thumbnail-art thumb-${slide.kind}`}><small>{slide.eyebrow}</small><strong>{slide.title}</strong><i/><i/><em className="thumbnail-number">{String(index+1).padStart(2,"0")} / {String(slides.length).padStart(2,"0")}</em></div><span>{String(index+1).padStart(2,"0")} · {slide.title}</span></button>)}<button className="add-slide" onClick={addSlide}><Plus size={18}/><span>Add slide</span></button></div></div>
+          <div className="filmstrip"><div className="filmstrip-label">SLIDES <span>{slides.length}</span><span> · CURRENT {String(Math.max(0,slides.findIndex((slide)=>slide.id===activeId))+1).padStart(2,"0")} / {String(slides.length).padStart(2,"0")}</span></div><div className="thumbnail-list">{slides.map((slide,index) => <button className={`thumbnail ${activeId===slide.id?"selected":""}`} key={slide.id} onClick={() => setActiveId(slide.id)}><div className={`thumbnail-art thumb-${slide.kind}`}><small>{slide.eyebrow}</small><strong>{slide.title}</strong><i/><i/><em className="thumbnail-number">{String(index+1).padStart(2,"0")} / {String(slides.length).padStart(2,"0")}</em></div><span>{String(index+1).padStart(2,"0")} · {slide.title}</span></button>)}<button className="add-slide" onClick={addSlide}><Plus size={18}/><span>Add slide</span></button></div></div>
         </section>
 
         <aside className="inspector-panel advanced-inspector">
