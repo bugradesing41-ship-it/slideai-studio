@@ -16,6 +16,7 @@ import {
 
 type Slide = SlideSpec;
 
+const DEFAULT_FONT_WEIGHTS=[400,700];
 const TEXT_ANIMATIONS=["Fade in","Typewriter","Rise up","Slide from left","Slide from right","Zoom in","Pop","Bounce","Elastic","Soft focus","Flip X","Flip Y","Rotate in","Float up","Drop in","Stretch","Swing","Wave","Pulse","Glitch","Tracking reveal","Slide reveal","Focus in","Overshoot","Spring settle"];
 const ITEM_ANIMATIONS=["Fade","Scale in","Pop","Bounce","Elastic","Spin in","Flip horizontal","Flip vertical","Slide left","Slide right","Slide up","Slide down","Float","Drift","Swing","Wobble","Pulse","Heartbeat","Shake","Jelly","Rubber band","Zoom through","Arc in","Drop","Spring"];
 const SLIDE_ANIMATIONS=["Fade","Slide left","Slide right","Rise","Zoom","Flip","Blur","Wipe","Rotate","Bounce"];
@@ -40,7 +41,7 @@ export default function StudioWorkspace() {
   const [fontFamily, setFontFamily] = useState("Manrope");
   const [fontCatalog, setFontCatalog] = useState<string[]>([]);
   const [fontWeightsByFamily, setFontWeightsByFamily] = useState<Record<string,number[]>>({});
-  const fontWeights = fontWeightsByFamily[fontFamily] ?? [400,700];
+  const fontWeights = fontWeightsByFamily[fontFamily] ?? DEFAULT_FONT_WEIGHTS;
   const [fontSearch, setFontSearch] = useState("");
   const [fontCatalogStatus, setFontCatalogStatus] = useState("Google Fonts kataloğu yükleniyor…");
   const [fontSize, setFontSize] = useState(32);
