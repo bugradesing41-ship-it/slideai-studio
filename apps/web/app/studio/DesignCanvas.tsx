@@ -57,7 +57,7 @@ function normalizeSerializedFonts(value:unknown, families:Set<string>) {
   if (Array.isArray(value)) { value.forEach((item)=>normalizeSerializedFonts(item,families)); return; }
   if (!value || typeof value !== "object") return;
   const record=value as Record<string,unknown>;
-  if (typeof record.fontFamily === "string") { record.fontFamily=record.fontFamily.replace(/\s+Variable$/i,""); families.add(record.fontFamily); }
+  if (typeof record.fontFamily === "string") { const normalizedFamily=record.fontFamily.replace(/\s+Variable$/i,""); record.fontFamily=normalizedFamily; families.add(normalizedFamily); }
   Object.values(record).forEach((item)=>normalizeSerializedFonts(item,families));
 }
 
