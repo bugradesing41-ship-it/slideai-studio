@@ -11,7 +11,7 @@ An AI-assisted presentation workspace built around conversational creation and a
 - Select slides from the filmstrip and add, duplicate, delete and reorder slides
 - Fabric.js canvas with object selection, move, resize and rotate controls
 - Freehand pencil drawing and drag-to-size shapes: rectangle, ellipse, triangle, line, arrow, star, diamond, pentagon, hexagon, heart and speech bubble
-- Editable canvas text with 16 locally bundled Google Fonts families, explicit variable-font face loading and selectable font weights
+- Editable canvas text with the live Google Fonts catalogue, family-specific font weights and on-demand Google Fonts CSS loading
 - 25 text animation presets and 25 object animation presets; selecting a preset immediately previews it on the selected object without permanently applying it
 - 25 typography effects and 25 visual-item effects
 - Import PNG, JPG, WEBP, GIF and SVG images from the computer (up to 12 MB per file)
