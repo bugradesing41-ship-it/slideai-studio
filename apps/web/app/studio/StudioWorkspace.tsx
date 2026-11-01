@@ -19,9 +19,6 @@ type Slide = SlideSpec;
 const TEXT_ANIMATIONS=["Fade in","Typewriter","Rise up","Slide from left","Slide from right","Zoom in","Pop","Bounce","Elastic","Soft focus","Flip X","Flip Y","Rotate in","Float up","Drop in","Stretch","Swing","Wave","Pulse","Glitch","Tracking reveal","Slide reveal","Focus in","Overshoot","Spring settle"];
 const ITEM_ANIMATIONS=["Fade","Scale in","Pop","Bounce","Elastic","Spin in","Flip horizontal","Flip vertical","Slide left","Slide right","Slide up","Slide down","Float","Drift","Swing","Wobble","Pulse","Heartbeat","Shake","Jelly","Rubber band","Zoom through","Arc in","Drop","Spring"];
 const SLIDE_ANIMATIONS=["Fade","Slide left","Slide right","Rise","Zoom","Flip","Blur","Wipe","Rotate","Bounce"];
-const FONT_WEIGHT_OPTIONS: Record<string, number[]> = {
-  "Inter Variable":[300,400,500,600,700,800], "DM Sans Variable":[300,400,500,600,700,800], "Manrope Variable":[300,400,500,600,700,800], "Space Grotesk Variable":[300,400,500,600,700], "Outfit Variable":[300,400,500,600,700,800], "Roboto Variable":[300,400,500,600,700,800], "Nunito Sans Variable":[300,400,500,600,700,800], "Playfair Display Variable":[400,500,600,700,800], "Montserrat Variable":[300,400,500,600,700,800], "Lora":[400,700], "Poppins":[400,500,600,700], "Oswald":[400,500,700], "Merriweather":[400,700], "Archivo":[400,500,700], "Bebas Neue":[400], "Caveat":[400,700]
-};
 const TEXT_EFFECTS=["Soft shadow","Deep shadow","Neon glow","Violet glow","Glass highlight","Frosted highlight","Outline","Double outline","Engraved","Wide tracking","Bold impact","Soft highlight","Glass text","Retro offset","3D depth","Metallic shadow","Underline accent","Overline accent","Pill highlight","Blur shadow","Long shadow","Warm glow","Cool glow","High contrast","Editorial italic"];
 const ITEM_EFFECTS=["Soft shadow","Deep shadow","Neon glow","Violet glow","Glass","Frosted glass","Outline","Double border","Dashed border","Dotted border","Inner depth","Emboss","3D lift","Long shadow","Soft blur shadow","Glow edge","Duotone tint","High contrast","Vintage fade","Pastel tint","Vivid color","Monochrome","Holographic feel","Sticker edge","Floating"];
 
@@ -40,7 +37,10 @@ export default function StudioWorkspace() {
   const [fill, setFill] = useState("#a78bfa");
   const [stroke, setStroke] = useState("#d8ccff");
   const [strokeWidth, setStrokeWidth] = useState(3);
-  const [fontFamily, setFontFamily] = useState("Manrope Variable");
+  const [fontFamily, setFontFamily] = useState("Manrope");
+  const [fontCatalog, setFontCatalog] = useState<string[]>([]);
+  const [fontSearch, setFontSearch] = useState("");
+  const [fontCatalogStatus, setFontCatalogStatus] = useState("Google Fonts kataloğu yükleniyor…");
   const [fontSize, setFontSize] = useState(32);
   const [fontWeight, setFontWeight] = useState("400");
   const [cornerRadius, setCornerRadius] = useState(18);
@@ -58,7 +58,7 @@ export default function StudioWorkspace() {
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [assetLibraryOpen, setAssetLibraryOpen] = useState(false);
-  const [assetCommand, setAssetCommand] = useState<{symbol:string;label:string;imageUrl?:string;token:number}>({ symbol: "", label: "", token: 0 });
+  const [assetCommand, setAssetCommand] = useState<{symbol:string;label:string;imageUrl?:string;fontFamily?:string;token:number}>({ symbol: "", label: "", token: 0 });
   const [imageCommand, setImageCommand] = useState({ dataUrl: "", name: "", token: 0 });
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [textAnimation, setTextAnimation] = useState("Fade in");
@@ -82,6 +82,12 @@ export default function StudioWorkspace() {
   const [textEffect, setTextEffect] = useState("Soft shadow");
   const [itemEffect, setItemEffect] = useState("Soft shadow");
   const activeSlide = useMemo(() => slides.find((slide) => slide.id === activeId) ?? slides[0], [slides, activeId]);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/fonts").then((response) => { if (!response.ok) throw new Error("Google Fonts kataloğu alınamadı"); return response.json(); }).then((data: {families?: string[]}) => { if (!cancelled && data.families?.length) { setFontCatalog(data.families); setFontCatalogStatus(`${data.families.length.toLocaleString()} Google Fonts ailesi`); } }).catch(() => { if (!cancelled) { setFontCatalog(["Arimo","Archivo","Bebas Neue","Caveat","DM Sans","Inter","Lora","Manrope","Merriweather","Montserrat","Noto Sans","Open Sans","Oswald","Outfit","Playfair Display","Poppins","Roboto","Source Sans 3","Space Grotesk"]); setFontCatalogStatus("Çevrimdışı katalog · Google Fonts CDN"); } });
+    return () => { cancelled = true; };
+  }, []);
+
   useEffect(() => {
     if (!isPlaying) return;
     const index = slides.findIndex((slide) => slide.id === activeId);
@@ -290,7 +296,7 @@ export default function StudioWorkspace() {
             </div>
           </div>
 
-          <div className="filmstrip"><div className="filmstrip-label">SLIDES <span>{slides.length}</span></div><div className="thumbnail-list">{slides.map((slide,index) => <button className={`thumbnail ${activeId===slide.id?"selected":""}`} key={slide.id} onClick={() => setActiveId(slide.id)}><div className={`thumbnail-art thumb-${slide.kind}`}><small>{slide.eyebrow}</small><strong>{slide.title}</strong><i/><i/></div><span>{String(index+1).padStart(2,"0")}</span></button>)}<button className="add-slide" onClick={addSlide}><Plus size={18}/><span>Add slide</span></button></div></div>
+          <div className="filmstrip"><div className="filmstrip-label">SLIDES <span>{slides.length}</span></div><div className="thumbnail-list">{slides.map((slide,index) => <button className={`thumbnail ${activeId===slide.id?"selected":""}`} key={slide.id} onClick={() => setActiveId(slide.id)}><div className={`thumbnail-art thumb-${slide.kind}`}><small>{slide.eyebrow}</small><strong>{slide.title}</strong><i/><i/><em className="thumbnail-number">{String(index+1).padStart(2,"0")} / {String(slides.length).padStart(2,"0")}</em></div><span>{String(index+1).padStart(2,"0")} · {slide.title}</span></button>)}<button className="add-slide" onClick={addSlide}><Plus size={18}/><span>Add slide</span></button></div></div>
         </section>
 
         <aside className="inspector-panel advanced-inspector">
@@ -329,20 +335,20 @@ export default function StudioWorkspace() {
             <button className={`quick-action ${shadowEnabled?"selected-effect":""}`} onClick={() => setShadowEnabled((value) => !value)}><Layers3 size={14}/> {shadowEnabled?"Shadow enabled":"Add soft shadow"}</button>
           </div>
           <div className="inspector-section">
-            <div className="inspector-label">TYPOGRAPHY</div>
-            <label className="field-label">Google Fonts family</label>
-            <select className="inspector-input" value={fontFamily} onChange={(event) => {const family=event.target.value;setFontFamily(family);if(!(FONT_WEIGHT_OPTIONS[family]??[400,700]).includes(Number(fontWeight)))setFontWeight("400");}}>
-              <option>Inter Variable</option><option>DM Sans Variable</option><option>Manrope Variable</option><option>Space Grotesk Variable</option><option>Outfit Variable</option><option>Roboto Variable</option><option>Nunito Sans Variable</option><option>Playfair Display Variable</option><option>Montserrat Variable</option><option>Lora</option><option>Poppins</option><option>Oswald</option><option>Merriweather</option><option>Archivo</option><option>Bebas Neue</option><option>Caveat</option>
-            </select>
-            <div className="font-preview-sample" style={{fontFamily,fontWeight:Number(fontWeight)}}>Aa Bb Cc 123 · ÇĞİÖŞÜ</div>
-            <label className="range-label">Font weight <span>{fontWeight}</span></label><select className="inspector-input" value={fontWeight} onChange={(event) => setFontWeight(event.target.value)}>{(FONT_WEIGHT_OPTIONS[fontFamily]??[400,700]).map((weight) => <option key={weight} value={String(weight)}>{weight===300?"Light":weight===400?"Regular":weight===500?"Medium":weight===600?"Semi bold":weight===700?"Bold":"Extra bold"} {weight}</option>)}</select>
+            <div className="inspector-label">TYPOGRAPHY <span>GOOGLE FONTS</span></div>
+            <label className="field-label">Font ailesi ara</label>
+            <input className="inspector-input" list="google-font-catalog" value={fontSearch || fontFamily} onChange={(event) => {setFontSearch(event.target.value);const match=fontCatalog.find((family)=>family.toLowerCase()===event.target.value.trim().toLowerCase());if(match)setFontFamily(match);}} onBlur={()=>{if(fontSearch.trim())setFontFamily(fontCatalog.find((family)=>family.toLowerCase()===fontSearch.trim().toLowerCase())??fontSearch.trim());setFontSearch("");}} placeholder="Örn. Arimo, Arşiv, Inter…"/>
+            <datalist id="google-font-catalog">{fontCatalog.map((family)=><option key={family} value={family}/>)}</datalist>
+            <p className="inspector-hint">{fontCatalogStatus}. Seçilen aile Google Fonts üzerinden yüklenir; katalog dışı isimlerde sistem fontuna geri dönülür.</p>
+            <div className="font-preview-sample" style={{fontFamily:`"${fontFamily}", sans-serif`,fontWeight:Number(fontWeight)}}>Aa Bb Cc 123 · ÇĞİÖŞÜ</div>
+            <label className="range-label">Font weight <span>{fontWeight}</span></label><select className="inspector-input" value={fontWeight} onChange={(event) => setFontWeight(event.target.value)}>{[100,200,300,400,500,600,700,800,900].map((weight)=><option key={weight} value={String(weight)}>{weight===100?"Thin":weight===200?"Extra light":weight===300?"Light":weight===400?"Regular":weight===500?"Medium":weight===600?"Semi bold":weight===700?"Bold":weight===800?"Extra bold":"Black"} {weight}</option>)}</select>
             <label className="range-label">Font size <span>{fontSize}px</span></label><input className="range-control" type="range" min="12" max="100" value={fontSize} onChange={(event) => setFontSize(Number(event.target.value))}/>
           </div>
           <div className="inspector-section motion-library-section">
             <div className="inspector-label">TEXT ANIMATIONS <span>25 PRESETS</span></div>
             <select className="inspector-input" value={textAnimation} disabled={!hasSelection || !isTextSelection} onChange={event=>{setTextAnimation(event.target.value);issueCanvasCommand("preview-animation:text:"+event.target.value);}}>{TEXT_ANIMATIONS.map(name=><option key={name}>{name}</option>)}</select>
             <p className="inspector-hint">Select text, then choose an animation to preview it instantly. Nothing is permanently applied.</p>
-            <div className="inspector-label preset-label">ITEM ANIMATIONS <span>25 PRESETS</span></div>
+            <div className="inspector-label preset-label">PRODUCT & OBJECT ANIMATIONS <span>25 PRESETS</span></div>
             <select className="inspector-input" value={itemAnimation} disabled={!hasSelection || isTextSelection} onChange={event=>{setItemAnimation(event.target.value);issueCanvasCommand("preview-animation:item:"+event.target.value);}}>{ITEM_ANIMATIONS.map(name=><option key={name}>{name}</option>)}</select>
             <p className="inspector-hint">Select a product, image or shape, then choose an animation for an instant preview.</p>
             <div className="inspector-label preset-label">TEXT EFFECTS <span>25 PRESETS</span></div>
@@ -382,7 +388,7 @@ export default function StudioWorkspace() {
           <div className="inspector-tip"><Sparkles size={15}/><div><strong>Pro tip</strong><p>Select any shape or text on the canvas to resize, rotate, recolor and layer it.</p></div></div>
         </aside>
       </div>
-      {assetLibraryOpen && <AssetLibrary initialCategory={assetLibraryCategory} onClose={() => setAssetLibraryOpen(false)} onChoose={(asset: StudioAsset) => { setAssetCommand((current) => ({ symbol: asset.symbol, label: asset.label, imageUrl: asset.imageUrl, token: current.token + 1 })); setAssetLibraryOpen(false); setTool("select"); }} />}
+      {assetLibraryOpen && <AssetLibrary initialCategory={assetLibraryCategory} onClose={() => setAssetLibraryOpen(false)} onChoose={(asset: StudioAsset) => { setAssetCommand((current) => ({ symbol: asset.symbol, label: asset.label, imageUrl: asset.imageUrl, fontFamily: asset.fontFamily, token: current.token + 1 })); setAssetLibraryOpen(false); setTool("select"); }} />}
     </main>
   );
 }
