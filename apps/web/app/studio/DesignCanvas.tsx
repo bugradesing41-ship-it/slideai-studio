@@ -4,6 +4,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useEffect, useRef } from "react";
+import type { DesignElement } from "@slideai/shared";
 
 declare module "fabric" {
   interface FabricObject {
@@ -40,6 +41,7 @@ type Props = {
   shadowEnabled: boolean;
   opacity: number;
   initialData?: string;
+  designElements: DesignElement[];
   onChange: (json: string) => void;
   onSelectionChange: (selected: boolean, objectType?: string, typography?: {fontFamily?:string;fontSize?:number;fontWeight?:number}) => void;
   onTextChange: (name: string, value: string) => void;
@@ -78,14 +80,14 @@ async function loadGoogleFont(family:string, weights:number[], weight:number|str
 
 export default function DesignCanvas({
   slideId, slideNumber, title, eyebrow, body, theme, tool, fill, stroke, strokeWidth,
-  fontFamily, fontWeights, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange
+  fontFamily, fontWeights, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, initialData, designElements, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange
 }: Props) {
   const elementRef = useRef<HTMLCanvasElement>(null);
   const canvasRef = useRef<any>(null);
   const historyRef = useRef<{ items: string[]; index: number }>({ items: [], index: -1 });
   const restoringRef = useRef(false);
-  const latestRef = useRef({ title, slideNumber, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontWeights, fontSize, fontWeight, cornerRadius, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange });
-  latestRef.current = { title, slideNumber, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontWeights, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange };
+  const latestRef = useRef({ title, slideNumber, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontWeights, fontSize, fontWeight, cornerRadius, shadowEnabled, opacity, initialData, designElements, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange });
+  latestRef.current = { title, slideNumber, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontWeights, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, initialData, designElements, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange };
 
   useEffect(() => {
     let disposed = false;
@@ -161,6 +163,27 @@ export default function DesignCanvas({
           await canvas.loadFromJSON(savedDocument);
         } catch {
           canvas.clear();
+        }
+      } else if (latestRef.current.designElements.length) {
+        const roleNames: Record<string,string> = { title:"slide-title", eyebrow:"slide-eyebrow", body:"slide-body" };
+        for (const element of latestRef.current.designElements) {
+          const common = { left:element.x, top:element.y, opacity:element.opacity, fill:element.fill || "#ffffff", stroke:element.stroke || undefined, strokeWidth:element.stroke ? 2 : 0, name:roleNames[element.role] || `ai-${element.id}` };
+          if (element.type === "text") {
+            canvas.add(new fabric.Textbox(element.text, { ...common, width:element.width, height:element.height, fontFamily:element.fontFamily || "DM Sans", fontSize:element.fontSize, fontWeight:element.fontWeight, textAlign:element.textAlign, lineHeight:1.15, editable:true }));
+          } else if (element.type === "rect") {
+            canvas.add(new fabric.Rect({ ...common, width:element.width, height:element.height, rx:16, ry:16 }));
+          } else if (element.type === "ellipse") {
+            canvas.add(new fabric.Ellipse({ ...common, rx:element.width/2, ry:element.height/2 }));
+          } else if (element.type === "triangle") {
+            canvas.add(new fabric.Triangle({ ...common, width:element.width, height:element.height }));
+          } else if (element.type === "line") {
+            canvas.add(new fabric.Line([element.x,element.y,element.x+element.width,element.y+element.height], { ...common, fill:"", stroke:element.stroke || element.fill || "#ffffff", strokeWidth:Math.max(1,element.fontSize/8) }));
+          } else if (element.type === "image-placeholder") {
+            canvas.add(
+              new fabric.Rect({ ...common, name:`ai-${element.id}-frame`, width:element.width, height:element.height, rx:18, ry:18, fill:element.fill || "rgba(255,255,255,0.08)", stroke:element.stroke || "#9b8bc7", strokeDashArray:[8,6] }),
+              new fabric.Textbox(element.text || "IMAGE / VISUAL", { left:element.x+12, top:element.y+element.height/2-16, width:element.width-24, fontFamily:"DM Sans", fontSize:Math.min(20,element.fontSize), fontWeight:600, textAlign:"center", fill:element.stroke || "#b9abd9", name:`ai-${element.id}-label`, editable:true })
+            );
+          }
         }
       }
       if (canvas.getObjects().length === 0) {
