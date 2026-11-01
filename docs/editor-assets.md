@@ -51,7 +51,7 @@ The current canvas implementation includes:
 
 ## In-app visual asset library
 
-The editor includes a searchable, category-filtered starter library with 239 curated Unicode visual assets across characters and cartoon-style mascots, symbols, signs and arrows, badges and labels, business and technology, places and travel, and lifestyle and hobbies. Assets are inserted as editable canvas text objects and can be moved, resized, rotated, layered and deleted. Their exact emoji appearance depends on the operating system emoji font.
+The editor includes a searchable, category-filtered starter library with 237 curated Unicode visual assets across characters and cartoon-style mascots, symbols, signs and arrows, badges and labels, business and technology, places and travel, and lifestyle and hobbies. Assets are inserted as editable canvas text objects and can be moved, resized, rotated, layered and deleted. Their exact emoji appearance depends on the operating system emoji font.
 
 ## Asset intake rules
 
