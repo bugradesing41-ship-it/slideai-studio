@@ -5,7 +5,7 @@ import { motion, type TargetAndTransition, type Transition } from "motion/react"
 import Link from "next/link";
 import DesignCanvas, { type Tool } from "./DesignCanvas";
 import AssetLibrary, { type StudioAsset } from "./AssetLibrary";
-import { sampleDeck, validateDeck, type SlideSpec } from "@slideai/shared";
+import { sampleDeck, validateDeck, type SlideSpec, type DeckSpec, type DesignType } from "@slideai/shared";
 import {
   ArrowLeft, ArrowUpRight, Check, ChevronDown, ChevronDown as MoveDown, ChevronUp as MoveUp, Copy, Download, ImagePlus,
   LayoutTemplate, MoreHorizontal, Plus, Send, Settings2,
@@ -28,6 +28,11 @@ export default function StudioWorkspace() {
   const [slides, setSlides] = useState<Slide[]>(sampleDeck.slides);
   const [activeId, setActiveId] = useState(1);
   const [prompt, setPrompt] = useState("");
+  const [designType, setDesignType] = useState<DesignType>("presentation");
+  const [slideCount, setSlideCount] = useState(8);
+  const [aiMode, setAiMode] = useState<"create" | "refine">("create");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [canvasResetToken, setCanvasResetToken] = useState(0);
   const [messages, setMessages] = useState([
     { role: "assistant", text: "Your starting deck is ready. Tell me what you would like to change, or select any text on the slide to edit it." }
   ]);
@@ -131,7 +136,7 @@ export default function StudioWorkspace() {
 
   function addSlide() {
     const id = Math.max(...slides.map((slide) => slide.id)) + 1;
-    const next: Slide = { id, title: "A new perspective", eyebrow: "04 — EXPLORE", body: "Add your key message here. Keep the idea focused, clear and memorable.", kind: "content", layout: "title-and-body" };
+    const next: Slide = { id, title: "A new perspective", eyebrow: "04 — EXPLORE", body: "Add your key message here. Keep the idea focused, clear and memorable.", kind: "content", layout: "title-and-body", elements: [] };
     setSlides((current) => {
       const nextSlides = [...current, next];
       const validation = validateDeck({ ...sampleDeck, title, theme, slides: nextSlides });
@@ -199,11 +204,58 @@ export default function StudioWorkspace() {
     setShadowEnabled(selected.shadow);
   }
 
-  function sendPrompt() {
+  async function sendPrompt() {
     const clean = prompt.trim();
-    if (!clean) return;
-    setMessages((current) => [...current, { role: "user", text: clean }, { role: "assistant", text: "I’ve added that to our editing queue. The AI connection is not configured yet, so this preview is using local sample content." }]);
+    if (!clean || isGenerating) return;
     setPrompt("");
+    setIsGenerating(true);
+    setMessages((current) => [...current, { role: "user", text: clean }, { role: "assistant", text: "Tasarım brief'in analiz ediliyor. Düzenlenebilir yerleşim hazırlanıyor…" }]);
+    try {
+      const existingDeck: DeckSpec = {
+        schemaVersion: "1.0",
+        id: "studio-current-deck",
+        title,
+        description: "Current editable SlideAI Studio design",
+        theme,
+        designType,
+        language: "tr",
+        slides,
+        metadata: { source: "ai" },
+      };
+      const response = await fetch("/api/ai/design", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: clean,
+          designType,
+          slideCount,
+          mode: aiMode,
+          existingDeck: aiMode === "refine" ? existingDeck : undefined,
+          activeSlideId: activeId,
+        }),
+      });
+      const payload = await response.json() as { error?: string; message?: string; deck?: DeckSpec };
+      if (!response.ok || !payload.deck) throw new Error(payload.error || "AI tasarımı oluşturamadı.");
+      const validation = validateDeck(payload.deck);
+      if (!validation.success) throw new Error("AI tasarımı DeckSpec doğrulamasından geçemedi.");
+      const nextDeck = validation.data;
+      setSlides(nextDeck.slides);
+      setTitle(nextDeck.title);
+      setTheme(nextDeck.theme === "blue" ? "blue" : nextDeck.theme === "light" ? "light" : "violet");
+      setCanvasDataBySlide({});
+      setSlideBackgrounds({});
+      setSlideAnimations({});
+      setActiveId(nextDeck.slides[0].id);
+      setCanvasResetToken((token) => token + 1);
+      setHasSelection(false);
+      setIsPlaying(false);
+      setMessages((current) => [...current.slice(0, -1), { role: "assistant", text: payload.message || "Tasarım hazır. Metinleri, şekilleri ve yerleşimleri tuvalde ayrı ayrı düzenleyebilirsin." }]);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Beklenmeyen bir hata oluştu.";
+      setMessages((current) => [...current.slice(0, -1), { role: "assistant", text: `Tasarım oluşturulamadı: ${message}` }]);
+    } finally {
+      setIsGenerating(false);
+    }
   }
 
   return (
@@ -217,12 +269,17 @@ export default function StudioWorkspace() {
       <div className="studio-body">
         <aside className="chat-panel">
           <div className="panel-heading"><div className="panel-heading-icon"><Sparkles size={16}/></div><div><strong>AI assistant</strong><span>Your creative partner</span></div><button className="icon-button"><MoreHorizontal size={17}/></button></div>
-          <div className="chat-context"><span className="context-dot"/> WORKING ON THIS PRESENTATION</div>
+          <div className="chat-context"><span className="context-dot"/> OPENAI DESIGN ENGINE · EDITABLE OUTPUT</div>
+          <div className="chat-ai-controls">
+            <label>DESIGN TYPE<select value={designType} onChange={(event)=>setDesignType(event.target.value as DesignType)}><option value="presentation">Presentation</option><option value="social-post">Social media</option><option value="advertisement">Advertisement</option><option value="product">Product design</option><option value="infographic">Infographic</option></select></label>
+            <label>MODE<select value={aiMode} onChange={(event)=>setAiMode(event.target.value as "create" | "refine")}><option value="create">Create from prompt</option><option value="refine">Improve current design</option></select></label>
+            {designType === "presentation" && <label>SLIDES<select value={slideCount} onChange={(event)=>setSlideCount(Number(event.target.value))}>{[3,4,5,6,8,10,12].map((count)=><option key={count} value={count}>{count} slides</option>)}</select></label>}
+          </div>
           <div className="chat-messages">
             {messages.map((message, index) => <div className={`chat-message ${message.role}`} key={index}>{message.role === "assistant" && <span className="message-avatar"><WandSparkles size={13}/></span>}<p>{message.text}</p></div>)}
           </div>
           <div className="suggestion-area"><span>TRY ASKING</span><button onClick={() => setPrompt("Make this slide more visual")}>Make this slide more visual <ArrowUpRight size={12}/></button><button onClick={() => setPrompt("Create a stronger opening")}>Create a stronger opening <ArrowUpRight size={12}/></button></div>
-          <div className="chat-composer"><textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); sendPrompt(); } }} placeholder="Ask AI to edit your presentation..." aria-label="Message AI assistant"/><div><span><Sparkles size={12}/> AI can make mistakes</span><button onClick={sendPrompt} disabled={!prompt.trim()} aria-label="Send message"><Send size={15}/></button></div></div>
+          <div className="chat-composer"><textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); sendPrompt(); } }} placeholder={aiMode === "create" ? "Describe the design you want…" : "Tell AI what to improve in this design…"} aria-label="Message AI assistant" disabled={isGenerating}/><div><span><Sparkles size={12}/> {isGenerating ? "Designing…" : "Powered by OpenAI"}</span><button onClick={sendPrompt} disabled={!prompt.trim() || isGenerating} aria-label="Send design request">{isGenerating ? <span className="ai-send-spinner"/> : <Send size={15}/>}</button></div></div>
         </aside>
 
         <section className="editor-main">
@@ -265,6 +322,7 @@ export default function StudioWorkspace() {
             <div className="canvas-zoom-frame" style={{ transform: `scale(${zoom / 100})` }}>
               <motion.div key={activeId + activeSlideAnimation + playbackToken} className="canvas-motion-frame" style={{transformPerspective:1200}} initial={slideMotion.initial} animate={slideMotion.animate} transition={slideMotion.transition}>
               <DesignCanvas
+                key={`${activeId}-${canvasResetToken}`}
                 slideId={activeId}
                 slideNumber={`${String(slides.findIndex((slide) => slide.id === activeId) + 1).padStart(2,"0")} / ${String(slides.length).padStart(2,"0")}`}
                 title={activeSlide.title}
@@ -284,6 +342,7 @@ export default function StudioWorkspace() {
                 shadowEnabled={shadowEnabled}
                 opacity={opacity}
                 initialData={canvasDataBySlide[activeId]}
+                designElements={activeSlide.elements ?? []}
                 onChange={saveCanvas}
                 onSelectionChange={(selected, type, typography) => {setHasSelection(selected);setSelectionType(type ?? "");if(typography){if(typography.fontFamily)setFontFamily(typography.fontFamily);if(typography.fontSize)setFontSize(typography.fontSize);if(typography.fontWeight)setFontWeight(String(typography.fontWeight));}}}
                 command={canvasCommand}
