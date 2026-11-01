@@ -122,3 +122,7 @@ h1{font:700 clamp(34px,4vw,49px)/1.12 Manrope,sans-serif;letter-spacing:-2.4px;m
 .asset-empty{padding:55px 20px;text-align:center;color:#8c909e;font-size:12px}
 .asset-library-footer{border-top:1px solid #292c37;padding:12px 20px;color:#7f8391;font-size:9px}
 @media(max-width:700px){.asset-library-backdrop{padding:8px}.asset-library{width:100%;height:94vh;border-radius:12px}.asset-grid{grid-template-columns:repeat(5,minmax(0,1fr));padding-left:12px;padding-right:12px}.asset-library-header,.asset-search{margin-left:12px;margin-right:12px}.asset-categories{padding-left:12px;padding-right:12px}.asset-results-head{padding-left:12px;padding-right:12px}.asset-library-header{margin:0;padding:14px}.asset-tile{min-height:72px}}
+\n
+.motion-library-section select{margin-bottom:7px}
+.motion-library-section .quick-action{margin-top:5px}
+.motion-library-section .preset-label{margin-top:17px}
