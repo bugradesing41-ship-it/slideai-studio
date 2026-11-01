@@ -70,7 +70,7 @@ export default function DesignCanvas({
       const fabric = await import("fabric");
       fabric.FabricObject.customProperties = ["name", "animationPreset"];
       if (disposed || !elementRef.current) return;
-      await document.fonts.load(`${latestRef.current.fontWeight} ${latestRef.current.fontSize}px "${latestRef.current.fontFamily}"`, "SlideAI Studio");
+      await document.fonts.load(`${latestRef.current.fontWeight} ${latestRef.current.fontSize}px "${latestRef.current.fontFamily}"`, "SlideAI Studio ÇĞİÖŞÜ çğıöşü Aa 123");
       await document.fonts.ready;
       const canvas = new fabric.Canvas(elementRef.current, {
         width: 1280,
@@ -496,7 +496,7 @@ export default function DesignCanvas({
 
   useEffect(() => {
     const canvas=canvasRef.current;if(!canvas)return;let cancelled=false;const object=canvas.getActiveObject();
-    void(async()=>{try{const loaded=await document.fonts.load(`${fontWeight} ${fontSize}px "${fontFamily}"`,"SlideAI Studio Aa 123");await document.fonts.ready;if(cancelled||!canvasRef.current)return;if(!loaded.length && !document.fonts.check(`${fontWeight} ${fontSize}px "${fontFamily}"`))throw new Error(`Font face unavailable: ${fontFamily}`);if(object && "fontFamily" in object){object.set({fontFamily,fontSize,fontWeight});object.setCoords();canvas.requestRenderAll();latestRef.current.onChange(JSON.stringify(canvas.toObject(["name","animationPreset"])));}}catch(error){console.error("Font load error",fontFamily,error);}})();
+    void(async()=>{try{const loaded=await document.fonts.load(`${fontWeight} ${fontSize}px "${fontFamily}"`,"SlideAI Studio ÇĞİÖŞÜ çğıöşü Aa 123");await document.fonts.ready;if(cancelled||!canvasRef.current)return;if(!loaded.length && !document.fonts.check(`${fontWeight} ${fontSize}px "${fontFamily}"`))throw new Error(`Font face unavailable: ${fontFamily}`);if(object && "fontFamily" in object){object.set({fontFamily,fontSize,fontWeight});object.setCoords();canvas.requestRenderAll();latestRef.current.onChange(JSON.stringify(canvas.toObject(["name","animationPreset"])));}}catch(error){console.error("Font load error",fontFamily,error);}})();
     return()=>{cancelled=true;};
   },[fontFamily,fontSize,fontWeight]);
 
