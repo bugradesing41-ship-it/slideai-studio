@@ -5,11 +5,13 @@ import { motion, type TargetAndTransition, type Transition } from "motion/react"
 import Link from "next/link";
 import DesignCanvas, { type Tool } from "./DesignCanvas";
 import AssetLibrary, { type StudioAsset } from "./AssetLibrary";
-import { sampleDeck, validateDeck, type SlideSpec, type DeckSpec, type DesignType } from "@slideai/shared";
+import MotionAssetLibrary, { type MotionAsset } from "./MotionAssetLibrary";
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import { sampleDeck, validateDeck, type SlideSpec } from "@slideai/shared";
 import {
   ArrowLeft, ArrowUpRight, Check, ChevronDown, ChevronDown as MoveDown, ChevronUp as MoveUp, Copy, Download, ImagePlus,
-  LayoutTemplate, MoreHorizontal, Plus, Send, Settings2,
-  Sparkles, Trash2, Type, WandSparkles, ZoomIn, ZoomOut, MousePointer2,
+  LayoutTemplate, MoreHorizontal, Plus, Settings2,
+  Sparkles, Trash2, Type, ZoomIn, ZoomOut, MousePointer2,
   Pencil, Square, Play, Users, Circle as CircleIcon, Triangle as TriangleIcon, Minus,
   MoveUpRight, Star, Undo2, Redo2, Layers3, Diamond, Hexagon, Pentagon, Heart, MessageSquareText
 } from "lucide-react";
@@ -27,15 +29,7 @@ const ITEM_EFFECTS=["Soft shadow","Deep shadow","Neon glow","Violet glow","Glass
 export default function StudioWorkspace() {
   const [slides, setSlides] = useState<Slide[]>(sampleDeck.slides);
   const [activeId, setActiveId] = useState(1);
-  const [prompt, setPrompt] = useState("");
-  const [designType, setDesignType] = useState<DesignType>("presentation");
-  const [slideCount, setSlideCount] = useState(8);
-  const [aiMode, setAiMode] = useState<"create" | "refine">("create");
-  const [isGenerating, setIsGenerating] = useState(false);
   const [canvasResetToken, setCanvasResetToken] = useState(0);
-  const [messages, setMessages] = useState([
-    { role: "assistant", text: "Your starting deck is ready. Tell me what you would like to change, or select any text on the slide to edit it." }
-  ]);
   const [title, setTitle] = useState(sampleDeck.title);
   const [zoom, setZoom] = useState(82);
   const [theme, setTheme] = useState<"violet" | "blue" | "light">("violet");
@@ -69,8 +63,9 @@ export default function StudioWorkspace() {
   const [assetCommand, setAssetCommand] = useState<{symbol:string;label:string;imageUrl?:string;fontFamily?:string;token:number}>({ symbol: "", label: "", token: 0 });
   const [imageCommand, setImageCommand] = useState({ dataUrl: "", name: "", token: 0 });
   const imageInputRef = useRef<HTMLInputElement>(null);
-  const [textAnimation, setTextAnimation] = useState("Fade in");
-  const [itemAnimation, setItemAnimation] = useState("Fade");
+  const [motionLibraryOpen, setMotionLibraryOpen] = useState(false);
+  const [motionAssetsBySlide, setMotionAssetsBySlide] = useState<Record<number, MotionAsset[]>>({});
+  const [motionSize, setMotionSize] = useState(34);
   const activeSlideAnimation = slideAnimations[activeId] ?? "Fade";
   const backgroundColor = slideBackgrounds[activeId] ?? (theme === "light" ? "#f1eee7" : theme === "blue" ? "#102333" : "#171525");
   const isTextSelection = ["textbox","i-text","text"].includes(selectionType.toLowerCase());
@@ -87,8 +82,6 @@ export default function StudioWorkspace() {
     "Bounce":{initial:{y:-300,opacity:0},animate:{y:[-300,0,-28,0],opacity:[0,1,1,1]},transition:{duration:1.05,times:[0,.62,.82,1],ease:"easeOut"}}
   };
   const slideMotion = SLIDE_MOTION[activeSlideAnimation] ?? SLIDE_MOTION.Fade;
-  const [textEffect, setTextEffect] = useState("Soft shadow");
-  const [itemEffect, setItemEffect] = useState("Soft shadow");
   const activeSlide = useMemo(() => slides.find((slide) => slide.id === activeId) ?? slides[0], [slides, activeId]);
   useEffect(() => {
     let cancelled = false;
@@ -204,59 +197,24 @@ export default function StudioWorkspace() {
     setShadowEnabled(selected.shadow);
   }
 
-  async function sendPrompt() {
-    const clean = prompt.trim();
-    if (!clean || isGenerating) return;
-    setPrompt("");
-    setIsGenerating(true);
-    setMessages((current) => [...current, { role: "user", text: clean }, { role: "assistant", text: "Tasarım brief'in analiz ediliyor. Düzenlenebilir yerleşim hazırlanıyor…" }]);
-    try {
-      const existingDeck: DeckSpec = {
-        schemaVersion: "1.0",
-        id: "studio-current-deck",
-        title,
-        description: "Current editable SlideAI Studio design",
-        theme,
-        designType,
-        language: "tr",
-        slides,
-        metadata: { source: "ai" },
-      };
-      const response = await fetch("/api/ai/design", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: clean,
-          designType,
-          slideCount,
-          mode: aiMode,
-          existingDeck: aiMode === "refine" ? existingDeck : undefined,
-          activeSlideId: activeId,
-        }),
-      });
-      const payload = await response.json() as { error?: string; message?: string; deck?: DeckSpec };
-      if (!response.ok || !payload.deck) throw new Error(payload.error || "AI tasarımı oluşturamadı.");
-      const validation = validateDeck(payload.deck);
-      if (!validation.success) throw new Error("AI tasarımı DeckSpec doğrulamasından geçemedi.");
-      const nextDeck = validation.data;
-      setSlides(nextDeck.slides);
-      setTitle(nextDeck.title);
-      setDesignType(nextDeck.designType);
-      setTheme(nextDeck.theme === "blue" ? "blue" : nextDeck.theme === "light" ? "light" : "violet");
-      setCanvasDataBySlide({});
-      setSlideBackgrounds({});
-      setSlideAnimations({});
-      setActiveId(nextDeck.slides[0].id);
-      setCanvasResetToken((token) => token + 1);
-      setHasSelection(false);
-      setIsPlaying(false);
-      setMessages((current) => [...current.slice(0, -1), { role: "assistant", text: payload.message || "Tasarım hazır. Metinleri, şekilleri ve yerleşimleri tuvalde ayrı ayrı düzenleyebilirsin." }]);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Beklenmeyen bir hata oluştu.";
-      setMessages((current) => [...current.slice(0, -1), { role: "assistant", text: `Tasarım oluşturulamadı: ${message}` }]);
-    } finally {
-      setIsGenerating(false);
-    }
+  function exportProject() {
+    const project = { format: "slideai-studio-project", version: 1, title, theme, slides, canvasDataBySlide, slideBackgrounds, slideAnimations,
+      motionAssetsBySlide: Object.fromEntries(Object.entries(motionAssetsBySlide).map(([id, assets]) => [id, assets.map(asset => ({ ...asset, data: asset.data instanceof ArrayBuffer ? Array.from(new Uint8Array(asset.data)) : asset.data }))])) };
+    const blob = new Blob([JSON.stringify(project, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url;
+    anchor.download = `${title.trim().replace(/[^a-z0-9-_]+/gi, "-") || "slideai-project"}.slideai.json`; anchor.click(); URL.revokeObjectURL(url);
+  }
+  async function shareProject() {
+    const shareText = `${title} — SlideAI Studio\n${slides.length} slides. Project file can be exported from the editor.`;
+    if (navigator.share) { try { await navigator.share({ title, text: shareText }); return; } catch { /* cancelled */ } }
+    await navigator.clipboard.writeText(shareText);
+    window.alert("Proje bilgisi panoya kopyalandı. Paylaşılabilir bağlantı için çevrimiçi proje depolama hesabı gerekir.");
+  }
+  function exportSlidePng() {
+    const canvas = document.querySelector<HTMLCanvasElement>(".canvas-container canvas");
+    if (!canvas) { window.alert("Tuval henüz hazır değil."); return; }
+    const anchor = document.createElement("a"); anchor.href = canvas.toDataURL("image/png");
+    anchor.download = `${title.trim().replace(/[^a-z0-9-_]+/gi, "-") || "slide"}-${activeId}.png`; anchor.click();
   }
 
   return (
@@ -264,23 +222,23 @@ export default function StudioWorkspace() {
       <header className="studio-topbar">
         <Link className="studio-back" href="/"><ArrowLeft size={16} /><span>Back to workspace</span></Link>
         <div className="studio-doc-title"><span className="doc-icon"><LayoutTemplate size={15} /></span><span>{title}</span><span className="saved-pill"><Check size={12} /> Saved</span></div>
-        <div className="studio-top-actions"><button className="icon-button" aria-label="More options"><MoreHorizontal size={18}/></button><button className="share-button">Share <ArrowUpRight size={14}/></button><button className="export-button"><Download size={14}/> Export</button></div>
+        <div className="studio-top-actions"><button className="icon-button" aria-label="More options"><MoreHorizontal size={18}/></button><button className="share-button" onClick={shareProject}>Share <ArrowUpRight size={14}/></button><button className="export-button" onClick={exportProject}><Download size={14}/> Export project</button></div>
       </header>
 
       <div className="studio-body">
-        <aside className="chat-panel">
-          <div className="panel-heading"><div className="panel-heading-icon"><Sparkles size={16}/></div><div><strong>Gemini assistant</strong><span>Your creative partner</span></div><button className="icon-button"><MoreHorizontal size={17}/></button></div>
-          <div className="chat-context"><span className="context-dot"/> GEMINI DESIGN ENGINE · EDITABLE OUTPUT</div>
-          <div className="chat-ai-controls">
-            <label>DESIGN TYPE<select value={designType} onChange={(event)=>setDesignType(event.target.value as DesignType)}><option value="presentation">Presentation</option><option value="social-post">Social media</option><option value="advertisement">Advertisement</option><option value="product">Product design</option><option value="infographic">Infographic</option></select></label>
-            <label>MODE<select value={aiMode} onChange={(event)=>setAiMode(event.target.value as "create" | "refine")}><option value="create">Create from prompt</option><option value="refine">Improve current design</option></select></label>
-            {designType === "presentation" && <label>SLIDES<select value={slideCount} onChange={(event)=>setSlideCount(Number(event.target.value))}>{[3,4,5,6,8,10,12].map((count)=><option key={count} value={count}>{count} slides</option>)}</select></label>}
+        <aside className="chat-panel motion-assets-panel">
+          <div className="panel-heading"><div className="panel-heading-icon"><Play size={16}/></div><div><strong>Motion library</strong><span>Real Lottie / dotLottie files</span></div></div>
+          <div className="chat-context"><span className="context-dot"/> IMPORT · PREVIEW · PLACE ON SLIDE</div>
+          <div className="motion-panel-content">
+            <p>Hazır animasyon dosyalarını içe aktar, önizle ve aktif slayta ekle. JSON ve .lottie desteklenir.</p>
+            <button className="motion-library-open" onClick={() => setMotionLibraryOpen(true)}><Plus size={15}/> Animation library</button>
+            <div className="motion-panel-links"><a href="https://lottiefiles.com/free-animations" target="_blank" rel="noreferrer">LottieFiles Community <ArrowUpRight size={12}/></a><a href="https://rive.app/community/" target="_blank" rel="noreferrer">Rive Community <ArrowUpRight size={12}/></a></div>
+            <div className="motion-added-heading">THIS SLIDE <span>{(motionAssetsBySlide[activeId] ?? []).length}</span></div>
+            {(motionAssetsBySlide[activeId] ?? []).map((asset,index)=><div className="motion-added-item" key={`${asset.name}-${index}`}><span>{asset.name}</span><button aria-label="Remove animation" onClick={()=>setMotionAssetsBySlide(current=>({...current,[activeId]:(current[activeId]??[]).filter((_,i)=>i!==index)}))}><Trash2 size={13}/></button></div>)}
+            <label className="field-label">Preview size <span>{motionSize}%</span></label><input className="range-control" type="range" min="15" max="75" value={motionSize} onChange={event=>setMotionSize(Number(event.target.value))}/>
+            <p className="inspector-hint">Animasyonlar Fabric tuvalinden ayrı bir katmanda oynatılır. PNG dışa aktarımı animasyon karesini içermez; proje JSON'u animasyon verisini saklar.</p>
           </div>
-          <div className="chat-messages">
-            {messages.map((message, index) => <div className={`chat-message ${message.role}`} key={index}>{message.role === "assistant" && <span className="message-avatar"><WandSparkles size={13}/></span>}<p>{message.text}</p></div>)}
-          </div>
-          <div className="suggestion-area"><span>TRY ASKING</span><button onClick={() => setPrompt("Make this slide more visual")}>Make this slide more visual <ArrowUpRight size={12}/></button><button onClick={() => setPrompt("Create a stronger opening")}>Create a stronger opening <ArrowUpRight size={12}/></button></div>
-          <div className="chat-composer"><textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); sendPrompt(); } }} placeholder={aiMode === "create" ? "Describe the design you want…" : "Tell AI what to improve in this design…"} aria-label="Message AI assistant" disabled={isGenerating}/><div><span><Sparkles size={12}/> {isGenerating ? "Designing…" : "Powered by Gemini"}</span><button onClick={sendPrompt} disabled={!prompt.trim() || isGenerating} aria-label="Send design request">{isGenerating ? <span className="ai-send-spinner"/> : <Send size={15}/>}</button></div></div>
+          <div className="motion-panel-footer"><button className="quick-action" onClick={exportSlidePng}><ImagePlus size={14}/> Export current slide PNG</button><button className="quick-action" onClick={exportProject}><Download size={14}/> Download editable project</button></div>
         </aside>
 
         <section className="editor-main">
@@ -290,8 +248,9 @@ export default function StudioWorkspace() {
               <span className="toolbar-divider"/>
               <button className="tool-button" onClick={() => issueCanvasCommand("undo")} disabled={!canUndo} title="Undo"><Undo2 size={15}/></button>
               <button className="tool-button" onClick={() => issueCanvasCommand("redo")} disabled={!canRedo} title="Redo"><Redo2 size={15}/></button>
+              <button className="tool-button" onClick={exportSlidePng} title="Export current slide as PNG"><Download size={15}/><span>PNG</span></button>
               <button className="tool-button asset-launch-button" onClick={() => {setAssetLibraryCategory("All assets");setAssetLibraryOpen(true);}} title="Open asset library"><ImagePlus size={15}/><span>Assets</span></button>
-              <button className="tool-button" onClick={() => {setAssetLibraryCategory("Characters");setAssetLibraryOpen(true);}} title="Add a character"><Users size={15}/><span>Characters</span></button>
+              <button className="tool-button" onClick={() => setMotionLibraryOpen(true)} title="Add an animation"><Play size={15}/><span>Motion</span></button>
               <button className="tool-button" onClick={() => {setIsPlaying(true);setPlaybackToken((token) => token + 1);setActiveId(slides[0].id);}} title="Play all slides"><Play size={15}/><span>Play all</span></button>
               {isPlaying && <button className="tool-button active-tool" onClick={() => setIsPlaying(false)} title="Stop presentation preview"><Square size={14}/><span>Stop</span></button>}
               <button className="tool-button" onClick={() => imageInputRef.current?.click()} title="Add image from computer"><ImagePlus size={15}/><span>Image</span></button>
@@ -357,6 +316,7 @@ export default function StudioWorkspace() {
                 }}
               />
               </motion.div>
+              {(motionAssetsBySlide[activeId] ?? []).map((asset,index)=><div className="slide-motion-overlay" key={`${asset.name}-${index}`} style={{width:`${motionSize}%`,height:`${motionSize}%`}}><DotLottieReact data={asset.data} src={asset.src} autoplay loop /></div>)}
             </div>
           </div>
 
@@ -401,31 +361,20 @@ export default function StudioWorkspace() {
           <div className="inspector-section">
             <div className="inspector-label">TYPOGRAPHY <span>GOOGLE FONTS</span></div>
             <label className="field-label">Font ailesi ara</label>
-            <input className="inspector-input" list="google-font-catalog" value={fontSearch || fontFamily} onChange={(event) => {setFontSearch(event.target.value);const match=fontCatalog.find((family)=>family.toLowerCase()===event.target.value.trim().toLowerCase());if(match){setFontFamily(match);setFontWeight(String((fontWeightsByFamily[match]??[400])[0]));}}} onBlur={()=>{if(fontSearch.trim()){const family=fontCatalog.find((item)=>item.toLowerCase()===fontSearch.trim().toLowerCase());if(family){setFontFamily(family);setFontWeight(String((fontWeightsByFamily[family]??[400])[0]));}else{setFontCatalogStatus(`“${fontSearch.trim()}” Google Fonts kataloğunda bulunamadı; mevcut font korundu.`);}}setFontSearch("");}} placeholder="Örn. Arimo, Arşiv, Inter…"/>
-            <datalist id="google-font-catalog">{fontCatalog.map((family)=><option key={family} value={family}/>)}</datalist>
+            <input className="inspector-input font-search-input" value={fontSearch} onChange={(event)=>setFontSearch(event.target.value)} placeholder="Font ara…"/>
+            <select className="inspector-input font-family-select" size={7} value={fontFamily} onChange={(event)=>{setFontFamily(event.target.value);setFontWeight(String((fontWeightsByFamily[event.target.value]??[400])[0]));}} aria-label="Google Fonts family">
+              {fontCatalog.filter(family=>family.toLowerCase().includes(fontSearch.trim().toLowerCase())).slice(0,500).map(family=><option key={family} value={family} style={{fontFamily:`"${family}", sans-serif`}}>{family}</option>)}
+            </select>
             <p className="inspector-hint">{fontCatalogStatus}. Seçilen aile Google Fonts üzerinden yüklenir; katalog dışı isimlerde sistem fontuna geri dönülür.</p>
             <div className="font-preview-sample" style={{fontFamily:`"${fontFamily}", sans-serif`,fontWeight:Number(fontWeight)}}>Aa Bb Cc 123 · ÇĞİÖŞÜ</div>
             <label className="range-label">Font weight <span>{fontWeight}</span></label><select className="inspector-input" value={fontWeight} onChange={(event) => setFontWeight(event.target.value)}>{fontWeights.map((weight)=><option key={weight} value={String(weight)}>{weight===100?"Thin":weight===200?"Extra light":weight===300?"Light":weight===400?"Regular":weight===500?"Medium":weight===600?"Semi bold":weight===700?"Bold":weight===800?"Extra bold":weight===900?"Black":`Weight ${weight}`} {weight}</option>)}</select>
             <label className="range-label">Font size <span>{fontSize}px</span></label><input className="range-control" type="range" min="12" max="100" value={fontSize} onChange={(event) => setFontSize(Number(event.target.value))}/>
           </div>
           <div className="inspector-section motion-library-section">
-            <div className="inspector-label">TEXT ANIMATIONS <span>25 PRESETS</span></div>
-            <select className="inspector-input" value={textAnimation} disabled={!hasSelection || !isTextSelection} onChange={event=>{setTextAnimation(event.target.value);issueCanvasCommand("preview-animation:text:"+event.target.value);}}>{TEXT_ANIMATIONS.map(name=><option key={name}>{name}</option>)}</select>
-            <p className="inspector-hint">Select text, then choose an animation to preview it instantly. Nothing is permanently applied.</p>
-            <div className="inspector-label preset-label">PRODUCT & OBJECT ANIMATIONS <span>25 PRESETS</span></div>
-            <select className="inspector-input" value={itemAnimation} disabled={!hasSelection || isTextSelection} onChange={event=>{setItemAnimation(event.target.value);issueCanvasCommand("preview-animation:item:"+event.target.value);}}>{ITEM_ANIMATIONS.map(name=><option key={name}>{name}</option>)}</select>
-            <p className="inspector-hint">Select a product, image or shape, then choose an animation for an instant preview.</p>
-            <div className="inspector-label preset-label">TEXT EFFECTS <span>25 PRESETS</span></div>
-            <select className="inspector-input" value={textEffect} onChange={event=>setTextEffect(event.target.value)}>{TEXT_EFFECTS.map(name=><option key={name}>{name}</option>)}</select>
-            <button className="quick-action" onClick={()=>issueCanvasCommand("effect:text:"+TEXT_EFFECTS.indexOf(textEffect)+"-"+textEffect.toLowerCase().replace(/[^a-z0-9]+/g,"-"))} disabled={!hasSelection}>Apply text effect</button>
-            <div className="inspector-label preset-label">ITEM EFFECTS <span>25 PRESETS</span></div>
-            <select className="inspector-input" value={itemEffect} onChange={event=>setItemEffect(event.target.value)}>{ITEM_EFFECTS.map(name=><option key={name}>{name}</option>)}</select>
-            <button className="quick-action" onClick={()=>issueCanvasCommand("effect:item:"+ITEM_EFFECTS.indexOf(itemEffect)+"-"+itemEffect.toLowerCase().replace(/[^a-z0-9]+/g,"-"))} disabled={!hasSelection}>Apply item effect</button>
-          </div>
-          <div className="inspector-section">
-            <div className="inspector-label">THIS SLIDE ANIMATION <span>10 OPTIONS</span></div>
+            <div className="inspector-label">SLIDE TRANSITION <span>10 STYLES</span></div>
             <select className="inspector-input" value={activeSlideAnimation} onChange={(event) => setSlideAnimations((current) => ({...current,[activeId]:event.target.value}))}>{SLIDE_ANIMATIONS.map((name) => <option key={name}>{name}</option>)}</select>
-            <p className="inspector-hint">Each slide keeps its own entrance animation. Use Play all to preview the complete presentation.</p>
+            <p className="inspector-hint">Slayt geçişi sunum önizlemesinde uygulanır. Ayrı animasyon katmanları için Motion Library'yi kullan.</p>
+            <button className="quick-action" onClick={()=>setMotionLibraryOpen(true)}><Play size={14}/> Open animation library</button>
           </div>
           <div className="inspector-section">
             <div className="inspector-label">SLIDE CONTENT</div>
@@ -452,6 +401,7 @@ export default function StudioWorkspace() {
           <div className="inspector-tip"><Sparkles size={15}/><div><strong>Pro tip</strong><p>Select any shape or text on the canvas to resize, rotate, recolor and layer it.</p></div></div>
         </aside>
       </div>
+      {motionLibraryOpen && <MotionAssetLibrary onClose={()=>setMotionLibraryOpen(false)} onChoose={(asset)=>{setMotionAssetsBySlide(current=>({...current,[activeId]:[...(current[activeId]??[]),asset]}));setMotionLibraryOpen(false);}} />}
       {assetLibraryOpen && <AssetLibrary initialCategory={assetLibraryCategory} onClose={() => setAssetLibraryOpen(false)} onChoose={(asset: StudioAsset) => { setAssetCommand((current) => ({ symbol: asset.symbol, label: asset.label, imageUrl: asset.imageUrl, fontFamily: asset.fontFamily, token: current.token + 1 })); setAssetLibraryOpen(false); setTool("select"); }} />}
     </main>
   );
