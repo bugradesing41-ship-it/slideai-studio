@@ -2,7 +2,7 @@
 
 An AI-assisted presentation workspace built around conversational creation and a live slide editor.
 
-> AI design MVP. The Studio now connects to the OpenAI Responses API through a server-side route and converts structured AI output into editable DeckSpec and Fabric.js canvas objects. Persistent projects, generated image assets and export services remain on the roadmap.
+> AI design MVP. The Studio now connects to the Google Gemini API through a server-side route and converts structured AI output into editable DeckSpec and Fabric.js canvas objects. Persistent projects, generated image assets and export services remain on the roadmap.
 
 ## Current features
 
@@ -24,7 +24,7 @@ An AI-assisted presentation workspace built around conversational creation and a
 - Per-slide canvas JSON state and local undo/redo history
 - Motion-powered slide-switch preview transitions
 - Responsive editor layout
-- OpenAI-powered design assistant for presentations, social posts, advertisements, product layouts and infographics
+- Gemini-powered design assistant for presentations, social posts, advertisements, product layouts and infographics
 - Structured DeckSpec output with editable text, shapes, lines, image placeholders and layout elements
 - Create-from-prompt and refine-current-design modes with server-side API key handling and schema validation
 
@@ -34,7 +34,7 @@ An AI-assisted presentation workspace built around conversational creation and a
 - CSS design system
 - Lucide icons
 - npm workspaces
-- OpenAI JavaScript SDK and Responses API
+- Google Gemini API (server-side REST integration)
 - Zod validation and structured JSON Schema outputs
 
 ## Run locally
@@ -80,13 +80,13 @@ Do not commit API keys, tokens, passwords or production secrets. Keep local envi
 - The asset library includes Google Material Symbols Outlined (Google Fonts Icons) alongside editable character/illustration assets.
 - Text, product/object and slide entrance animations remain separate preview systems powered by Motion and the Fabric canvas animation engine. Slide numbering is derived from the active slide order and shown on the canvas and thumbnails.
 
-## OpenAI setup
+## Gemini setup
 
 1. Copy `apps/web/.env.example` to `apps/web/.env.local` (Next.js loads environment files from the web app directory).
-2. Set `OPENAI_API_KEY` to an API key from your OpenAI Platform project.
-3. Optionally set `OPENAI_MODEL`; the default is `gpt-5.5`.
+2. Set `GEMINI_API_KEY` to an API key from Google AI Studio.
+3. Optionally set `GEMINI_MODEL`; the default is `gemini-3.8-flash`.
 4. Restart the Next.js development server and open `/studio`.
 
-The browser calls only `/api/ai/design`. The OpenAI key is read by the Node.js route from the server environment and is never returned to the client. The route validates requests, rate-limits each IP in-process, requests strict Structured Outputs, and validates the result against the shared Zod DeckSpec before returning it. See [AI design engine](docs/ai-design-engine.md).
+The browser calls only `/api/ai/design`. The Gemini key is read by the Node.js route from the server environment and is never returned to the client. The route validates requests, rate-limits each IP in-process, requests JSON structured output, and validates the result against the shared Zod DeckSpec before returning it. See [AI design engine](docs/ai-design-engine.md).
 
 The current MVP generates editable text and vector shapes. Image areas are editable placeholders; direct AI image generation, authentication, persistent project storage, durable usage quotas and export are future increments. The in-memory IP limit is a development safeguard, not a substitute for production distributed rate limiting and user authentication.
