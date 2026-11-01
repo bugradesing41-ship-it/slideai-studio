@@ -96,7 +96,7 @@ export default function DesignCanvas({
       };
       const selection = () => {
         const active = canvas.getActiveObject();
-        const typography = active && "fontFamily" in active ? { fontFamily:active.fontFamily as string, fontSize:active.fontSize as number, fontWeight:Number(active.fontWeight ?? 400) } : undefined;
+        const typography = active && "fontFamily" in active ? { fontFamily:String(active.get("fontFamily") ?? ""), fontSize:Number(active.get("fontSize") ?? 0), fontWeight:Number(active.get("fontWeight") ?? 400) } : undefined;
         latestRef.current.onSelectionChange(Boolean(active), active?.type ?? "", typography);
         if (active && latestRef.current.cornerRadius > 0) {
           void import("fabric").then(({ Rect }) => {
