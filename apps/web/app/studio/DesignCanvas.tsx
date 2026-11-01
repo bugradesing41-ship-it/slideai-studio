@@ -40,7 +40,7 @@ type Props = {
   opacity: number;
   initialData?: string;
   onChange: (json: string) => void;
-  onSelectionChange: (selected: boolean, objectType?: string) => void;
+  onSelectionChange: (selected: boolean, objectType?: string, typography?: {fontFamily?:string;fontSize?:number;fontWeight?:number}) => void;
   onTextChange: (name: string, value: string) => void;
   command: CanvasCommand;
   assetCommand: AssetCommand;
@@ -96,7 +96,8 @@ export default function DesignCanvas({
       };
       const selection = () => {
         const active = canvas.getActiveObject();
-        latestRef.current.onSelectionChange(Boolean(active), active?.type ?? "");
+        const typography = active && "fontFamily" in active ? { fontFamily:active.fontFamily as string, fontSize:active.fontSize as number, fontWeight:Number(active.fontWeight ?? 400) } : undefined;
+        latestRef.current.onSelectionChange(Boolean(active), active?.type ?? "", typography);
         if (active && latestRef.current.cornerRadius > 0) {
           void import("fabric").then(({ Rect }) => {
             if (!canvasRef.current || canvas.getActiveObject() !== active) return;
@@ -478,7 +479,7 @@ export default function DesignCanvas({
       const items = [...history.items.slice(0,history.index+1),json].slice(-60);
       historyRef.current = {items,index:items.length-1};
       latestRef.current.onHistoryChange(items.length>1,false);
-      latestRef.current.onSelectionChange(true, "textbox");
+      latestRef.current.onSelectionChange(true, "textbox", {fontFamily:latestRef.current.fontFamily,fontSize:latestRef.current.fontSize,fontWeight:latestRef.current.fontWeight});
     });
   }, [assetCommand.token]);
 
