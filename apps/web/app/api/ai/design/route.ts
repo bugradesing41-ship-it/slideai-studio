@@ -21,12 +21,12 @@ const elementSchema = {
     id: { type: "string" },
     type: { type: "string", enum: ["text", "rect", "ellipse", "line", "triangle", "image-placeholder"] },
     role: { type: "string", enum: ["title", "eyebrow", "body", "label", "decorative"] },
-    x: { type: "number" }, y: { type: "number" },
-    width: { type: "number" }, height: { type: "number" },
+    x: { type: "number", minimum: 0, maximum: 1280 }, y: { type: "number", minimum: 0, maximum: 720 },
+    width: { type: "number", minimum: 1, maximum: 1280 }, height: { type: "number", minimum: 1, maximum: 720 },
     text: { type: "string" }, fill: { type: "string" }, stroke: { type: "string" },
-    fontFamily: { type: "string" }, fontSize: { type: "number" }, fontWeight: { type: "integer" },
+    fontFamily: { type: "string" }, fontSize: { type: "number", minimum: 8, maximum: 180 }, fontWeight: { type: "integer", minimum: 100, maximum: 900 },
     textAlign: { type: "string", enum: ["left", "center", "right"] },
-    opacity: { type: "number" },
+    opacity: { type: "number", minimum: 0, maximum: 1 },
   },
   required: ["id", "type", "role", "x", "y", "width", "height", "text", "fill", "stroke", "fontFamily", "fontSize", "fontWeight", "textAlign", "opacity"],
   additionalProperties: false,
@@ -98,7 +98,7 @@ When refining an existing deck, preserve its topic, useful content, language and
 `;
 
 export async function POST(request: Request) {
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const ip = request.headers.get("x-real-ip") || request.headers.get("x-forwarded-for")?.split(",").at(-1)?.trim() || "unknown";
   if (!allowRequest(ip)) {
     return NextResponse.json({ error: "Çok fazla tasarım isteği gönderildi. Bir dakika sonra tekrar dene." }, { status: 429 });
   }
