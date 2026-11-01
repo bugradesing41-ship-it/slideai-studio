@@ -42,7 +42,10 @@ The current canvas implementation includes:
 - Freehand pencil drawing
 - Drag-to-size rectangle, ellipse, triangle, line and arrow tools
 - Star, diamond, pentagon, hexagon, heart and speech-bubble shapes
-- Editable text objects and a curated font selector
+- Editable text objects, 16 locally bundled font families and font-load synchronization before Fabric canvas redraw
+- Image insertion from local PNG, JPG, WEBP, GIF and SVG files, with a 12 MB per-file limit
+- Separate 25-preset text and object animation collections, plus selected-object animation preview
+- Separate 25-preset typography and visual-item effect collections
 - Fill, stroke, stroke width, opacity and soft shadow controls
 - Quick visual presets: Violet, Glass, Neon, Outline and Sunset
 - Object duplicate/delete/front/back actions
