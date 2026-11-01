@@ -304,7 +304,6 @@ export default function DesignCanvas({
     if (action.startsWith("effect:")) {
       const [,kind,preset] = action.split(":");
       const index = preset.split("-")[0];
-      const { Shadow } = requireFabricEffects;
       void import("fabric").then(({ Shadow: FabricShadow }) => {
         if (!canvasRef.current) return;
         const shadowMap: Record<string,{color:string;blur:number;offsetX:number;offsetY:number}> = {
