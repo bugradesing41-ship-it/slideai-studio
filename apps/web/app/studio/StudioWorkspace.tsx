@@ -16,6 +16,12 @@ import {
 
 type Slide = SlideSpec;
 
+const TEXT_ANIMATIONS=["Fade in","Typewriter","Rise up","Slide from left","Slide from right","Zoom in","Pop","Bounce","Elastic","Soft focus","Flip X","Flip Y","Rotate in","Float up","Drop in","Stretch","Swing","Wave","Pulse","Glitch","Tracking reveal","Slide reveal","Focus in","Overshoot","Spring settle"];
+const ITEM_ANIMATIONS=["Fade","Scale in","Pop","Bounce","Elastic","Spin in","Flip horizontal","Flip vertical","Slide left","Slide right","Slide up","Slide down","Float","Drift","Swing","Wobble","Pulse","Heartbeat","Shake","Jelly","Rubber band","Zoom through","Arc in","Drop","Spring"];
+const TEXT_EFFECTS=["Soft shadow","Deep shadow","Neon glow","Violet glow","Glass highlight","Frosted highlight","Outline","Double outline","Engraved","Wide tracking","Bold impact","Soft highlight","Glass text","Retro offset","3D depth","Metallic shadow","Underline accent","Overline accent","Pill highlight","Blur shadow","Long shadow","Warm glow","Cool glow","High contrast","Editorial italic"];
+const ITEM_EFFECTS=["Soft shadow","Deep shadow","Neon glow","Violet glow","Glass","Frosted glass","Outline","Double border","Dashed border","Dotted border","Inner depth","Emboss","3D lift","Long shadow","Soft blur shadow","Glow edge","Duotone tint","High contrast","Vintage fade","Pastel tint","Vivid color","Monochrome","Holographic feel","Sticker edge","Floating"];
+
+
 export default function StudioWorkspace() {
   const [slides, setSlides] = useState<Slide[]>(sampleDeck.slides);
   const [activeId, setActiveId] = useState(1);
@@ -285,6 +291,21 @@ export default function StudioWorkspace() {
               <option>Inter</option><option>DM Sans</option><option>Manrope</option><option>Space Grotesk</option><option>Playfair Display</option><option>Montserrat</option><option>Lora</option><option>Outfit</option><option>Poppins</option><option>Nunito Sans</option><option>Roboto</option><option>Oswald</option><option>Merriweather</option><option>Archivo</option><option>Bebas Neue</option><option>Caveat</option>
             </select>
             <label className="range-label">Font size <span>{fontSize}px</span></label><input className="range-control" type="range" min="12" max="100" value={fontSize} onChange={(event) => setFontSize(Number(event.target.value))}/>
+          </div>
+          <div className="inspector-section motion-library-section">
+            <div className="inspector-label">TEXT ANIMATIONS <span>25 PRESETS</span></div>
+            <select className="inspector-input" value={textAnimation} onChange={event=>setTextAnimation(event.target.value)}>{TEXT_ANIMATIONS.map(name=><option key={name}>{name}</option>)}</select>
+            <button className="quick-action" onClick={()=>issueCanvasCommand("animation:text:"+textAnimation)} disabled={!hasSelection}>Apply to selected text</button>
+            <div className="inspector-label preset-label">ITEM ANIMATIONS <span>25 PRESETS</span></div>
+            <select className="inspector-input" value={itemAnimation} onChange={event=>setItemAnimation(event.target.value)}>{ITEM_ANIMATIONS.map(name=><option key={name}>{name}</option>)}</select>
+            <button className="quick-action" onClick={()=>issueCanvasCommand("animation:item:"+itemAnimation)} disabled={!hasSelection}>Apply to selected item</button>
+            <button className="quick-action" onClick={()=>issueCanvasCommand("preview-animation")} disabled={!hasSelection}><WandSparkles size={14}/> Preview selected animation</button>
+            <div className="inspector-label preset-label">TEXT EFFECTS <span>25 PRESETS</span></div>
+            <select className="inspector-input" value={textEffect} onChange={event=>setTextEffect(event.target.value)}>{TEXT_EFFECTS.map(name=><option key={name}>{name}</option>)}</select>
+            <button className="quick-action" onClick={()=>issueCanvasCommand("effect:text:"+TEXT_EFFECTS.indexOf(textEffect)+"-"+textEffect.toLowerCase().replace(/[^a-z0-9]+/g,"-"))} disabled={!hasSelection}>Apply text effect</button>
+            <div className="inspector-label preset-label">ITEM EFFECTS <span>25 PRESETS</span></div>
+            <select className="inspector-input" value={itemEffect} onChange={event=>setItemEffect(event.target.value)}>{ITEM_EFFECTS.map(name=><option key={name}>{name}</option>)}</select>
+            <button className="quick-action" onClick={()=>issueCanvasCommand("effect:item:"+ITEM_EFFECTS.indexOf(itemEffect)+"-"+itemEffect.toLowerCase().replace(/[^a-z0-9]+/g,"-"))} disabled={!hasSelection}>Apply item effect</button>
           </div>
           <div className="inspector-section">
             <div className="inspector-label">SLIDE TRANSITION</div>
