@@ -18,10 +18,11 @@ declare module "fabric" {
 
 type Tool = "select" | "draw" | "rect" | "circle" | "triangle" | "line" | "arrow" | "star" | "diamond" | "hexagon" | "pentagon" | "heart" | "speech" | "text";
 type CanvasCommand = { action: string; token: number };
-type AssetCommand = { symbol: string; label: string; token: number };
+type AssetCommand = { symbol: string; label: string; imageUrl?: string; token: number };
 type ImageCommand = { dataUrl: string; name: string; token: number };
 type Props = {
   slideId: number;
+  slideNumber: string;
   title: string;
   eyebrow: string;
   body: string;
@@ -50,15 +51,15 @@ type Props = {
 export type { Tool };
 
 export default function DesignCanvas({
-  slideId, title, eyebrow, body, theme, tool, fill, stroke, strokeWidth,
+  slideId, slideNumber, title, eyebrow, body, theme, tool, fill, stroke, strokeWidth,
   fontFamily, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange
 }: Props) {
   const elementRef = useRef<HTMLCanvasElement>(null);
   const canvasRef = useRef<any>(null);
   const historyRef = useRef<{ items: string[]; index: number }>({ items: [], index: -1 });
   const restoringRef = useRef(false);
-  const latestRef = useRef({ title, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange });
-  latestRef.current = { title, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange };
+  const latestRef = useRef({ title, slideNumber, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange });
+  latestRef.current = { title, slideNumber, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange };
 
   useEffect(() => {
     let disposed = false;
@@ -69,6 +70,7 @@ export default function DesignCanvas({
       const fabric = await import("fabric");
       fabric.FabricObject.customProperties = ["name", "animationPreset"];
       if (disposed || !elementRef.current) return;
+      await document.fonts.load(`${latestRef.current.fontWeight} ${latestRef.current.fontSize}px "${latestRef.current.fontFamily}"`, "SlideAI Studio");
       await document.fonts.ready;
       const canvas = new fabric.Canvas(elementRef.current, {
         width: 1280,
@@ -111,6 +113,9 @@ export default function DesignCanvas({
         const titleObject = canvas.getObjects().find((object: any) => object.name === "slide-title");
         const eyebrowObject = canvas.getObjects().find((object: any) => object.name === "slide-eyebrow");
         const bodyObject = canvas.getObjects().find((object: any) => object.name === "slide-body");
+        let numberObject = canvas.getObjects().find((object: any) => object.name === "slide-number");
+        if (!numberObject) { numberObject = new fabric.Textbox(current.slideNumber, { name:"slide-number", left:1050, top:650, width:150, fontSize:14, fontFamily:"Inter Variable", fontWeight:600, textAlign:"right", fill:current.theme === "light" ? "#777287" : "#aaa3c4", selectable:false, evented:false }); canvas.add(numberObject); }
+        numberObject.set("text", current.slideNumber);
         if (titleObject) titleObject.set("text", current.title);
         if (eyebrowObject) eyebrowObject.set("text", current.eyebrow);
         if (bodyObject) bodyObject.set("text", current.body);
@@ -149,9 +154,10 @@ export default function DesignCanvas({
           }),
           new fabric.Textbox("THINK CLEARLY. CREATE BOLDLY.", {
             name: "slide-footer", left: 84, top: 650, width: 700, fontSize: 12,
-            fontFamily: "Inter", fontWeight: "bold", charSpacing: 140,
+            fontFamily: "Inter Variable", fontWeight: 600, charSpacing: 140,
             fill: light ? "#777287" : "#aaa3c4", selectable: false, evented: false,
-          })
+          }),
+          new fabric.Textbox(latestRef.current.slideNumber, { name:"slide-number", left:1050, top:650, width:150, fontSize:14, fontFamily:"Inter Variable", fontWeight:600, textAlign:"right", fill:light ? "#777287" : "#aaa3c4", selectable:false, evented:false })
         );
       } else {
         syncText();
@@ -395,28 +401,71 @@ export default function DesignCanvas({
   }, [command.token, command.action]);
 
   useEffect(() => {
-    const canvas=canvasRef.current;
+    const canvas = canvasRef.current;
     if (!canvas || !command.action.startsWith("preview-animation:")) return;
-    const target=canvas.getActiveObject(); if(!target)return;
-    const original={left:target.left??0,top:target.top??0,scaleX:target.scaleX??1,scaleY:target.scaleY??1,angle:target.angle??0,opacity:target.opacity??1,text:target.text,charSpacing:target.charSpacing??0};
-    const parts=command.action.split(":");const name=parts.length>=3?parts.slice(2).join(":"):(target.animationPreset??"item:Fade").split(":")[1]??"Fade";
-    const map:Record<string,[number,number,number,number,number]>={"Fade in":[0,0,.8,.8,0],"Typewriter":[0,0,1,1,0],"Rise up":[0,-38,1,1,0],"Slide from left":[-90,0,1,1,0],"Slide from right":[90,0,1,1,0],"Zoom in":[0,0,.25,.25,0],"Pop":[0,0,.55,.55,0],"Bounce":[0,-28,.82,.82,0],"Elastic":[0,0,.35,.35,0],"Soft focus":[0,0,1.15,1.15,0],"Flip X":[0,0,1,.05,0],"Flip Y":[0,0,.05,1,0],"Rotate in":[0,0,.7,.7,-24],"Float up":[0,-24,1,1,0],"Drop in":[0,-70,1,1,0],"Stretch":[0,0,1.3,.7,0],"Swing":[0,0,1,1,-14],"Wave":[0,-10,1,1,7],"Pulse":[0,0,1.2,1.2,0],"Glitch":[8,0,1,1,3],"Tracking reveal":[0,0,.9,.9,0],"Slide reveal":[-18,0,1,1,0],"Focus in":[0,0,1.25,1.25,0],"Overshoot":[0,0,1.35,1.35,0],"Spring settle":[0,-18,.8,.8,0],"Fade":[0,0,1,1,0],"Scale in":[0,0,.25,.25,0],"Spin in":[0,0,.7,.7,-180],"Flip horizontal":[0,0,1,.05,0],"Flip vertical":[0,0,.05,1,0],"Slide left":[-90,0,1,1,0],"Slide right":[90,0,1,1,0],"Slide up":[0,-70,1,1,0],"Slide down":[0,70,1,1,0],"Float":[0,-20,1,1,0],"Drift":[18,-12,1,1,5],"Wobble":[0,0,1,1,10],"Heartbeat":[0,0,1.18,1.18,0],"Shake":[5,0,1,1,4],"Jelly":[0,0,1.22,.82,0],"Rubber band":[0,0,1.25,.78,0],"Zoom through":[0,0,1.8,1.8,0],"Arc in":[-50,-40,.7,.7,-18],"Drop":[0,-55,1,1,0],"Spring":[0,0,.65,.65,0]};
-    const [dx,dy,sx,sy,angle]=map[name]??[0,0,.7,.7,0];const start=performance.now();let frame=0;
-    const tick=(now:number)=>{const t=Math.min(1,(now-start)/850),e=1-Math.pow(1-t,3);const update:any={left:original.left+dx*(1-e),top:original.top+dy*(1-e),scaleX:original.scaleX*(sx+(1-sx)*e),scaleY:original.scaleY*(sy+(1-sy)*e),angle:original.angle+angle*(1-e),opacity:original.opacity*(name==="Fade"||name==="Fade in"?e:1)};if(name==="Typewriter"&&typeof original.text==="string")update.text=original.text.slice(0,Math.ceil(original.text.length*e));if(name==="Tracking reveal")update.charSpacing=(original.charSpacing??0)+420*(1-e);if(name==="Glitch"&&t<.45)update.left=original.left+(Math.random()-.5)*22;target.set(update);canvas.requestRenderAll();if(t<1)frame=requestAnimationFrame(tick);else{target.set(original);canvas.requestRenderAll();}};
-    frame=requestAnimationFrame(tick);return()=>{cancelAnimationFrame(frame);target.set(original);canvas.requestRenderAll();};
+    const target = canvas.getActiveObject();
+    if (!target) return;
+    const original = { left:target.left??0, top:target.top??0, scaleX:target.scaleX??1, scaleY:target.scaleY??1, angle:target.angle??0, opacity:target.opacity??1, text:target.text, charSpacing:target.charSpacing??0 };
+    const name = command.action.split(":").slice(2).join(":");
+    const F = (at:number, x=0, y=0, sx=1, sy=1, angle=0, opacity=1, charSpacing=0, textProgress=1) => ({at,x,y,sx,sy,angle,opacity,charSpacing,textProgress});
+    const frames:Record<string,ReturnType<typeof F>[]> = {
+      "Fade in":[F(0,0,0,1,1,0,0),F(1)], "Typewriter":[F(0,0,0,1,1,0,1,0,0),F(1,0,0,1,1,0,1,0,1)],
+      "Rise up":[F(0,0,90),F(1)], "Slide from left":[F(0,-260),F(1)], "Slide from right":[F(0,260),F(1)], "Zoom in":[F(0,0,0,.08,.08,0,0),F(1)],
+      "Pop":[F(0,0,0,.35,.35,0,0),F(.72,0,0,1.18,1.18),F(1)], "Bounce":[F(0,0,-100),F(.62,0,12),F(.82,0,-7),F(1)], "Elastic":[F(0,0,0,.18,.18),F(.55,0,0,1.24,1.24),F(.78,0,0,.9,.9),F(1)],
+      "Soft focus":[F(0,0,0,1.18,1.18,0,0),F(1)], "Flip X":[F(0,0,0,.02,1),F(.55,0,0,1.12,1),F(1)], "Flip Y":[F(0,0,0,1,.02),F(.55,0,0,1,1.12),F(1)],
+      "Rotate in":[F(0,0,0,.65,.65,-100,0),F(1)], "Float up":[F(0,0,50),F(1)], "Drop in":[F(0,0,-180),F(.72,0,12),F(1)], "Stretch":[F(0,0,0,.45,1.55),F(.6,0,0,1.18,.86),F(1)],
+      "Swing":[F(0,0,0,1,1,-28),F(.3,0,0,1,1,18),F(.55,0,0,1,1,-12),F(.78,0,0,1,1,7),F(1)], "Wave":[F(0,0,0,1,1,-14),F(.25,0,-8,1,1,14),F(.5,0,5,1,1,-10),F(.75,0,-3,1,1,7),F(1)],
+      "Pulse":[F(0,0,0,.82,.82),F(.5,0,0,1.2,1.2),F(1)], "Glitch":[F(0,-14,0,1,1,-4),F(.16,12,-2,1,1,5),F(.32,-8,1,1,1,-3),F(.48,6,0,1,1,2),F(1)], "Tracking reveal":[F(0,0,0,1,1,0,1,520),F(1)],
+      "Slide reveal":[F(0,-180,0,.92,1),F(1)], "Focus in":[F(0,0,0,1.65,1.65,0,0),F(1)], "Overshoot":[F(0,0,0,.35,.35),F(.7,0,0,1.28,1.28),F(1)], "Spring settle":[F(0,0,-65,.82,.82),F(.65,0,14,1.08,1.08),F(.84,0,-5,.98,.98),F(1)],
+      "Fade":[F(0,0,0,1,1,0,0),F(1)], "Scale in":[F(0,0,0,.12,.12,0,0),F(1)], "Spin in":[F(0,0,0,.45,.45,-220,0),F(1)], "Flip horizontal":[F(0,0,0,.015,1,0,0),F(1)], "Flip vertical":[F(0,0,0,1,.015,0,0),F(1)],
+      "Slide left":[F(0,-240),F(1)], "Slide right":[F(0,240),F(1)], "Slide up":[F(0,0,150),F(1)], "Slide down":[F(0,-150),F(1)], "Float":[F(0,0,36),F(1)], "Drift":[F(0,-110,32,1,1,-4),F(1)],
+      "Wobble":[F(0,0,0,1,1,-18),F(.2,0,0,1,1,16),F(.4,0,0,1,1,-13),F(.6,0,0,1,1,10),F(.8,0,0,1,1,-5),F(1)], "Heartbeat":[F(0,0,0,.85,.85),F(.22,0,0,1.24,1.24),F(.42,0,0,.92,.92),F(.64,0,0,1.18,1.18),F(1)], "Shake":[F(0,-18),F(.2,16),F(.4,-13),F(.6,10),F(.8,-5),F(1)],
+      "Jelly":[F(0,0,0,.72,1.28),F(.25,0,0,1.22,.78),F(.5,0,0,.9,1.1),F(.75,0,0,1.06,.94),F(1)], "Rubber band":[F(0,0,0,1.35,.65),F(.28,0,0,.72,1.28),F(.55,0,0,1.12,.9),F(.78,0,0,.95,1.05),F(1)], "Zoom through":[F(0,0,0,.04,.04,0,0),F(.65,0,0,1.35,1.35),F(1)], "Arc in":[F(0,-170,110,.72,.72,-35),F(.6,-18,8,1.05,1.05,5),F(1)], "Drop":[F(0,0,-220,.9,.9),F(.68,0,14,1.04,1.04),F(1)], "Spring":[F(0,0,-75,.72,.72),F(.62,0,16,1.1,1.1),F(.82,0,-6,.96,.96),F(1)]
+    };
+    const sequence = frames[name] ?? [F(0,0,0,.5,.5,0,0),F(1)];
+    const start = performance.now(); const duration = name === "Typewriter" ? 1350 : 1050; let frameId = 0;
+    const interpolate = (a:number,b:number,t:number) => a + (b-a)*t;
+    const tick = (now:number) => {
+      const progress = Math.min(1,(now-start)/duration);
+      let next = sequence.findIndex((item,index)=>index<sequence.length-1 && progress>=item.at && progress<=sequence[index+1].at);
+      if (next < 0) next = sequence.length-2;
+      const from=sequence[next],to=sequence[next+1],local=Math.max(0,Math.min(1,(progress-from.at)/Math.max(.0001,to.at-from.at)));
+      const eased=local*local*(3-2*local);
+      const value=(key:"x"|"y"|"sx"|"sy"|"angle"|"opacity"|"charSpacing"|"textProgress",fallback:number)=>interpolate(from[key]??fallback,to[key]??fallback,eased);
+      const update:any={left:original.left+value("x",0),top:original.top+value("y",0),scaleX:original.scaleX*value("sx",1),scaleY:original.scaleY*value("sy",1),angle:original.angle+value("angle",0),opacity:original.opacity*value("opacity",1)};
+      if (typeof original.text === "string" && name === "Typewriter") update.text=original.text.slice(0,Math.ceil(original.text.length*value("textProgress",1)));
+      if (name === "Tracking reveal") update.charSpacing=value("charSpacing",original.charSpacing??0);
+      target.set(update); target.setCoords(); canvas.requestRenderAll();
+      if (progress < 1) frameId=requestAnimationFrame(tick); else { target.set(original); target.setCoords(); canvas.requestRenderAll(); }
+    };
+    frameId=requestAnimationFrame(tick);
+    return () => { cancelAnimationFrame(frameId); target.set(original); target.setCoords(); canvas.requestRenderAll(); };
   }, [command.token, command.action]);
 
   useEffect(() => {
     const canvas=canvasRef.current;if(!canvas||imageCommand.token===0)return;let cancelled=false;
-    void import("fabric").then(async({FabricImage})=>{if(cancelled||!canvasRef.current)return;try{const image=await FabricImage.fromURL(imageCommand.dataUrl);if(cancelled||!canvasRef.current)return;const scale=Math.min(760/(image.width||1),560/(image.height||1),1);image.set({left:260,top:80,scaleX:scale,scaleY:scale,name:imageCommand.name||"Imported image"});canvas.add(image);canvas.setActiveObject(image);canvas.requestRenderAll();const json=JSON.stringify(canvas.toObject(["name","animationPreset"]));latestRef.current.onChange(json);const h=historyRef.current,items=[...h.items.slice(0,h.index+1),json].slice(-60);historyRef.current={items,index:items.length-1};latestRef.current.onHistoryChange(items.length>1,false);latestRef.current.onSelectionChange(true, "image");}catch(error){console.error("Could not add image",error);}});
+    void import("fabric").then(async({FabricImage})=>{if(cancelled||!canvasRef.current)return;try{const image=await FabricImage.fromURL(imageCommand.dataUrl,{crossOrigin:"anonymous"});if(cancelled||!canvasRef.current)return;const scale=Math.min(760/(image.width||1),560/(image.height||1),1);image.set({left:260,top:80,scaleX:scale,scaleY:scale,name:imageCommand.name||"Imported image"});canvas.add(image);canvas.setActiveObject(image);canvas.requestRenderAll();const json=JSON.stringify(canvas.toObject(["name","animationPreset"]));latestRef.current.onChange(json);const h=historyRef.current,items=[...h.items.slice(0,h.index+1),json].slice(-60);historyRef.current={items,index:items.length-1};latestRef.current.onHistoryChange(items.length>1,false);latestRef.current.onSelectionChange(true, "image");}catch(error){console.error("Could not add image",error);}});
     return()=>{cancelled=true;};
   },[imageCommand.token]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || assetCommand.token === 0) return;
-    void import("fabric").then(({ Textbox }) => {
+    void import("fabric").then(async({ Textbox, FabricImage }) => {
       if (!canvasRef.current) return;
+      if (assetCommand.imageUrl) {
+        try {
+          const image = await FabricImage.fromURL(assetCommand.imageUrl, { crossOrigin:"anonymous" });
+          if (!canvasRef.current) return;
+          const scale = Math.min(360/(image.width||1), 500/(image.height||1), 1);
+          image.set({ left:790, top:120, scaleX:scale, scaleY:scale, name:assetCommand.label });
+          canvas.add(image); canvas.setActiveObject(image); canvas.requestRenderAll();
+          const json=JSON.stringify(canvas.toObject(["name","animationPreset"])); latestRef.current.onChange(json);
+          const history=historyRef.current,items=[...history.items.slice(0,history.index+1),json].slice(-60); historyRef.current={items,index:items.length-1};
+          latestRef.current.onHistoryChange(items.length>1,false); latestRef.current.onSelectionChange(true,"image");
+        } catch(error) { console.error("Could not load character illustration",error); }
+        return;
+      }
       const sticker = new Textbox(assetCommand.symbol, {
         left: 500, top: 250, width: 190, fontFamily: "Noto Color Emoji, Segoe UI Emoji, Apple Color Emoji, sans-serif",
         fontSize: 112, textAlign: "center", lineHeight: 1, editable: false,
@@ -446,8 +495,8 @@ export default function DesignCanvas({
   }, [tool, stroke, strokeWidth]);
 
   useEffect(() => {
-    const canvas=canvasRef.current;if(!canvas)return;let cancelled=false;const object=canvas.getActiveObject();if(!object||!("fontFamily" in object))return;
-    void(async()=>{try{await document.fonts.load(`${fontWeight} ${fontSize}px "${fontFamily}"`);await document.fonts.ready;if(cancelled||!canvasRef.current)return;object.set({fontFamily,fontSize,fontWeight});object.setCoords();canvas.requestRenderAll();latestRef.current.onChange(JSON.stringify(canvas.toObject(["name","animationPreset"])));}catch(error){console.error("Font load error",fontFamily,error);}})();
+    const canvas=canvasRef.current;if(!canvas)return;let cancelled=false;const object=canvas.getActiveObject();
+    void(async()=>{try{const loaded=await document.fonts.load(`${fontWeight} ${fontSize}px "${fontFamily}"`,"SlideAI Studio Aa 123");await document.fonts.ready;if(cancelled||!canvasRef.current)return;if(!loaded.length && !document.fonts.check(`${fontWeight} ${fontSize}px "${fontFamily}"`))throw new Error(`Font face unavailable: ${fontFamily}`);if(object && "fontFamily" in object){object.set({fontFamily,fontSize,fontWeight});object.setCoords();canvas.requestRenderAll();latestRef.current.onChange(JSON.stringify(canvas.toObject(["name","animationPreset"])));}}catch(error){console.error("Font load error",fontFamily,error);}})();
     return()=>{cancelled=true;};
   },[fontFamily,fontSize,fontWeight]);
 
@@ -498,13 +547,15 @@ export default function DesignCanvas({
     const titleObject = canvas.getObjects().find((object: any) => object.name === "slide-title");
     const eyebrowObject = canvas.getObjects().find((object: any) => object.name === "slide-eyebrow");
     const bodyObject = canvas.getObjects().find((object: any) => object.name === "slide-body");
+    const numberObject = canvas.getObjects().find((object: any) => object.name === "slide-number");
+    if (numberObject) numberObject.set("text", current.slideNumber);
     if (titleObject) titleObject.set("text", current.title);
     if (eyebrowObject) eyebrowObject.set("text", current.eyebrow);
     if (bodyObject) bodyObject.set("text", current.body);
     canvas.backgroundColor = current.backgroundColor;
     canvas.requestRenderAll();
     current.onChange(JSON.stringify(canvas.toObject(["name", "animationPreset"])));
-  }, [title, eyebrow, body, theme, backgroundColor]);
+  }, [title, eyebrow, body, theme, backgroundColor, slideNumber]);
 
   return <div className="design-canvas-shell"><canvas ref={elementRef} /></div>;
 }
