@@ -280,6 +280,7 @@ export default function DesignCanvas({
     const canvas = canvasRef.current;
     if (!canvas || command.token === 0) return;
     const action = command.action;
+    if (action.startsWith("preview-animation:")) return;
     if (action === "undo" || action === "redo") {
       const history = historyRef.current;
       const nextIndex = action === "undo" ? history.index - 1 : history.index + 1;
