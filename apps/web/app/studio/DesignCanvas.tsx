@@ -32,6 +32,7 @@ type Props = {
   stroke: string;
   strokeWidth: number;
   fontFamily: string;
+  fontWeights: number[];
   fontSize: number;
   fontWeight: number;
   cornerRadius: number;
@@ -50,16 +51,18 @@ type Props = {
 
 export type { Tool };
 
-async function loadGoogleFont(family:string, weight:number|string=400, size=32):Promise<boolean> {
+async function loadGoogleFont(family:string, weights:number[], weight:number|string=400, size=32):Promise<boolean> {
   if (!family.trim()) return false;
   const safeFamily=family.trim();
-  const id=`slideai-google-font-${safeFamily.toLowerCase().replace(/[^a-z0-9]+/g,"-")}`;
+  const supportedWeights=weights.length?weights:[400];
+  const id=`slideai-google-font-${safeFamily.toLowerCase().replace(/[^a-z0-9]+/g,"-")}-${supportedWeights.join("-")}`;
   let link=document.getElementById(id) as HTMLLinkElement|null;
   if(!link){
     link=document.createElement("link");link.id=id;link.rel="stylesheet";
-    link.href=`https://fonts.googleapis.com/css2?family=${encodeURIComponent(safeFamily).replace(/%20/g,"+")}&display=swap`;
+    link.href=`https://fonts.googleapis.com/css2?family=${encodeURIComponent(safeFamily).replace(/%20/g,"+")}:wght@${supportedWeights.join(";")}&display=swap`;
+    const ready=new Promise<void>((resolve)=>{link!.addEventListener("load",()=>resolve(),{once:true});link!.addEventListener("error",()=>resolve(),{once:true});window.setTimeout(resolve,4500);});
     document.head.appendChild(link);
-    await new Promise<void>((resolve)=>{link!.addEventListener("load",()=>resolve(),{once:true});link!.addEventListener("error",()=>resolve(),{once:true});window.setTimeout(resolve,4500);});
+    await ready;
   }
   try { const faces=await document.fonts.load(`${weight} ${size}px "${safeFamily}"`,"SlideAI Studio ÇĞİÖŞÜ çğıöşü Aa 123");await document.fonts.ready;return faces.length>0; }
   catch { return false; }
@@ -67,13 +70,13 @@ async function loadGoogleFont(family:string, weight:number|string=400, size=32):
 
 export default function DesignCanvas({
   slideId, slideNumber, title, eyebrow, body, theme, tool, fill, stroke, strokeWidth,
-  fontFamily, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange
+  fontFamily, fontWeights, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange
 }: Props) {
   const elementRef = useRef<HTMLCanvasElement>(null);
   const canvasRef = useRef<any>(null);
   const historyRef = useRef<{ items: string[]; index: number }>({ items: [], index: -1 });
   const restoringRef = useRef(false);
-  const latestRef = useRef({ title, slideNumber, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange });
+  const latestRef = useRef({ title, slideNumber, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontWeights, fontSize, fontWeight, cornerRadius, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange });
   latestRef.current = { title, slideNumber, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange };
 
   useEffect(() => {
@@ -85,7 +88,7 @@ export default function DesignCanvas({
       const fabric = await import("fabric");
       fabric.FabricObject.customProperties = ["name", "animationPreset"];
       if (disposed || !elementRef.current) return;
-      await loadGoogleFont(latestRef.current.fontFamily, latestRef.current.fontWeight, latestRef.current.fontSize);
+      await loadGoogleFont(latestRef.current.fontFamily, latestRef.current.fontWeights, latestRef.current.fontWeight, latestRef.current.fontSize);
       const canvas = new fabric.Canvas(elementRef.current, {
         width: 1280,
         height: 720,
@@ -485,7 +488,7 @@ export default function DesignCanvas({
       }
       if (assetCommand.fontFamily === "Material Symbols Outlined") {
         const link = document.getElementById("slideai-material-symbols") as HTMLLinkElement | null;
-        if (!link) { const stylesheet=document.createElement("link"); stylesheet.id="slideai-material-symbols"; stylesheet.rel="stylesheet"; stylesheet.href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"; document.head.appendChild(stylesheet); await new Promise<void>((resolve)=>{stylesheet.onload=()=>resolve();stylesheet.onerror=()=>resolve();}); }
+        if (!link) { const stylesheet=document.createElement("link"); stylesheet.id="slideai-material-symbols"; stylesheet.rel="stylesheet"; stylesheet.href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"; const ready=new Promise<void>((resolve)=>{stylesheet.onload=()=>resolve();stylesheet.onerror=()=>resolve();}); document.head.appendChild(stylesheet); await ready; }
         await document.fonts.load(`112px "Material Symbols Outlined"`,assetCommand.symbol);
       }
       const sticker = new Textbox(assetCommand.symbol, {
@@ -518,9 +521,9 @@ export default function DesignCanvas({
 
   useEffect(() => {
     const canvas=canvasRef.current;if(!canvas)return;let cancelled=false;const object=canvas.getActiveObject();
-    void(async()=>{const loaded=await loadGoogleFont(fontFamily,fontWeight,fontSize);if(cancelled||!canvasRef.current)return;if(!loaded)console.warn(`Google Font "${fontFamily}" bulunamadı; tarayıcı yedek font kullanacak.`);if(object && "fontFamily" in object){object.set({fontFamily,fontSize,fontWeight});object.setCoords();canvas.requestRenderAll();latestRef.current.onChange(JSON.stringify(canvas.toObject(["name","animationPreset"])));}})();
+    void(async()=>{const loaded=await loadGoogleFont(fontFamily,fontWeights,fontWeight,fontSize);if(cancelled||!canvasRef.current)return;if(!loaded)console.warn(`Google Font "${fontFamily}" bulunamadı; tarayıcı yedek font kullanacak.`);if(object && "fontFamily" in object){object.set({fontFamily,fontSize,fontWeight});object.setCoords();canvas.requestRenderAll();latestRef.current.onChange(JSON.stringify(canvas.toObject(["name","animationPreset"])));}})();
     return()=>{cancelled=true;};
-  },[fontFamily,fontSize,fontWeight]);
+  },[fontFamily,fontWeights,fontSize,fontWeight]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
