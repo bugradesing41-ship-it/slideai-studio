@@ -241,6 +241,7 @@ export default function StudioWorkspace() {
       const nextDeck = validation.data;
       setSlides(nextDeck.slides);
       setTitle(nextDeck.title);
+      setDesignType(nextDeck.designType);
       setTheme(nextDeck.theme === "blue" ? "blue" : nextDeck.theme === "light" ? "light" : "violet");
       setCanvasDataBySlide({});
       setSlideBackgrounds({});
