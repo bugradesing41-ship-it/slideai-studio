@@ -4,7 +4,6 @@ import "@fontsource-variable/dm-sans";
 import "@fontsource-variable/manrope";
 import "@fontsource-variable/space-grotesk";
 import "@fontsource-variable/outfit";
-import "@fontsource-variable/poppins";
 import "@fontsource-variable/roboto";
 import "@fontsource-variable/nunito-sans";
 import "@fontsource/inter/400.css";
