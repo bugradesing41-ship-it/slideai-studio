@@ -10,7 +10,7 @@ import {
   ArrowLeft, ArrowUpRight, Check, ChevronDown, ChevronDown as MoveDown, ChevronUp as MoveUp, Copy, Download, ImagePlus,
   LayoutTemplate, MoreHorizontal, Plus, Send, Settings2,
   Sparkles, Trash2, Type, WandSparkles, ZoomIn, ZoomOut, MousePointer2,
-  Pencil, Square, Circle as CircleIcon, Triangle as TriangleIcon, Minus,
+  Pencil, Square, Play, Users, Circle as CircleIcon, Triangle as TriangleIcon, Minus,
   MoveUpRight, Star, Undo2, Redo2, Layers3, Diamond, Hexagon, Pentagon, Heart, MessageSquareText
 } from "lucide-react";
 
@@ -211,9 +211,9 @@ export default function StudioWorkspace() {
               <button className="tool-button" onClick={() => issueCanvasCommand("undo")} disabled={!canUndo} title="Undo"><Undo2 size={15}/></button>
               <button className="tool-button" onClick={() => issueCanvasCommand("redo")} disabled={!canRedo} title="Redo"><Redo2 size={15}/></button>
               <button className="tool-button asset-launch-button" onClick={() => {setAssetLibraryCategory("All assets");setAssetLibraryOpen(true);}} title="Open asset library"><ImagePlus size={15}/><span>Assets</span></button>
-              <button className="tool-button" onClick={() => {setAssetLibraryCategory("Characters");setAssetLibraryOpen(true);}} title="Add a character"><span aria-hidden="true">🧑‍🎨</span><span>Characters</span></button>
-              <button className="tool-button" onClick={() => {setIsPlaying(true);setActiveId(slides[0].id);}} title="Play all slides"><span aria-hidden="true">▶</span><span>Play all</span></button>
-              {isPlaying && <button className="tool-button active-tool" onClick={() => setIsPlaying(false)} title="Stop presentation preview">■<span>Stop</span></button>}
+              <button className="tool-button" onClick={() => {setAssetLibraryCategory("Characters");setAssetLibraryOpen(true);}} title="Add a character"><Users size={15}/><span>Characters</span></button>
+              <button className="tool-button" onClick={() => {setIsPlaying(true);setActiveId(slides[0].id);}} title="Play all slides"><Play size={15}/><span>Play all</span></button>
+              {isPlaying && <button className="tool-button active-tool" onClick={() => setIsPlaying(false)} title="Stop presentation preview"><Square size={14}/><span>Stop</span></button>}
               <button className="tool-button" onClick={() => imageInputRef.current?.click()} title="Add image from computer"><ImagePlus size={15}/><span>Image</span></button>
               <input ref={imageInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" hidden onChange={(event) => { const file=event.target.files?.[0]; if(!file)return; if(file.size>12*1024*1024){window.alert("Please choose an image smaller than 12 MB.");event.target.value="";return;} const reader=new FileReader(); reader.onload=()=>{if(typeof reader.result==="string")setImageCommand(current=>({dataUrl:reader.result as string,name:file.name,token:current.token+1}));}; reader.readAsDataURL(file); event.target.value=""; }} />
               <span className="toolbar-divider"/>
