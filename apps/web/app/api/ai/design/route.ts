@@ -1,4 +1,3 @@
-import OpenAI from "openai";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { deckSpecSchema, designTypeSchema } from "@slideai/shared";
@@ -103,9 +102,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Çok fazla tasarım isteği gönderildi. Bir dakika sonra tekrar dene." }, { status: 429 });
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return NextResponse.json({ error: "OpenAI API anahtarı sunucuda tanımlı değil. Proje köküne .env.local ekleyip OPENAI_API_KEY değerini tanımla." }, { status: 503 });
+    return NextResponse.json({ error: "Gemini API anahtarı sunucuda tanımlı değil. apps/web/.env.local dosyasına GEMINI_API_KEY değerini ekle." }, { status: 503 });
   }
 
   try {
@@ -126,25 +125,45 @@ export async function POST(request: Request) {
       body.mode === "refine" && body.activeSlideId ? `The user currently has slide id ${body.activeSlideId} selected. Prioritize that slide unless the prompt asks for a deck-wide change.` : "",
     ].filter(Boolean).join("\n\n");
 
-    const openai = new OpenAI({ apiKey, timeout: 85_000, maxRetries: 1 });
-    const response = await openai.responses.create({
-      model: process.env.OPENAI_MODEL || "gpt-5.5",
-      store: false,
-      max_output_tokens: 16000,
-      instructions: systemInstructions,
-      input: designBrief,
-      text: {
-        format: {
-          type: "json_schema",
-          name: "slideai_editable_design",
-          strict: true,
-          schema: outputSchema as never,
+    const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+    const geminiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey,
         },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemInstructions }] },
+          contents: [{ role: "user", parts: [{ text: designBrief }] }],
+          generationConfig: {
+            responseMimeType: "application/json",
+            responseJsonSchema: outputSchema,
+            maxOutputTokens: 16000,
+            temperature: 0.7,
+          },
+        }),
+        signal: AbortSignal.timeout(85_000),
+        cache: "no-store",
       },
-    });
-
-    const output = response.output_text;
-    if (!output) throw new Error("The design model returned an empty response.");
+    );
+    const geminiPayload = await geminiResponse.json() as {
+      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+      promptFeedback?: { blockReason?: string };
+      error?: { message?: string; status?: string };
+    };
+    if (!geminiResponse.ok) {
+      const apiError = new Error(geminiPayload.error?.message || "Gemini API request failed.") as Error & { status?: number };
+      apiError.status = geminiResponse.status;
+      throw apiError;
+    }
+    const output = geminiPayload.candidates?.[0]?.content?.parts?.map((part) => part.text ?? "").join("").trim();
+    if (!output) {
+      throw new Error(geminiPayload.promptFeedback?.blockReason
+        ? "Gemini güvenlik filtresi isteği engelledi. Promptu değiştirip tekrar dene."
+        : "Gemini boş bir tasarım yanıtı döndürdü.");
+    }
     const parsed = JSON.parse(output) as unknown;
     const resultSchema = z.object({ message: z.string().min(1).max(1000), deck: deckSpecSchema });
     const result = resultSchema.safeParse(parsed);
@@ -157,15 +176,23 @@ export async function POST(request: Request) {
       ...result.data.deck,
       metadata: { source: "ai" as const, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
     };
-    return NextResponse.json({ message: result.data.message, deck, model: process.env.OPENAI_MODEL || "gpt-5.5" });
+    return NextResponse.json({ message: result.data.message, deck, model });
   } catch (error) {
     if (error instanceof z.ZodError || error instanceof SyntaxError) {
       return NextResponse.json({ error: "İstek bilgileri geçersiz. Komut en fazla 3000 karakter olabilir." }, { status: 400 });
     }
-    if (error instanceof OpenAI.APIError) {
-      console.error("OpenAI design request failed:", error.status, error.code, error.message);
-      const status = error.status === 429 ? 429 : error.status === 401 ? 503 : 502;
-      return NextResponse.json({ error: error.status === 429 ? "OpenAI kullanım limiti veya bakiyesi nedeniyle istek tamamlanamadı." : "OpenAI tasarım isteği tamamlanamadı. API anahtarını ve model erişimini kontrol et." }, { status });
+    if (error instanceof Error && "status" in error && typeof error.status === "number") {
+      const statusCode = error.status;
+      console.error("Gemini design request failed:", statusCode, error.message);
+      const status = statusCode === 429 ? 429 : statusCode === 401 || statusCode === 403 ? 503 : 502;
+      const message = statusCode === 429
+        ? "Gemini kullanım kotası veya faturalandırma limiti nedeniyle istek tamamlanamadı."
+        : statusCode === 401 || statusCode === 403
+          ? "Gemini API anahtarı geçersiz veya API erişimi yetkilendirilmemiş."
+          : statusCode === 404
+            ? "Gemini modeli bulunamadı. GEMINI_MODEL değerini kontrol et."
+            : "Gemini tasarım isteği tamamlanamadı. Google AI Studio API anahtarını ve model erişimini kontrol et.";
+      return NextResponse.json({ error: message }, { status });
     }
     console.error("AI design route error:", error);
     return NextResponse.json({ error: "Tasarım oluşturulurken beklenmeyen bir hata oluştu." }, { status: 500 });
