@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 import Link from "next/link";
 import DesignCanvas, { type Tool } from "./DesignCanvas";
@@ -42,6 +42,12 @@ export default function StudioWorkspace() {
   const [canRedo, setCanRedo] = useState(false);
   const [assetLibraryOpen, setAssetLibraryOpen] = useState(false);
   const [assetCommand, setAssetCommand] = useState({ symbol: "", label: "", token: 0 });
+  const [imageCommand, setImageCommand] = useState({ dataUrl: "", name: "", token: 0 });
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const [textAnimation, setTextAnimation] = useState("Fade in");
+  const [itemAnimation, setItemAnimation] = useState("Fade");
+  const [textEffect, setTextEffect] = useState("Soft shadow");
+  const [itemEffect, setItemEffect] = useState("Soft shadow");
   const activeSlide = useMemo(() => slides.find((slide) => slide.id === activeId) ?? slides[0], [slides, activeId]);
   useEffect(() => {
     function handleEditorShortcut(event: KeyboardEvent) {
@@ -177,6 +183,8 @@ export default function StudioWorkspace() {
               <button className="tool-button" onClick={() => issueCanvasCommand("undo")} disabled={!canUndo} title="Undo"><Undo2 size={15}/></button>
               <button className="tool-button" onClick={() => issueCanvasCommand("redo")} disabled={!canRedo} title="Redo"><Redo2 size={15}/></button>
               <button className="tool-button asset-launch-button" onClick={() => setAssetLibraryOpen(true)} title="Open asset library"><ImagePlus size={15}/><span>Assets</span></button>
+              <button className="tool-button" onClick={() => imageInputRef.current?.click()} title="Add image from computer"><ImagePlus size={15}/><span>Image</span></button>
+              <input ref={imageInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" hidden onChange={(event) => { const file=event.target.files?.[0]; if(!file)return; if(file.size>12*1024*1024){window.alert("Please choose an image smaller than 12 MB.");event.target.value="";return;} const reader=new FileReader(); reader.onload=()=>{if(typeof reader.result==="string")setImageCommand(current=>({dataUrl:reader.result as string,name:file.name,token:current.token+1}));}; reader.readAsDataURL(file); event.target.value=""; }} />
               <span className="toolbar-divider"/>
               <button className={`tool-button ${tool==="select"?"active-tool":""}`} onClick={() => setTool("select")} title="Select"><MousePointer2 size={15}/></button>
               <button className={`tool-button ${tool==="draw"?"active-tool":""}`} onClick={() => setTool("draw")} title="Free draw"><Pencil size={15}/></button>
@@ -222,6 +230,7 @@ export default function StudioWorkspace() {
                 onSelectionChange={setHasSelection}
                 command={canvasCommand}
                 assetCommand={assetCommand}
+                imageCommand={imageCommand}
                 onHistoryChange={(undo, redo) => { setCanUndo(undo); setCanRedo(redo); }}
                 onTextChange={(name, value) => {
                   if (name === "slide-title") { updateActive({ title: value }); setTitle(value); }
