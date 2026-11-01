@@ -23,3 +23,7 @@ The model should produce and edit structured presentation data. A deterministic 
 
 ## Security
 Never commit API keys, access tokens, private credentials or production secrets. Use environment variables and keep real environment files out of version control.
+
+## AI design generation
+
+The Studio client sends prompts to `POST /api/ai/design`. The Node.js route calls the OpenAI Responses API using strict JSON Schema Structured Outputs. The generated response is parsed and validated against `@slideai/shared`'s DeckSpec Zod schema. Each slide can carry editable canvas elements (text, rectangles, ellipses, lines, triangles and image placeholders); the Fabric.js canvas instantiates those as separate objects. The OpenAI key is server-only via `OPENAI_API_KEY`.
