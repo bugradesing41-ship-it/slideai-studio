@@ -29,7 +29,7 @@ The current canvas implementation includes:
 - Image insertion from local PNG, JPG, WEBP, GIF and SVG files, with a 12 MB per-file limit
 - Separate 25-preset text and 25-preset item animation collections. Each named preset has its own multi-step keyframe sequence; selecting a preset previews it immediately and restores the object afterward without saving an animation assignment
 - Ten distinct per-slide entrance transitions, each with its own motion curve, and a Play all presentation preview
-- Automatic slide number overlays in the format 01 / 08, synchronized with slide order and deck length
+- Automatic slide number overlays and filmstrip labels in the format 01 / 08, derived from the active slide order and total deck length
 - Separate 25-preset typography and visual-item effect collections
 - Per-slide background color, adjustable corner radius for selected objects, fill, stroke, stroke width, opacity and soft shadow controls
 - Rounded speech-bubble drawing tool and direct access to character stickers
