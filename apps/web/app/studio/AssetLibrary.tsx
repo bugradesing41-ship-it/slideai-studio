@@ -27,7 +27,7 @@ const CHARACTER_ART: StudioAsset[] = [
   ["floating","Floating character","https://opendoodles.s3-us-west-1.amazonaws.com/floating.svg","floating levitating"],
   ["reading","Reading character","https://opendoodles.s3-us-west-1.amazonaws.com/reading.svg","reading book education"],
   ["plant","Plant lover","https://opendoodles.s3-us-west-1.amazonaws.com/plant.svg","plant nature eco"],
-  ["walking","Walking character","https://opendoodles.s3-us-west-1.amazonaws.com/rolling.svg","walking lifestyle"],
+  ["walking","Rolling character","https://opendoodles.s3-us-west-1.amazonaws.com/rolling.svg","walking lifestyle"],
   ["swing","Swinging character","https://opendoodles.s3-us-west-1.amazonaws.com/swinging.svg","swing play"],
   ["falling","Falling with papers","https://opendoodles.s3-us-west-1.amazonaws.com/clumsy.svg","work office papers"],
   ["strolling","Strolling character","https://opendoodles.s3-us-west-1.amazonaws.com/strolling.svg","walking fashion"],
