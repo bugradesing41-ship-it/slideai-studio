@@ -13,6 +13,7 @@ A browser-based presentation editor focused on hands-on slide design, typography
 - Motion library powered by the MIT-licensed `@lottiefiles/dotlottie-react` player
 - Preview and insert Lottie JSON and dotLottie `.lottie` files from the user's device
 - Links to LottieFiles and Rive community asset libraries; community asset licenses remain the user's responsibility
+- Automatic browser-local saving for the current project
 - Export the editable SlideAI project as `.slideai.json`
 - Export the current slide as PNG
 - Export a basic Microsoft PowerPoint `.pptx` deck
