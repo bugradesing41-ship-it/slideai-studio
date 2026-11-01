@@ -92,7 +92,19 @@ export default function DesignCanvas({
         historyRef.current = { items, index: items.length - 1 };
         latestRef.current.onHistoryChange(items.length > 1, false);
       };
-      const selection = () => { const active = canvas.getActiveObject(); latestRef.current.onSelectionChange(Boolean(active), active?.type ?? ""); };
+      const selection = () => {
+        const active = canvas.getActiveObject();
+        latestRef.current.onSelectionChange(Boolean(active), active?.type ?? "");
+        if (active && latestRef.current.cornerRadius > 0) {
+          void import("fabric").then(({ Rect }) => {
+            if (!canvasRef.current || canvas.getActiveObject() !== active) return;
+            const width = Math.max(1, active.width ?? 1);
+            const height = Math.max(1, active.height ?? 1);
+            active.set({ clipPath: new Rect({ width, height, rx: Math.min(latestRef.current.cornerRadius,width/2), ry: Math.min(latestRef.current.cornerRadius,height/2), originX:"center", originY:"center" }), rx:latestRef.current.cornerRadius, ry:latestRef.current.cornerRadius });
+            canvas.requestRenderAll();
+          });
+        }
+      };
       const syncText = () => {
         const current = latestRef.current;
         const titleObject = canvas.getObjects().find((object: any) => object.name === "slide-title");
@@ -166,7 +178,7 @@ export default function DesignCanvas({
         if (event.target != null && currentTool === "select") return;
         const pointer = canvas.getPointer(event.e);
         if (currentTool === "text") {
-          const text = new fabric.IText("Double-click to edit", { left: pointer.x, top: pointer.y, fontFamily: latestRef.current.fontFamily, fontSize: latestRef.current.fontSize, fill: latestRef.current.fill, opacity: latestRef.current.opacity, shadow: latestRef.current.shadowEnabled ? new fabric.Shadow({ color: "rgba(0,0,0,0.32)", blur: 24, offsetX: 8, offsetY: 12 }) : undefined, editable: true });
+          const text = new fabric.IText("Double-click to edit", { left: pointer.x, top: pointer.y, fontFamily: latestRef.current.fontFamily, fontSize: latestRef.current.fontSize, fontWeight: latestRef.current.fontWeight, fill: latestRef.current.fill, opacity: latestRef.current.opacity, shadow: latestRef.current.shadowEnabled ? new fabric.Shadow({ color: "rgba(0,0,0,0.32)", blur: 24, offsetX: 8, offsetY: 12 }) : undefined, editable: true });
           canvas.add(text); canvas.setActiveObject(text); text.enterEditing(); canvas.requestRenderAll(); save();
           return;
         }
@@ -389,7 +401,7 @@ export default function DesignCanvas({
     const map:Record<string,[number,number,number,number,number]>={"Fade in":[0,0,.8,.8,0],"Typewriter":[0,0,1,1,0],"Rise up":[0,-38,1,1,0],"Slide from left":[-90,0,1,1,0],"Slide from right":[90,0,1,1,0],"Zoom in":[0,0,.25,.25,0],"Pop":[0,0,.55,.55,0],"Bounce":[0,-28,.82,.82,0],"Elastic":[0,0,.35,.35,0],"Soft focus":[0,0,1.15,1.15,0],"Flip X":[0,0,1,.05,0],"Flip Y":[0,0,.05,1,0],"Rotate in":[0,0,.7,.7,-24],"Float up":[0,-24,1,1,0],"Drop in":[0,-70,1,1,0],"Stretch":[0,0,1.3,.7,0],"Swing":[0,0,1,1,-14],"Wave":[0,-10,1,1,7],"Pulse":[0,0,1.2,1.2,0],"Glitch":[8,0,1,1,3],"Tracking reveal":[0,0,.9,.9,0],"Slide reveal":[-18,0,1,1,0],"Focus in":[0,0,1.25,1.25,0],"Overshoot":[0,0,1.35,1.35,0],"Spring settle":[0,-18,.8,.8,0],"Fade":[0,0,1,1,0],"Scale in":[0,0,.25,.25,0],"Spin in":[0,0,.7,.7,-180],"Flip horizontal":[0,0,1,.05,0],"Flip vertical":[0,0,.05,1,0],"Slide left":[-90,0,1,1,0],"Slide right":[90,0,1,1,0],"Slide up":[0,-70,1,1,0],"Slide down":[0,70,1,1,0],"Float":[0,-20,1,1,0],"Drift":[18,-12,1,1,5],"Wobble":[0,0,1,1,10],"Heartbeat":[0,0,1.18,1.18,0],"Shake":[5,0,1,1,4],"Jelly":[0,0,1.22,.82,0],"Rubber band":[0,0,1.25,.78,0],"Zoom through":[0,0,1.8,1.8,0],"Arc in":[-50,-40,.7,.7,-18],"Drop":[0,-55,1,1,0],"Spring":[0,0,.65,.65,0]};
     const [dx,dy,sx,sy,angle]=map[name]??[0,0,.7,.7,0];const start=performance.now();let frame=0;
     const tick=(now:number)=>{const t=Math.min(1,(now-start)/850),e=1-Math.pow(1-t,3);target.set({left:original.left+dx*(1-e),top:original.top+dy*(1-e),scaleX:original.scaleX*(sx+(1-sx)*e),scaleY:original.scaleY*(sy+(1-sy)*e),angle:original.angle+angle*(1-e),opacity:original.opacity*(name==="Fade"||name==="Fade in"?e:1)});canvas.requestRenderAll();if(t<1)frame=requestAnimationFrame(tick);else{target.set(original);canvas.requestRenderAll();}};
-    frame=requestAnimationFrame(tick);return()=>cancelAnimationFrame(frame);
+    frame=requestAnimationFrame(tick);return()=>{cancelAnimationFrame(frame);target.set(original);canvas.requestRenderAll();};
   }, [command.token, command.action]);
 
   useEffect(() => {
@@ -433,7 +445,7 @@ export default function DesignCanvas({
 
   useEffect(() => {
     const canvas=canvasRef.current;if(!canvas)return;let cancelled=false;const object=canvas.getActiveObject();if(!object||!("fontFamily" in object))return;
-    void(async()=>{try{await document.fonts.load(`${fontSize}px "${fontFamily}"`);await document.fonts.ready;if(cancelled||!canvasRef.current)return;object.set({fontFamily,fontSize,fontWeight});object.setCoords();canvas.requestRenderAll();latestRef.current.onChange(JSON.stringify(canvas.toObject(["name","animationPreset"])));}catch(error){console.error("Font load error",fontFamily,error);}})();
+    void(async()=>{try{await document.fonts.load(`${fontWeight} ${fontSize}px "${fontFamily}"`);await document.fonts.ready;if(cancelled||!canvasRef.current)return;object.set({fontFamily,fontSize,fontWeight});object.setCoords();canvas.requestRenderAll();latestRef.current.onChange(JSON.stringify(canvas.toObject(["name","animationPreset"])));}catch(error){console.error("Font load error",fontFamily,error);}})();
     return()=>{cancelled=true;};
   },[fontFamily,fontSize,fontWeight]);
 
@@ -486,7 +498,7 @@ export default function DesignCanvas({
     if (titleObject) titleObject.set("text", current.title);
     if (eyebrowObject) eyebrowObject.set("text", current.eyebrow);
     if (bodyObject) bodyObject.set("text", current.body);
-    canvas.backgroundColor = current.theme === "light" ? "#f1eee7" : current.theme === "blue" ? "#102333" : "#171525";
+    canvas.backgroundColor = current.backgroundColor;
     canvas.requestRenderAll();
     current.onChange(JSON.stringify(canvas.toObject(["name", "animationPreset"])));
   }, [title, eyebrow, body, theme, backgroundColor]);
