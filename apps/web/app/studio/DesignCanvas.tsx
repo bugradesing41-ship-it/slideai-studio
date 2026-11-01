@@ -386,6 +386,12 @@ export default function DesignCanvas({
   }, [command.token, command.action]);
 
   useEffect(() => {
+    const canvas=canvasRef.current;if(!canvas||imageCommand.token===0)return;let cancelled=false;
+    void import("fabric").then(async({FabricImage})=>{if(cancelled||!canvasRef.current)return;try{const image=await FabricImage.fromURL(imageCommand.dataUrl);if(cancelled||!canvasRef.current)return;const scale=Math.min(760/(image.width||1),560/(image.height||1),1);image.set({left:260,top:80,scaleX:scale,scaleY:scale,name:imageCommand.name||"Imported image"});canvas.add(image);canvas.setActiveObject(image);canvas.requestRenderAll();const json=JSON.stringify(canvas.toObject(["name","animationPreset"]));latestRef.current.onChange(json);const h=historyRef.current,items=[...h.items.slice(0,h.index+1),json].slice(-60);historyRef.current={items,index:items.length-1};latestRef.current.onHistoryChange(items.length>1,false);latestRef.current.onSelectionChange(true);}catch(error){console.error("Could not add image",error);}});
+    return()=>{cancelled=true;};
+  },[imageCommand.token]);
+
+  useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || assetCommand.token === 0) return;
     void import("fabric").then(({ Textbox }) => {
@@ -417,6 +423,12 @@ export default function DesignCanvas({
     }
     if (current.tool === "select") canvas.selection = true;
   }, [tool, stroke, strokeWidth]);
+
+  useEffect(() => {
+    const canvas=canvasRef.current;if(!canvas)return;let cancelled=false;const object=canvas.getActiveObject();if(!object||!("fontFamily" in object))return;
+    void(async()=>{try{await document.fonts.load(`${fontSize}px "${fontFamily}"`);await document.fonts.ready;if(cancelled||!canvasRef.current)return;object.set({fontFamily,fontSize});object.setCoords();canvas.requestRenderAll();latestRef.current.onChange(JSON.stringify(canvas.toObject(["name","animationPreset"])));}catch(error){console.error("Font load error",fontFamily,error);}})();
+    return()=>{cancelled=true;};
+  },[fontFamily,fontSize]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
