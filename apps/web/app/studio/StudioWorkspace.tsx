@@ -190,19 +190,46 @@ export default function StudioWorkspace() {
     setShadowEnabled(selected.shadow);
   }
 
-  function exportProject() {
+  function buildProjectBlob() {
     const project = { format: "slideai-studio-project", version: 1, title, theme, slides, canvasDataBySlide, slideBackgrounds, slideAnimations,
       motionAssetsBySlide: Object.fromEntries(Object.entries(motionAssetsBySlide).map(([id, assets]) => [id, assets.map(asset => ({ ...asset, data: asset.data instanceof ArrayBuffer ? Array.from(new Uint8Array(asset.data)) : asset.data }))])) };
-    const blob = new Blob([JSON.stringify(project, null, 2)], { type: "application/json" });
+    return new Blob([JSON.stringify(project, null, 2)], { type: "application/json" });
+  }
+  function exportProject() {
+    const blob = buildProjectBlob();
     const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url;
     anchor.download = `${title.trim().replace(/[^a-z0-9-_]+/gi, "-") || "slideai-project"}.slideai.json`; anchor.click(); URL.revokeObjectURL(url);
   }
   async function shareProject() {
     const shareText = `${title} — SlideAI Studio\n${slides.length} slides. Project file can be exported from the editor.`;
+    const projectFile = new File([buildProjectBlob()], `${title || "slideai-project"}.slideai.json`, { type: "application/json" });
+    if (navigator.share && navigator.canShare?.({ files: [projectFile] })) { try { await navigator.share({ title, text: shareText, files: [projectFile] }); return; } catch { /* cancelled */ } }
     if (navigator.share) { try { await navigator.share({ title, text: shareText }); return; } catch { /* cancelled */ } }
     await navigator.clipboard.writeText(shareText);
     window.alert("Proje bilgisi panoya kopyalandı. Paylaşılabilir bağlantı için çevrimiçi proje depolama hesabı gerekir.");
   }
+  async function exportPowerPoint() {
+    const PptxGenJS = (await import("pptxgenjs")).default;
+    const pptx = new PptxGenJS();
+    pptx.layout = "LAYOUT_WIDE";
+    pptx.author = "SlideAI Studio";
+    pptx.subject = "Editable presentation";
+    pptx.title = title;
+    pptx.company = "SlideAI Studio";
+    for (const item of slides) {
+      const slide = pptx.addSlide();
+      slide.background = { color: backgroundColor.replace("#", "") };
+      const light = theme === "light";
+      const main = light ? "252333" : "F4F1FF";
+      const muted = light ? "666174" : "BCB8CD";
+      slide.addText(item.eyebrow || "", { x: 0.9, y: 0.8, w: 11.5, h: 0.35, fontFace: "Aptos", fontSize: 11, bold: true, charSpacing: 2, color: light ? "7558BC" : "B39BFF", margin: 0 });
+      slide.addText(item.title || "", { x: 0.85, y: 1.8, w: 11.6, h: 1.65, fontFace: "Aptos Display", fontSize: 34, bold: true, color: main, margin: 0.02, breakLine: false, fit: "shrink" });
+      slide.addText(item.body || "", { x: 0.9, y: 4.0, w: 9.8, h: 1.4, fontFace: "Aptos", fontSize: 17, color: muted, margin: 0.02, valign: "top", fit: "shrink" });
+      slide.addText(`${String(slides.indexOf(item)+1).padStart(2,"0")} / ${String(slides.length).padStart(2,"0")}`, { x: 11.4, y: 6.85, w: 1.0, h: 0.25, fontFace: "Aptos", fontSize: 9, color: muted, align: "right", margin: 0 });
+    }
+    await pptx.writeFile({ fileName: `${title.trim().replace(/[^a-z0-9-_]+/gi, "-") || "slideai-presentation"}.pptx` });
+  }
+
   function exportSlidePng() {
     const canvas = document.querySelector<HTMLCanvasElement>(".canvas-container canvas");
     if (!canvas) { window.alert("Tuval henüz hazır değil."); return; }
@@ -231,7 +258,7 @@ export default function StudioWorkspace() {
             <label className="field-label">Preview size <span>{motionSize}%</span></label><input className="range-control" type="range" min="15" max="75" value={motionSize} onChange={event=>setMotionSize(Number(event.target.value))}/>
             <p className="inspector-hint">Animasyonlar Fabric tuvalinden ayrı bir katmanda oynatılır. PNG dışa aktarımı animasyon karesini içermez; proje JSON'u animasyon verisini saklar.</p>
           </div>
-          <div className="motion-panel-footer"><button className="quick-action" onClick={exportSlidePng}><ImagePlus size={14}/> Export current slide PNG</button><button className="quick-action" onClick={exportProject}><Download size={14}/> Download editable project</button></div>
+          <div className="motion-panel-footer"><button className="quick-action" onClick={exportSlidePng}><ImagePlus size={14}/> Export current slide PNG</button><button className="quick-action" onClick={exportProject}><Download size={14}/> Download editable project</button><button className="quick-action" onClick={()=>void exportPowerPoint()}><Download size={14}/> Export PowerPoint (.pptx)</button></div>
         </aside>
 
         <section className="editor-main">
@@ -242,6 +269,7 @@ export default function StudioWorkspace() {
               <button className="tool-button" onClick={() => issueCanvasCommand("undo")} disabled={!canUndo} title="Undo"><Undo2 size={15}/></button>
               <button className="tool-button" onClick={() => issueCanvasCommand("redo")} disabled={!canRedo} title="Redo"><Redo2 size={15}/></button>
               <button className="tool-button" onClick={exportSlidePng} title="Export current slide as PNG"><Download size={15}/><span>PNG</span></button>
+              <button className="tool-button" onClick={()=>void exportPowerPoint()} title="Export Microsoft PowerPoint"><Download size={15}/><span>PPTX</span></button>
               <button className="tool-button asset-launch-button" onClick={() => {setAssetLibraryCategory("All assets");setAssetLibraryOpen(true);}} title="Open asset library"><ImagePlus size={15}/><span>Assets</span></button>
               <button className="tool-button" onClick={() => setMotionLibraryOpen(true)} title="Add an animation"><Play size={15}/><span>Motion</span></button>
               <button className="tool-button" onClick={() => {setIsPlaying(true);setPlaybackToken((token) => token + 1);setActiveId(slides[0].id);}} title="Play all slides"><Play size={15}/><span>Play all</span></button>
