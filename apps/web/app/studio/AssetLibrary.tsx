@@ -16,8 +16,8 @@ const ASSETS: StudioAsset[] = [
 ];
 const CATEGORIES=["All assets","Characters","Symbols","Signs & arrows","Badges & labels","Business & tech","Places & travel","Lifestyle & hobbies"];
 
-export default function AssetLibrary({onChoose,onClose}:{onChoose:(asset:StudioAsset)=>void;onClose:()=>void}) {
-  const [category,setCategory]=useState("All assets");
+export default function AssetLibrary({onChoose,onClose,initialCategory="All assets"}:{onChoose:(asset:StudioAsset)=>void;onClose:()=>void;initialCategory?:string}) {
+  const [category,setCategory]=useState(initialCategory);
   const [query,setQuery]=useState("");
   const filtered=useMemo(()=>ASSETS.filter(asset=>(category==="All assets"||asset.category===category)&&(query.trim()===""||(asset.label+" "+asset.keywords+" "+asset.symbol).toLowerCase().includes(query.toLowerCase()))),[category,query]);
   return <div className="asset-library-backdrop" role="presentation" onMouseDown={event=>{if(event.target===event.currentTarget)onClose();}}>
