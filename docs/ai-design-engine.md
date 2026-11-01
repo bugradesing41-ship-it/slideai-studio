@@ -4,7 +4,7 @@
 
 1. The Studio chat collects a design category, create/refine mode, slide count and prompt.
 2. The browser posts the brief to `POST /api/ai/design`; it never calls Gemini directly.
-3. The Node.js route reads `OPENAI_API_KEY` from the server environment, validates the request and optionally validates the existing DeckSpec.
+3. The Node.js route reads `GEMINI_API_KEY` from the server environment, validates the request and optionally validates the existing DeckSpec.
 4. Google Gemini API Structured Outputs returns a strict JSON object containing a DeckSpec and a short assistant message.
 5. The server validates the returned deck with the shared Zod schema, adds AI provenance timestamps and returns it to the client.
 6. The client replaces the current deck and remounts Fabric.js. Each generated text or vector shape becomes an individual editable canvas object.
