@@ -270,7 +270,7 @@ export default function StudioWorkspace() {
       <div className="studio-body">
         <aside className="chat-panel">
           <div className="panel-heading"><div className="panel-heading-icon"><Sparkles size={16}/></div><div><strong>Gemini assistant</strong><span>Your creative partner</span></div><button className="icon-button"><MoreHorizontal size={17}/></button></div>
-          <div className="chat-context"><span className="context-dot"/> OPENAI DESIGN ENGINE · EDITABLE OUTPUT</div>
+          <div className="chat-context"><span className="context-dot"/> GEMINI DESIGN ENGINE · EDITABLE OUTPUT</div>
           <div className="chat-ai-controls">
             <label>DESIGN TYPE<select value={designType} onChange={(event)=>setDesignType(event.target.value as DesignType)}><option value="presentation">Presentation</option><option value="social-post">Social media</option><option value="advertisement">Advertisement</option><option value="product">Product design</option><option value="infographic">Infographic</option></select></label>
             <label>MODE<select value={aiMode} onChange={(event)=>setAiMode(event.target.value as "create" | "refine")}><option value="create">Create from prompt</option><option value="refine">Improve current design</option></select></label>
@@ -280,7 +280,7 @@ export default function StudioWorkspace() {
             {messages.map((message, index) => <div className={`chat-message ${message.role}`} key={index}>{message.role === "assistant" && <span className="message-avatar"><WandSparkles size={13}/></span>}<p>{message.text}</p></div>)}
           </div>
           <div className="suggestion-area"><span>TRY ASKING</span><button onClick={() => setPrompt("Make this slide more visual")}>Make this slide more visual <ArrowUpRight size={12}/></button><button onClick={() => setPrompt("Create a stronger opening")}>Create a stronger opening <ArrowUpRight size={12}/></button></div>
-          <div className="chat-composer"><textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); sendPrompt(); } }} placeholder={aiMode === "create" ? "Describe the design you want…" : "Tell AI what to improve in this design…"} aria-label="Message AI assistant" disabled={isGenerating}/><div><span><Sparkles size={12}/> {isGenerating ? "Designing…" : "Powered by OpenAI"}</span><button onClick={sendPrompt} disabled={!prompt.trim() || isGenerating} aria-label="Send design request">{isGenerating ? <span className="ai-send-spinner"/> : <Send size={15}/>}</button></div></div>
+          <div className="chat-composer"><textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); sendPrompt(); } }} placeholder={aiMode === "create" ? "Describe the design you want…" : "Tell AI what to improve in this design…"} aria-label="Message AI assistant" disabled={isGenerating}/><div><span><Sparkles size={12}/> {isGenerating ? "Designing…" : "Powered by Gemini"}</span><button onClick={sendPrompt} disabled={!prompt.trim() || isGenerating} aria-label="Send design request">{isGenerating ? <span className="ai-send-spinner"/> : <Send size={15}/>}</button></div></div>
         </aside>
 
         <section className="editor-main">
