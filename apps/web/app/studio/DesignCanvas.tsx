@@ -99,6 +99,9 @@ export default function DesignCanvas({
       fabric.FabricObject.customProperties = ["name", "animationPreset"];
       if (disposed || !elementRef.current) return;
       await loadGoogleFont(latestRef.current.fontFamily, latestRef.current.fontWeights, latestRef.current.fontWeight, latestRef.current.fontSize);
+      const generatedFamilies = [...new Set(latestRef.current.designElements.filter((element) => element.type === "text").map((element) => element.fontFamily).filter(Boolean))];
+      await Promise.all(generatedFamilies.map((family) => loadGoogleFont(family, [400], 400, 32)));
+      if (disposed || !elementRef.current) return;
       const canvas = new fabric.Canvas(elementRef.current, {
         width: 1280,
         height: 720,
