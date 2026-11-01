@@ -82,7 +82,7 @@ Do not commit API keys, tokens, passwords or production secrets. Keep local envi
 
 ## OpenAI setup
 
-1. Copy the root `.env.example` file to `.env.local`.
+1. Copy `apps/web/.env.example` to `apps/web/.env.local` (Next.js loads environment files from the web app directory).
 2. Set `OPENAI_API_KEY` to an API key from your OpenAI Platform project.
 3. Optionally set `OPENAI_MODEL`; the default is `gpt-5.5`.
 4. Restart the Next.js development server and open `/studio`.
