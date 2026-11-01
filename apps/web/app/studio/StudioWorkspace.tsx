@@ -247,26 +247,23 @@ export default function StudioWorkspace() {
     window.alert("Proje bilgisi panoya kopyalandı. Paylaşılabilir bağlantı için çevrimiçi proje depolama hesabı gerekir.");
   }
   async function exportPowerPoint() {
-    const PptxGenJS = (await import("pptxgenjs")).default;
-    const pptx = new PptxGenJS();
-    pptx.layout = "LAYOUT_WIDE";
-    pptx.author = "SlideAI Studio";
-    pptx.subject = "Editable presentation";
-    pptx.title = title;
-    pptx.company = "SlideAI Studio";
-    for (const item of slides) {
-      const slide = pptx.addSlide();
-      const slideBg = slideBackgrounds[item.id] ?? (theme === "light" ? "#f1eee7" : theme === "blue" ? "#102333" : "#171525");
-      slide.background = { color: slideBg.replace("#", "") };
-      const light = theme === "light";
-      const main = light ? "252333" : "F4F1FF";
-      const muted = light ? "666174" : "BCB8CD";
-      slide.addText(item.eyebrow || "", { x: 0.9, y: 0.8, w: 11.5, h: 0.35, fontFace: "Aptos", fontSize: 11, bold: true, charSpacing: 2, color: light ? "7558BC" : "B39BFF", margin: 0 });
-      slide.addText(item.title || "", { x: 0.85, y: 1.8, w: 11.6, h: 1.65, fontFace: "Aptos Display", fontSize: 34, bold: true, color: main, margin: 0.02, breakLine: false, fit: "shrink" });
-      slide.addText(item.body || "", { x: 0.9, y: 4.0, w: 9.8, h: 1.4, fontFace: "Aptos", fontSize: 17, color: muted, margin: 0.02, valign: "top", fit: "shrink" });
-      slide.addText(`${String(slides.indexOf(item)+1).padStart(2,"0")} / ${String(slides.length).padStart(2,"0")}`, { x: 11.4, y: 6.85, w: 1.0, h: 0.25, fontFace: "Aptos", fontSize: 9, color: muted, align: "right", margin: 0 });
+    const response = await fetch("/api/export/pptx", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, theme, slides, slideBackgrounds }),
+    });
+    if (!response.ok) {
+      const message = await response.text();
+      window.alert(message || "PowerPoint dosyası oluşturulamadı.");
+      return;
     }
-    await pptx.writeFile({ fileName: `${title.trim().replace(/[^a-z0-9-_]+/gi, "-") || "slideai-presentation"}.pptx` });
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${title.trim().replace(/[^a-z0-9-_]+/gi, "-") || "slideai-presentation"}.pptx`;
+    anchor.click();
+    URL.revokeObjectURL(url);
   }
 
   function exportSlidePng() {
