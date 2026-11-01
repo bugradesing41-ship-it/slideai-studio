@@ -19,6 +19,7 @@ declare module "fabric" {
 type Tool = "select" | "draw" | "rect" | "circle" | "triangle" | "line" | "arrow" | "star" | "diamond" | "hexagon" | "pentagon" | "heart" | "speech" | "text";
 type CanvasCommand = { action: string; token: number };
 type AssetCommand = { symbol: string; label: string; token: number };
+type ImageCommand = { dataUrl: string; name: string; token: number };
 type Props = {
   slideId: number;
   title: string;
@@ -39,6 +40,7 @@ type Props = {
   onTextChange: (name: string, value: string) => void;
   command: CanvasCommand;
   assetCommand: AssetCommand;
+  imageCommand: ImageCommand;
   onHistoryChange: (canUndo: boolean, canRedo: boolean) => void;
 };
 
@@ -46,14 +48,14 @@ export type { Tool };
 
 export default function DesignCanvas({
   slideId, title, eyebrow, body, theme, tool, fill, stroke, strokeWidth,
-  fontFamily, fontSize, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, assetCommand, onHistoryChange
+  fontFamily, fontSize, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange
 }: Props) {
   const elementRef = useRef<HTMLCanvasElement>(null);
   const canvasRef = useRef<any>(null);
   const historyRef = useRef<{ items: string[]; index: number }>({ items: [], index: -1 });
   const restoringRef = useRef(false);
-  const latestRef = useRef({ title, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontSize, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, assetCommand, onHistoryChange });
-  latestRef.current = { title, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontSize, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, assetCommand, onHistoryChange };
+  const latestRef = useRef({ title, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontSize, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange });
+  latestRef.current = { title, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontSize, shadowEnabled, opacity, initialData, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange };
 
   useEffect(() => {
     let disposed = false;
@@ -64,6 +66,7 @@ export default function DesignCanvas({
       const fabric = await import("fabric");
       fabric.FabricObject.customProperties = ["name", "animationPreset"];
       if (disposed || !elementRef.current) return;
+      await document.fonts.ready;
       const canvas = new fabric.Canvas(elementRef.current, {
         width: 1280,
         height: 720,
@@ -291,6 +294,77 @@ export default function DesignCanvas({
         latestRef.current.onHistoryChange(items.length > 1, false);
       }
     };
+    if (action.startsWith("animation:")) {
+      const [,kind,preset] = action.split(":");
+      active.set({ animationPreset: `${kind}:${preset}` });
+      canvas.requestRenderAll();
+      recordCommand();
+      return;
+    }
+    if (action.startsWith("effect:")) {
+      const [,kind,preset] = action.split(":");
+      const index = preset.split("-")[0];
+      const { Shadow } = requireFabricEffects;
+      void import("fabric").then(({ Shadow: FabricShadow }) => {
+        if (!canvasRef.current) return;
+        const shadowMap: Record<string,{color:string;blur:number;offsetX:number;offsetY:number}> = {
+          "0":{color:"rgba(0,0,0,.24)",blur:18,offsetX:0,offsetY:8},
+          "1":{color:"rgba(0,0,0,.42)",blur:30,offsetX:4,offsetY:14},
+          "2":{color:"#8b5cf6",blur:28,offsetX:0,offsetY:0},
+          "3":{color:"#a78bfa",blur:36,offsetX:0,offsetY:0},
+          "4":{color:"rgba(255,255,255,.22)",blur:16,offsetX:0,offsetY:4},
+          "5":{color:"rgba(255,255,255,.35)",blur:24,offsetX:0,offsetY:5},
+          "10":{color:"rgba(0,0,0,.22)",blur:5,offsetX:2,offsetY:3},
+          "11":{color:"rgba(255,255,255,.35)",blur:4,offsetX:-2,offsetY:-2},
+          "12":{color:"rgba(0,0,0,.35)",blur:20,offsetX:0,offsetY:10},
+          "13":{color:"rgba(0,0,0,.3)",blur:0,offsetX:8,offsetY:8},
+          "14":{color:"rgba(0,0,0,.16)",blur:26,offsetX:0,offsetY:12},
+          "15":{color:"#c4b5fd",blur:18,offsetX:0,offsetY:0},
+          "20":{color:"rgba(0,0,0,.3)",blur:0,offsetX:10,offsetY:10},
+          "21":{color:"#fb923c",blur:22,offsetX:0,offsetY:0},
+          "22":{color:"#67e8f9",blur:22,offsetX:0,offsetY:0}
+        };
+        const effectIndex = Number(index);
+        const shadow = shadowMap[String(effectIndex)];
+        const common: Record<string,unknown> = {};
+        if (shadow) common.shadow = new FabricShadow(shadow);
+        if (kind === "text") {
+          if (effectIndex === 6) common.stroke = "#ffffff";
+          if (effectIndex === 7) common.stroke = "#ffffff";
+          if (effectIndex === 8) common.stroke = "#51456f";
+          if (effectIndex === 9) common.charSpacing = 160;
+          if (effectIndex === 10) common.fontWeight = "bold";
+          if (effectIndex === 11) common.backgroundColor = "rgba(167,139,250,.18)";
+          if (effectIndex === 12) common.backgroundColor = "rgba(255,255,255,.12)";
+          if (effectIndex === 13) common.shadow = new FabricShadow({color:"#f97316",blur:0,offsetX:3,offsetY:3});
+          if (effectIndex === 14) common.shadow = new FabricShadow({color:"#000000",blur:0,offsetX:4,offsetY:4});
+          if (effectIndex === 15) common.shadow = new FabricShadow({color:"#cbd5e1",blur:4,offsetX:2,offsetY:2});
+          if (effectIndex === 16) common.underline = true;
+          if (effectIndex === 17) common.overline = true;
+          if (effectIndex === 18) common.backgroundColor = "rgba(167,139,250,.28)";
+          if (effectIndex === 19) common.shadow = new FabricShadow({color:"#000000",blur:22,offsetX:0,offsetY:4});
+          if (effectIndex === 23) { common.stroke = "#ffffff"; common.strokeWidth = 1; }
+          if (effectIndex === 24) common.fontStyle = "italic";
+        } else {
+          if (effectIndex === 6 || effectIndex === 7) { common.stroke = "#ffffff"; common.strokeWidth = effectIndex===7?5:3; }
+          if (effectIndex === 8) common.strokeDashArray = [12,7];
+          if (effectIndex === 9) common.strokeDashArray = [2,6];
+          if (effectIndex === 16) common.opacity = .72;
+          if (effectIndex === 17) common.opacity = .88;
+          if (effectIndex === 18) common.opacity = .68;
+          if (effectIndex === 19) common.opacity = .78;
+          if (effectIndex === 20) common.opacity = 1;
+          if (effectIndex === 21) common.opacity = .5;
+          if (effectIndex === 22) common.shadow = new FabricShadow({color:"#a5f3fc",blur:20,offsetX:0,offsetY:0});
+          if (effectIndex === 23) { common.stroke = "#ffffff"; common.strokeWidth = 7; }
+          if (effectIndex === 24) common.shadow = new FabricShadow({color:"rgba(0,0,0,.2)",blur:20,offsetX:0,offsetY:12});
+        }
+        active.set(common);
+        canvas.requestRenderAll();
+        recordCommand();
+      });
+      return;
+    }
     if (action === "delete") {
       canvas.remove(active);
       canvas.discardActiveObject();
