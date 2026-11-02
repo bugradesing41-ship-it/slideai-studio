@@ -695,8 +695,9 @@ export default function DesignCanvas({
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || assetCommand.token === 0) return;
+    let cancelled = false;
     void import("fabric").then(async({ Textbox, FabricImage }) => {
-      if (!canvasRef.current) return;
+      if (cancelled || canvasRef.current !== canvas) return;
       if (assetCommand.imageUrl) {
         try {
           const response=await fetch(assetCommand.imageUrl);
@@ -712,14 +713,14 @@ export default function DesignCanvas({
             dataUrl=`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
           }
           const image = await FabricImage.fromURL(dataUrl);
-          if (!canvasRef.current) return;
+          if (cancelled || canvasRef.current !== canvas) return;
           const scale = Math.min(360/(image.width||1), 500/(image.height||1), 1);
           image.set({ left:790, top:120, scaleX:scale, scaleY:scale, name:assetCommand.label, isAnimated:assetCommand.animated===true });
           canvas.add(image); canvas.setActiveObject(image); canvas.requestRenderAll();if(assetCommand.animated)ensureAnimatedRender(canvas);
           const json=JSON.stringify(canvas.toObject(["name","animationPreset","isAnimated"])); latestRef.current.onChange(json);
           const history=historyRef.current,items=[...history.items.slice(0,history.index+1),json].slice(-60); historyRef.current={items,index:items.length-1};
           latestRef.current.onHistoryChange(items.length>1,false); latestRef.current.onSelectionChange(true,"image");
-        } catch(error) { console.error("Could not load character illustration",error); }
+        } catch(error) { if(!cancelled){console.error("Could not load character illustration",error);window.alert(error instanceof Error?error.message:"Could not add this character. Please try again.");} }
         return;
       }
       if (assetCommand.fontFamily === "Material Symbols Outlined") {
@@ -732,6 +733,7 @@ export default function DesignCanvas({
         fontSize: 112, textAlign: "center", lineHeight: 1, editable: false,
         name: `asset-${assetCommand.label.toLowerCase().replace(/[^a-z0-9]+/g,"-")}`,
       });
+      if (cancelled || canvasRef.current !== canvas) return;
       canvas.add(sticker); canvas.setActiveObject(sticker); canvas.requestRenderAll();
       const json = JSON.stringify(canvas.toObject(["name","animationPreset"]));
       latestRef.current.onChange(json);
@@ -741,6 +743,7 @@ export default function DesignCanvas({
       latestRef.current.onHistoryChange(items.length>1,false);
       latestRef.current.onSelectionChange(true, "textbox", {fontFamily:latestRef.current.fontFamily,fontSize:latestRef.current.fontSize,fontWeight:latestRef.current.fontWeight});
     });
+    return () => { cancelled = true; };
   }, [assetCommand.token]);
 
   useEffect(() => {
