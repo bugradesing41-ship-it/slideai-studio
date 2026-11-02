@@ -197,7 +197,6 @@ export default function DesignCanvas({
         if (current.eyebrow.trim()) canvas.add(new fabric.Textbox(current.eyebrow,{name:"slide-eyebrow",left:84,top:115,width:900,fontSize:18,fontFamily:"DM Sans",fontWeight:600,charSpacing:190,fill:light?"#7558bc":current.theme==="blue"?"#8bc7e7":"#b39bff",editable:true}));
         if (current.title.trim()) canvas.add(new fabric.Textbox(current.title,{name:"slide-title",left:80,top:205,width:1030,height:190,fontSize:66,fontFamily:"Manrope",fontWeight:600,lineHeight:1.05,fill:light?"#252333":"#f4f1ff",editable:true}));
         if (current.body.trim()) canvas.add(new fabric.Textbox(current.body,{name:"slide-body",left:84,top:440,width:800,height:110,fontSize:25,fontFamily:"DM Sans",fontWeight:400,lineHeight:1.35,fill:light?"#666174":"#bcb8cd",editable:true}));
-        canvas.add(new fabric.Textbox(latestRef.current.slideNumber,{name:"slide-number",left:1050,top:650,width:150,fontSize:14,fontFamily:"DM Sans",fontWeight:600,textAlign:"right",fill:light?"#777287":"#aaa3c4",selectable:false,evented:false}));
       } else {
         syncText();
       }
