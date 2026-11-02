@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Search, X, Sparkles } from "lucide-react";
 
 export type StudioAsset = { id: string; label: string; symbol: string; category: string; keywords: string; imageUrl?: string; fontFamily?: string; source?: string };
@@ -59,6 +59,7 @@ const CATEGORIES=["All assets","Characters","Google Icons","Symbols","Signs & ar
 export default function AssetLibrary({onChoose,onClose,initialCategory="All assets"}:{onChoose:(asset:StudioAsset)=>void;onClose:()=>void;initialCategory?:string}) {
   const [category,setCategory]=useState(initialCategory);
   const [query,setQuery]=useState("");
+  useEffect(()=>{const id="slideai-material-symbols-library";if(document.getElementById(id))return;const link=document.createElement("link");link.id=id;link.rel="stylesheet";link.href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined";document.head.appendChild(link);},[]);
   const filtered=useMemo(()=>([...GOOGLE_MATERIAL_ICONS,...CHARACTER_ART,...ASSETS] as StudioAsset[]).filter(asset=>(category==="All assets"||asset.category===category)&&(query.trim()===""||(asset.label+" "+asset.keywords+" "+asset.symbol).toLowerCase().includes(query.toLowerCase()))),[category,query]);
   return <div className="asset-library-backdrop" role="presentation" onMouseDown={event=>{if(event.target===event.currentTarget)onClose();}}>
     <section className="asset-library" role="dialog" aria-modal="true" aria-label="Asset library">
