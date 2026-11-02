@@ -104,7 +104,7 @@ async function readCanvasObjects(serialized: string | undefined): Promise<Fabric
 }
 
 function renderFabricObject(
-  slide: PptxGenJS,
+  slide: any,
   object: FabricObject,
   parentX = 0,
   parentY = 0,
@@ -176,7 +176,7 @@ function renderFabricObject(
       const bg = colorValue(object.backgroundColor, "FFFFFF");
       textOptions.fill = { color: bg.color, transparency: bg.transparency };
     }
-    slide.addText(text, textOptions as PptxGenJS.TextOptions);
+    slide.addText(text, textOptions as any);
     return;
   }
 
@@ -200,20 +200,21 @@ function renderFabricObject(
   };
   const shape = shapeTypes[type];
   if (!shape) return;
-  slide.addShape(shape as PptxGenJS.ShapeType, {
+  slide.addShape(shape as any, {
     x, y, w: Math.max(0.01, w), h: Math.max(0.01, h),
     rotate: rotation,
     fill: { color: fill.color, transparency: Math.min(100, fill.transparency + Math.round((1 - opacity) * 100)) },
     line: object.stroke && lineWidth > 0
       ? { color: stroke.color, width: lineWidth, transparency: stroke.transparency }
       : { color: fill.color, transparency: 100, width: 0.1 },
-  } as PptxGenJS.ShapeOptions);
+  } as any);
 }
 
 export async function POST(request: Request) {
   try {
     const payload = (await request.json()) as ExportRequest;
-    if (!Array.isArray(payload.slides) || payload.slides.length === 0 || payload.slides.length > 100) {
+    const slides = payload.slides;
+    if (!Array.isArray(slides) || slides.length === 0 || slides.length > 100) {
       return new Response("Geçerli bir sunum için 1–100 slayt gerekli.", { status: 400 });
     }
 
@@ -228,7 +229,7 @@ export async function POST(request: Request) {
     pptx.title = title;
     pptx.company = "SlideAI Studio";
 
-    for (const [index, item] of payload.slides.entries()) {
+    for (const [index, item] of slides.entries()) {
       const slide = pptx.addSlide();
       slide.background = { color: slideBackground(backgrounds[item.id], theme) };
       const objects = await readCanvasObjects(canvasData[item.id]);
@@ -248,7 +249,7 @@ export async function POST(request: Request) {
           slide.addText(item.body.slice(0, 5000), { x: 0.9, y: 4.0, w: 9.8, h: 1.4, fontFace: "Aptos", fontSize: 17, color: muted, margin: 0.02, valign: "top", fit: "shrink" });
         }
         if (item.eyebrow?.trim() || item.title?.trim() || item.body?.trim()) {
-          slide.addText(`${String(index + 1).padStart(2, "0")} / ${String(payload.slides.length).padStart(2, "0")}`, { x: 11.4, y: 6.85, w: 1.0, h: 0.25, fontFace: "Aptos", fontSize: 9, color: muted, align: "right", margin: 0 });
+          slide.addText(`${String(index + 1).padStart(2, "0")} / ${String(slides.length).padStart(2, "0")}`, { x: 11.4, y: 6.85, w: 1.0, h: 0.25, fontFace: "Aptos", fontSize: 9, color: muted, align: "right", margin: 0 });
         }
       }
     }
