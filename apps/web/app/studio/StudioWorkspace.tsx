@@ -122,7 +122,7 @@ export default function StudioWorkspace() {
 
   useEffect(() => {
     if (isPlaying) issueCanvasCommand("play-slide-animations");
-  }, [isPlaying, activeId]);
+  }, [isPlaying]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -366,6 +366,7 @@ export default function StudioWorkspace() {
                 assetCommand={assetCommand}
                 imageCommand={imageCommand}
                 onHistoryChange={(undo, redo) => { setCanUndo(undo); setCanRedo(redo); }}
+                onReady={() => { if (isPlaying) issueCanvasCommand("play-slide-animations"); }}
                 onTextChange={(name, value) => {
                   if (name === "slide-title") { updateActive({ title: value }); setTitle(value); }
                   if (name === "slide-eyebrow") updateActive({ eyebrow: value });
