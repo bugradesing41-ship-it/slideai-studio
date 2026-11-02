@@ -338,6 +338,13 @@ export default function DesignCanvas({
 
   useEffect(() => {
     const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.backgroundColor = backgroundColor;
+    canvas.requestRenderAll();
+  }, [backgroundColor, slideId]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
     if (!canvas || command.token === 0) return;
     const action = command.action;
     if (action.startsWith("preview-animation:") || action === "play-slide-animations") return;
