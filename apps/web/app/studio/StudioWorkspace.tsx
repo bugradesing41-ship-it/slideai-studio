@@ -11,10 +11,12 @@ import {
   LayoutTemplate, Plus, Settings2,
   Sparkles, Trash2, Type, ZoomIn, ZoomOut, MousePointer2,
   Pencil, Square, Play, Circle as CircleIcon, Triangle as TriangleIcon, Minus,
-  MoveUpRight, Star, Undo2, Redo2, Layers3, Diamond, Hexagon, Pentagon, Heart, MessageSquareText
+  MoveUpRight, Star, Undo2, Redo2, Layers3, Diamond, Hexagon, Pentagon, Heart, MessageSquareText,
+  Ruler, Grid3X3, Lock, Unlock, Eye, EyeOff, AlignLeft, AlignCenter, AlignRight, Group, Ungroup
 } from "lucide-react";
 
 type Slide = SlideSpec;
+type CanvasLayer = {index:number;id:string;name:string;type:string;visible:boolean;locked:boolean;active:boolean};
 
 const BLANK_SLIDE: Slide = { id: 1, title: " ", eyebrow: "", body: "", kind: "cover", layout: "title", elements: [] };
 
@@ -67,6 +69,11 @@ export default function StudioWorkspace() {
   const [selectedAnimationPreset, setSelectedAnimationPreset] = useState("");
   const [animationCategory, setAnimationCategory] = useState("All");
   const [animationPanelOpen, setAnimationPanelOpen] = useState(true);
+  const [leftPanelTab,setLeftPanelTab]=useState<"layers"|"arrange"|"animations">("layers");
+  const [layers,setLayers]=useState<CanvasLayer[]>([]);
+  const [showRulers,setShowRulers]=useState(true);
+  const [showGuides,setShowGuides]=useState(true);
+  const [snapToGuides,setSnapToGuides]=useState(true);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const activeSlideAnimation = slideAnimations[activeId] ?? "Fade";
   const backgroundColor = slideBackgrounds[activeId] ?? (theme === "light" ? "#ffffff" : theme === "blue" ? "#102333" : "#171525");
@@ -330,35 +337,59 @@ export default function StudioWorkspace() {
       </header>
 
       <div className="studio-body">
-        <aside className={`chat-panel animation-presets-panel ${animationPanelOpen?"is-open":"is-collapsed"}`}>
-          <button className="animation-panel-toggle" onClick={()=>setAnimationPanelOpen((open)=>!open)} aria-expanded={animationPanelOpen}>
-            <span className="panel-heading-icon"><Play size={16}/></span><span className="animation-panel-heading-copy"><strong>Object animations</strong><small>Text & element motion presets</small></span>{animationPanelOpen?<MoveUp size={16}/>:<ChevronDown size={16}/>}
-          </button>
-          {animationPanelOpen && <>
-          <div className="chat-context"><span className="context-dot"/> CLICK AN ANIMATION · APPLIED INSTANTLY</div>
-          <div className="animation-library-content">
-            <p className="animation-library-intro">Metin ve tasarım öğeleri için ayrı, kategorilere ayrılmış hazır animasyonlar. Bir preset&apos;e tıklaman yeterli.</p>
-            {!hasSelection ? <div className="animation-empty-state"><MousePointer2 size={22}/><strong>Henüz nesne seçilmedi</strong><span>Animasyonları görmek ve uygulamak için slayttaki bir metne, şekle veya görsele tıkla.</span></div> : (() => {
-              const isText = ["textbox","i-text","text"].includes(selectedObjectType.toLowerCase());
-              const presets = isText ? TEXT_OBJECT_ANIMATIONS : ELEMENT_ANIMATIONS;
-              const categories = ["All","Entrance","Reveal","Emphasis","Movement","Distortion"];
-              const categoryFor = (preset:string) => {
-                if (["Typewriter","Tracking reveal","Soft focus","Focus in","Slide reveal","Zoom through"].includes(preset)) return "Reveal";
-                if (["Bounce","Elastic","Pulse","Heartbeat","Wobble","Shake","Jelly","Rubber band","Swing","Wave","Overshoot","Spring settle"].includes(preset)) return "Emphasis";
-                if (["Float up","Float","Drift","Slide from left","Slide from right","Rise up","Arc in"].includes(preset)) return "Movement";
-                if (["Glitch","Stretch","Flip X","Flip Y","Flip horizontal","Flip vertical"].includes(preset)) return "Distortion";
-                return "Entrance";
-              };
-              const filtered = presets.filter((preset) => animationCategory === "All" || categoryFor(preset) === animationCategory);
-              return <>
-                <div className="animation-target-label"><span>{isText ? "TEXT ANIMATIONS" : "ELEMENT ANIMATIONS"}</span><small>{selectedObjectType}</small></div>
-                <div className="animation-category-list">{categories.map((category) => <button key={category} className={animationCategory===category?"active":""} onClick={()=>setAnimationCategory(category)}>{category}</button>)}</div>
-                <div className="animation-preset-list">{filtered.map((preset,index)=><button key={preset} title={`${preset} animasyonunu uygula`} className={selectedAnimationPreset===preset?"animation-preset-card selected":"animation-preset-card"} onClick={()=>{const kind=isText?"text":"element";setSelectedAnimationPreset(preset);issueCanvasCommand(`apply-animation:${kind}:${preset}`);}}><span className="animation-preset-index">{String(index+1).padStart(2,"0")}</span><span className="animation-preset-copy"><strong>{preset}</strong><small>{categoryFor(preset)} · Tıkla ve uygula</small></span><span className="animation-preset-check">{selectedAnimationPreset===preset?"✓":"＋"}</span></button>)}</div>
-                {selectedAnimationPreset && <p className="inspector-hint">“{selectedAnimationPreset}” seçili nesneye kaydedildi. Sunum oynatıldığında animasyon çalışır.</p>}
-              </>;
-            })()}
-          </div>
-          </>}
+        <aside className="left-tools-panel">
+          <div className="left-panel-heading"><div><strong>Editor tools</strong><small>Organize and refine your slide</small></div><span className="left-panel-count">{layers.length} layers</span></div>
+          <nav className="left-panel-tabs" aria-label="Editor panels">
+            <button className={leftPanelTab==="layers"?"active":""} onClick={()=>setLeftPanelTab("layers")}><Layers3 size={14}/> Layers</button>
+            <button className={leftPanelTab==="arrange"?"active":""} onClick={()=>setLeftPanelTab("arrange")}><Grid3X3 size={14}/> Arrange</button>
+            <button className={leftPanelTab==="animations"?"active":""} onClick={()=>setLeftPanelTab("animations")}><Play size={14}/> Motion</button>
+          </nav>
+          {leftPanelTab==="layers"&&<div className="left-panel-content">
+            <div className="panel-section-title"><div><strong>Layers</strong><small>Top items appear first</small></div><span>{layers.length}</span></div>
+            <div className="layer-action-row">
+              <button onClick={()=>issueCanvasCommand("group")} disabled={selectedObjectType!=="activeselection"} title="Group selected objects"><Group size={14}/> Group</button>
+              <button onClick={()=>issueCanvasCommand("ungroup")} disabled={selectedObjectType!=="group"} title="Ungroup selected group"><Ungroup size={14}/> Ungroup</button>
+            </div>
+            {layers.length===0?<div className="left-empty-state"><Layers3 size={22}/><strong>No layers yet</strong><span>Add text, shapes or images to see them listed here.</span></div>:<div className="layer-list">{layers.map(layer=><div key={layer.id} className={"layer-row "+(layer.active?"active":"")}>
+              <button className="layer-select" onClick={()=>issueCanvasCommand("select-layer:"+layer.index)} title={"Select "+layer.name}><span className="layer-type-icon">{layer.type==="image"?"▧":layer.type.includes("text")?"T":"◇"}</span><span><strong>{layer.name}</strong><small>{layer.type}</small></span></button>
+              <button className="layer-utility" onClick={()=>issueCanvasCommand("toggle-visible:"+layer.index)} title={layer.visible?"Hide layer":"Show layer"}>{layer.visible?<Eye size={13}/>:<EyeOff size={13}/>}</button>
+              <button className="layer-utility" onClick={()=>issueCanvasCommand("toggle-lock:"+layer.index)} title={layer.locked?"Unlock layer":"Lock layer"}>{layer.locked?<Lock size={13}/>:<Unlock size={13}/>}</button>
+            </div>)}</div>}
+            <p className="left-panel-hint">Shift + click on the canvas to select multiple objects, then group them.</p>
+          </div>}
+          {leftPanelTab==="arrange"&&<div className="left-panel-content">
+            <div className="panel-section-title"><div><strong>Align to slide</strong><small>Position the selected object precisely</small></div></div>
+            <div className="align-control-grid">
+              <button onClick={()=>issueCanvasCommand("align:left")} disabled={!hasSelection}><AlignLeft size={15}/><span>Left</span></button>
+              <button onClick={()=>issueCanvasCommand("align:center-x")} disabled={!hasSelection}><AlignCenter size={15}/><span>Center</span></button>
+              <button onClick={()=>issueCanvasCommand("align:right")} disabled={!hasSelection}><AlignRight size={15}/><span>Right</span></button>
+              <button onClick={()=>issueCanvasCommand("align:top")} disabled={!hasSelection}>Top</button>
+              <button onClick={()=>issueCanvasCommand("align:center-y")} disabled={!hasSelection}>Middle</button>
+              <button onClick={()=>issueCanvasCommand("align:bottom")} disabled={!hasSelection}>Bottom</button>
+            </div>
+            <div className="panel-section-title arrange-subtitle"><div><strong>Canvas helpers</strong><small>Guides and measurement tools</small></div></div>
+            <label className="editor-toggle-row"><span><Ruler size={15}/> Rulers</span><input type="checkbox" checked={showRulers} onChange={event=>setShowRulers(event.target.checked)}/></label>
+            <label className="editor-toggle-row"><span><Grid3X3 size={15}/> Center guides</span><input type="checkbox" checked={showGuides} onChange={event=>setShowGuides(event.target.checked)}/></label>
+            <label className="editor-toggle-row"><span><AlignCenter size={15}/> Smart snapping</span><input type="checkbox" checked={snapToGuides} onChange={event=>setSnapToGuides(event.target.checked)}/></label>
+            <p className="left-panel-hint">Objects snap to slide edges, center lines and nearby object edges while moving.</p>
+          </div>}
+          {leftPanelTab==="animations"&&<div className="left-panel-content motion-tab-content">
+            <div className="chat-context"><span className="context-dot"/> CLICK AN ANIMATION · APPLIED INSTANTLY</div>
+            <div className="animation-library-content">
+              <p className="animation-library-intro">Metin ve tasarım öğeleri için ayrı, kategorilere ayrılmış animasyonlar. Bir preset&apos;e tıklaman yeterli.</p>
+              {!hasSelection?<div className="animation-empty-state"><MousePointer2 size={22}/><strong>Henüz nesne seçilmedi</strong><span>Animasyon uygulamak için slayttaki bir metne, şekle veya görsele tıkla.</span></div>:(()=>{
+                const isText=["textbox","i-text","text"].includes(selectedObjectType.toLowerCase());
+                const presets=isText?TEXT_OBJECT_ANIMATIONS:ELEMENT_ANIMATIONS;
+                const categories=["All","Entrance","Reveal","Emphasis","Movement","Distortion"];
+                const categoryFor=(preset:string)=>{if(["Typewriter","Tracking reveal","Soft focus","Focus in","Slide reveal","Zoom through"].includes(preset))return "Reveal";if(["Bounce","Elastic","Pulse","Heartbeat","Wobble","Shake","Jelly","Rubber band","Swing","Wave","Overshoot","Spring settle"].includes(preset))return "Emphasis";if(["Float up","Float","Drift","Slide from left","Slide from right","Rise up","Arc in"].includes(preset))return "Movement";if(["Glitch","Stretch","Flip X","Flip Y","Flip horizontal","Flip vertical"].includes(preset))return "Distortion";return "Entrance";};
+                const filtered=presets.filter(preset=>animationCategory==="All"||categoryFor(preset)===animationCategory);
+                return <><div className="animation-target-label"><span>{isText?"TEXT ANIMATIONS":"ELEMENT ANIMATIONS"}</span><small>{selectedObjectType}</small></div>
+                  <div className="animation-category-list">{categories.map(category=><button key={category} className={animationCategory===category?"active":""} onClick={()=>setAnimationCategory(category)}>{category}</button>)}</div>
+                  <div className="animation-preset-list">{filtered.map((preset,index)=><button key={preset} className={selectedAnimationPreset===preset?"animation-preset-card selected":"animation-preset-card"} onClick={()=>{setSelectedAnimationPreset(preset);issueCanvasCommand("apply-animation:"+(isText?"text":"element")+":"+preset);}}><span className="animation-preset-index">{String(index+1).padStart(2,"0")}</span><span className="animation-preset-copy"><strong>{preset}</strong><small>{categoryFor(preset)} · Click to apply</small></span><span className="animation-preset-check">{selectedAnimationPreset===preset?"✓":"＋"}</span></button>)}</div>
+                  {selectedAnimationPreset&&<p className="inspector-hint">“{selectedAnimationPreset}” seçili nesneye kaydedildi.</p>}</>;
+              })()}
+            </div>
+          </div>}
         </aside>
 
         <section className="editor-main">
@@ -413,6 +444,10 @@ export default function StudioWorkspace() {
                 strokeWidth={strokeWidth}
                 textBorderEnabled={textBorderEnabled}
                 textBorderWidth={textBorderWidth}
+                showRulers={showRulers}
+                showGuides={showGuides}
+                snapToGuides={snapToGuides}
+                onLayersChange={setLayers}
                 fontFamily={fontFamily}
                 fontWeights={fontWeights}
                 fontSize={fontSize}
