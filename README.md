@@ -8,7 +8,10 @@ A browser-based presentation editor focused on hands-on slide design, typography
 - Add, duplicate, delete and reorder slides
 - Editable text, drawing tools, vector shapes, image import and object layering
 - Google Fonts catalogue with a searchable, scrollable font-family picker and weight controls
-- Theme, background, fill, stroke, opacity, shadow and corner-radius controls
+- Theme, solid or 2–3 color gradient slide backgrounds, fill, text color, typography size, stroke, opacity, shadow and corner-radius controls
+- New presentations and added slides start as blank canvases rather than prefilled sample templates
+- Redesigned asset library with aligned previews, consistent tile sizes and readable labels
+- Collapsible object-animation panel to keep the editor workspace compact
 - Slide transition previews
 - Built-in animation presets for selected text objects and visual elements, with separate curated sets
 - Animation presets are organized into Entrance, Reveal, Emphasis, Movement and Distortion categories
