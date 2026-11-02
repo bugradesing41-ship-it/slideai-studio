@@ -43,7 +43,7 @@ export default function Home() {
           <span>slideai<span className="brand-light">studio</span></span>
         </Link>
 
-        <Link className="new-button" href="/studio">
+        <Link className="new-button" href="/studio?blank=1">
           <Plus size={17} /> New presentation
           <span className="shortcut">⌘ K</span>
         </Link>
@@ -83,8 +83,8 @@ export default function Home() {
           </section>
 
           <section className="create-panel">
-            <div className="create-heading"><div className="ai-orb"><Layers3 size={19} /></div><div><strong>Build your next presentation</strong><span>Start with a blank slide and shape every detail in the editor.</span></div></div>
-            <div className="create-footer"><span><Layers3 size={14} /> Professional slide editor</span><Link className="create-button" href="/studio">Open editor <ArrowUpRight size={16} /></Link></div>
+            <div className="create-heading"><div className="ai-orb"><Layers3 size={19} /></div><div><strong>Boş slayt oluştur</strong><span>Tertemiz beyaz bir slaytla başla; tasarımını editörde kendin oluştur.</span></div></div>
+            <div className="create-footer"><span><Layers3 size={14} /> Professional slide editor</span><Link className="create-button" href="/studio?blank=1">Boş slayt oluştur <ArrowUpRight size={16} /></Link></div>
           </section>
 
           <section className="quick-start">
