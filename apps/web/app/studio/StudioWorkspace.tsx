@@ -8,7 +8,7 @@ import AssetLibrary, { type StudioAsset } from "./AssetLibrary";
 import { sampleDeck, validateDeck, type SlideSpec } from "@slideai/shared";
 import {
   ArrowLeft, ArrowUpRight, Check, ChevronDown, ChevronDown as MoveDown, ChevronUp as MoveUp, Copy, Download, ImagePlus,
-  LayoutTemplate, MoreHorizontal, Plus, Settings2,
+  LayoutTemplate, Plus, Settings2,
   Sparkles, Trash2, Type, ZoomIn, ZoomOut, MousePointer2,
   Pencil, Square, Play, Circle as CircleIcon, Triangle as TriangleIcon, Minus,
   MoveUpRight, Star, Undo2, Redo2, Layers3, Diamond, Hexagon, Pentagon, Heart, MessageSquareText
@@ -286,7 +286,6 @@ export default function StudioWorkspace() {
           <div className="panel-heading"><div className="panel-heading-icon"><Play size={16}/></div><div><strong>Object animations</strong><span>Text & element motion presets</span></div></div>
           <div className="chat-context"><span className="context-dot"/> SELECT AN OBJECT · APPLY · PREVIEW</div>
           <div className="animation-library-content">
-            {#if false}{/if}
             <p className="animation-library-intro">Tuvalde bir metin veya tasarım öğesi seç. Seçtiğin nesne türüne uygun animasyonları buradan uygula.</p>
             {!hasSelection ? <div className="animation-empty-state"><MousePointer2 size={22}/><strong>Henüz nesne seçilmedi</strong><span>Animasyon eklemek için slayttaki bir metne, şekle veya görsele tıkla.</span></div> : <>
               <div className="animation-target-label"><span>{["textbox","i-text","text"].includes(selectedObjectType.toLowerCase()) ? "TEXT ANIMATIONS" : "ELEMENT ANIMATIONS"}</span><small>{selectedObjectType}</small></div>
@@ -305,8 +304,7 @@ export default function StudioWorkspace() {
               <button className="tool-button" onClick={() => issueCanvasCommand("undo")} disabled={!canUndo} title="Undo"><Undo2 size={15}/></button>
               <button className="tool-button" onClick={() => issueCanvasCommand("redo")} disabled={!canRedo} title="Redo"><Redo2 size={15}/></button>
               <button className="tool-button asset-launch-button" onClick={() => {setAssetLibraryCategory("All assets");setAssetLibraryOpen(true);}} title="Open asset library"><ImagePlus size={15}/><span>Assets</span></button>
-              <button className="tool-button" onClick={() => setMotionLibraryOpen(true)} title="Add an animation"><Play size={15}/><span>Motion</span></button>
-              <button className="tool-button" onClick={() => {setIsPlaying(true);setPlaybackToken((token) => token + 1);setActiveId(slides[0].id);}} title="Play all slides"><Play size={15}/><span>Play all</span></button>
+                            <button className="tool-button" onClick={() => {setIsPlaying(true);setPlaybackToken((token) => token + 1);setActiveId(slides[0].id);}} title="Play all slides"><Play size={15}/><span>Play all</span></button>
               {isPlaying && <button className="tool-button active-tool" onClick={() => setIsPlaying(false)} title="Stop presentation preview"><Square size={14}/><span>Stop</span></button>}
               <button className="tool-button" onClick={() => imageInputRef.current?.click()} title="Add image from computer"><ImagePlus size={15}/><span>Image</span></button>
               <input ref={imageInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" hidden onChange={(event) => { const file=event.target.files?.[0]; if(!file)return; if(file.size>12*1024*1024){window.alert("Please choose an image smaller than 12 MB.");event.target.value="";return;} const reader=new FileReader(); reader.onload=()=>{if(typeof reader.result==="string")setImageCommand(current=>({dataUrl:reader.result as string,name:file.name,token:current.token+1}));}; reader.readAsDataURL(file); event.target.value=""; }} />
