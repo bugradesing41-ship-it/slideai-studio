@@ -16,6 +16,8 @@ import {
 
 type Slide = SlideSpec;
 
+const BLANK_SLIDE: Slide = { id: 1, title: " ", eyebrow: "", body: "", kind: "cover", layout: "title", elements: [] };
+
 const DEFAULT_FONT_WEIGHTS=[400];
 const SLIDE_ANIMATIONS=["Fade","Slide left","Slide right","Rise","Zoom","Flip","Blur","Wipe","Rotate","Bounce"];
 const TEXT_OBJECT_ANIMATIONS=["Fade in","Typewriter","Rise up","Slide from left","Slide from right","Pop","Elastic","Soft focus","Flip X","Flip Y","Rotate in","Float up","Drop in","Stretch","Tracking reveal","Focus in","Overshoot","Spring settle","Wobble","Heartbeat"];
@@ -23,11 +25,11 @@ const ELEMENT_ANIMATIONS=["Fade in","Rise up","Slide from left","Slide from righ
 
 
 export default function StudioWorkspace() {
-  const [slides, setSlides] = useState<Slide[]>(sampleDeck.slides);
+  const [slides, setSlides] = useState<Slide[]>([BLANK_SLIDE]);
   const [localSaveState, setLocalSaveState] = useState("Restoring…");
   const [isRestored, setIsRestored] = useState(false);
   const [activeId, setActiveId] = useState(1);
-  const [title, setTitle] = useState(sampleDeck.title);
+  const [title, setTitle] = useState("Untitled presentation");
   const [zoom, setZoom] = useState(82);
   const [theme, setTheme] = useState<"violet" | "blue" | "light">("violet");
   const [tool, setTool] = useState<Tool>("select");
@@ -62,6 +64,7 @@ export default function StudioWorkspace() {
   const [selectedObjectType, setSelectedObjectType] = useState("");
   const [selectedAnimationPreset, setSelectedAnimationPreset] = useState("");
   const [animationCategory, setAnimationCategory] = useState("All");
+  const [animationPanelOpen, setAnimationPanelOpen] = useState(true);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const activeSlideAnimation = slideAnimations[activeId] ?? "Fade";
   const backgroundColor = slideBackgrounds[activeId] ?? (theme === "light" ? "#f1eee7" : theme === "blue" ? "#102333" : "#171525");
@@ -165,7 +168,7 @@ export default function StudioWorkspace() {
 
   function addSlide() {
     const id = Math.max(...slides.map((slide) => slide.id)) + 1;
-    const next: Slide = { id, title: "A new perspective", eyebrow: "04 — EXPLORE", body: "Add your key message here. Keep the idea focused, clear and memorable.", kind: "content", layout: "title-and-body", elements: [] };
+    const next: Slide = { id, title: " ", eyebrow: "", body: "", kind: "content", layout: "title-and-body", elements: [] };
     setSlides((current) => {
       const nextSlides = [...current, next];
       const validation = validateDeck({ ...sampleDeck, title, theme, slides: nextSlides });
@@ -287,8 +290,11 @@ export default function StudioWorkspace() {
       </header>
 
       <div className="studio-body">
-        <aside className="chat-panel animation-presets-panel">
-          <div className="panel-heading"><div className="panel-heading-icon"><Play size={16}/></div><div><strong>Object animations</strong><span>Text & element motion presets</span></div></div>
+        <aside className={`chat-panel animation-presets-panel ${animationPanelOpen?"is-open":"is-collapsed"}`}>
+          <button className="animation-panel-toggle" onClick={()=>setAnimationPanelOpen((open)=>!open)} aria-expanded={animationPanelOpen}>
+            <span className="panel-heading-icon"><Play size={16}/></span><span className="animation-panel-heading-copy"><strong>Object animations</strong><small>Text & element motion presets</small></span>{animationPanelOpen?<ChevronUp size={16}/>:<ChevronDown size={16}/>}
+          </button>
+          {animationPanelOpen && <>
           <div className="chat-context"><span className="context-dot"/> CLICK AN ANIMATION · APPLIED INSTANTLY</div>
           <div className="animation-library-content">
             <p className="animation-library-intro">Metin ve tasarım öğeleri için ayrı, kategorilere ayrılmış hazır animasyonlar. Bir preset'e tıklaman yeterli.</p>
@@ -312,6 +318,7 @@ export default function StudioWorkspace() {
               </>;
             })()}
           </div>
+          </>}
         </aside>
 
         <section className="editor-main">
@@ -407,7 +414,9 @@ export default function StudioWorkspace() {
           </div>
           <div className="inspector-section">
             <div className="inspector-label">SLIDE BACKGROUND</div>
-            <div className="color-control-row"><label>Background <input type="color" value={backgroundColor} onChange={(event) => setSlideBackgrounds((current) => ({...current,[activeId]:event.target.value}))}/></label><button className="quick-action" onClick={() => setSlideBackgrounds((current) => {const next={...current};delete next[activeId];return next;})}>Reset background</button></div>
+            <div className="background-mode-switch"><button className={!backgroundColor.startsWith("gradient:")?"active":""} onClick={()=>setSlideBackgrounds((current)=>({...current,[activeId]:backgroundColor.startsWith("gradient:")?"#171525":backgroundColor}))}>Solid</button><button className={backgroundColor.startsWith("gradient:")?"active":""} onClick={()=>setSlideBackgrounds((current)=>({...current,[activeId]:current[activeId]?.startsWith("gradient:")?current[activeId]:"gradient:#8b5cf6,#22d3ee"}))}>Gradient</button></div>
+            {!backgroundColor.startsWith("gradient:") ? <div className="color-control-row"><label>Background <input type="color" value={backgroundColor} onChange={(event)=>setSlideBackgrounds((current)=>({...current,[activeId]:event.target.value}))}/></label></div> : <div className="gradient-editor"><div className="gradient-preview" style={{backgroundImage:`linear-gradient(90deg,${backgroundColor.slice(9).split(",").join(",")})`}}/><div className="gradient-palette">{["#8b5cf6","#22d3ee","#ec4899","#f97316","#facc15","#22c55e","#2563eb","#f8fafc","#111827","#ef4444","#a3e635","#14b8a6"].map((color)=><button key={color} className={backgroundColor.slice(9).split(",").includes(color)?"selected":""} style={{backgroundColor:color}} title={color} onClick={()=>setSlideBackgrounds((current)=>{const chosen=(current[activeId]?.startsWith("gradient:")?current[activeId].slice(9).split(","):["#8b5cf6","#22d3ee"]).filter(Boolean);const next=chosen.includes(color)?chosen.filter((item)=>item!==color):chosen.length<3?[...chosen,color]:[...chosen.slice(1),color];return {...current,[activeId]:`gradient:${next.length>=2?next.join(","):"#8b5cf6,#22d3ee"}`};})}/>)}</div><small>Paletten 2 veya 3 renk seç. En fazla 3 renk kullanılabilir.</small></div>}
+            <button className="quick-action background-reset" onClick={()=>setSlideBackgrounds((current)=>{const next={...current};delete next[activeId];return next;})}>Reset background</button>
             <div className="inspector-label preset-label">COLORS & STROKE</div>
             <div className="color-control-row"><label>Fill <input type="color" value={fill} onChange={(event) => setFill(event.target.value)}/></label><label>Border <input type="color" value={stroke} onChange={(event) => setStroke(event.target.value)}/></label></div>
             <label className="range-label">Stroke width <span>{strokeWidth}px</span></label><input className="range-control" type="range" min="1" max="18" value={strokeWidth} onChange={(event) => setStrokeWidth(Number(event.target.value))}/>
@@ -431,6 +440,7 @@ export default function StudioWorkspace() {
             </select>
             <p className="inspector-hint">{fontCatalogStatus}. Seçilen aile Google Fonts üzerinden yüklenir; katalog dışı isimlerde sistem fontuna geri dönülür.</p>
             <div className="font-preview-sample" style={{fontFamily:`"${fontFamily}", sans-serif`,fontWeight:Number(fontWeight)}}>Aa Bb Cc 123 · ÇĞİÖŞÜ</div>
+            <div className="color-control-row typography-color-row"><label>Text color <input type="color" value={fill} onChange={(event)=>setFill(event.target.value)}/></label></div>
             <label className="range-label">Font weight <span>{fontWeight}</span></label><select className="inspector-input" value={fontWeight} onChange={(event) => setFontWeight(event.target.value)}>{fontWeights.map((weight)=><option key={weight} value={String(weight)}>{weight===100?"Thin":weight===200?"Extra light":weight===300?"Light":weight===400?"Regular":weight===500?"Medium":weight===600?"Semi bold":weight===700?"Bold":weight===800?"Extra bold":weight===900?"Black":`Weight ${weight}`} {weight}</option>)}</select>
             <label className="range-label">Font size <span>{fontSize}px</span></label><input className="range-control" type="range" min="12" max="100" value={fontSize} onChange={(event) => setFontSize(Number(event.target.value))}/>
           </div>
