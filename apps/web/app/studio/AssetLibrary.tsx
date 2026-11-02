@@ -15,46 +15,49 @@ const ASSETS: StudioAsset[] = [
   ...[["⚽","Football"],["🏀","Basketball"],["🏈","American football"],["⚾","Baseball"],["🎾","Tennis"],["🏐","Volleyball"],["🏓","Ping pong"],["🏸","Badminton"],["🥊","Boxing"],["🥋","Martial arts"],["🏋️","Weightlifting"],["🚴","Cycling"],["🏊","Swimming"],["🏃","Running"],["🧘","Yoga"],["🎮","Gaming"],["🎧","Headphones"],["🎵","Music"],["🎬","Film"],["📷","Camera"],["🎨","Art palette"],["🖌️","Paintbrush"],["🎤","Microphone"],["🎹","Piano"],["🎸","Guitar"],["🎭","Theatre"],["🎪","Circus"],["🎟️","Ticket"],["🎲","Dice"],["🧸","Toy"]].map(([symbol,label],i)=>({id:"life-"+i,label,symbol,category:"Lifestyle & hobbies",keywords:"sport music art entertainment hobby"}))
 ];
 const CHARACTER_ART: StudioAsset[] = [
-  ["jumping","Jumping character","https://opendoodles.s3-us-west-1.amazonaws.com/jumping.svg","energetic jump action celebration"],
-  ["selfie","Taking a selfie","https://opendoodles.s3-us-west-1.amazonaws.com/selfie.svg","phone social media selfie"],
-  ["dancing","Dancing character","https://opendoodles.s3-us-west-1.amazonaws.com/dancing.svg","dance music movement"],
-  ["chilling","Relaxed character","https://opendoodles.s3-us-west-1.amazonaws.com/chilling.svg","relax sitting lifestyle"],
-  ["laying","Using a phone","https://opendoodles.s3-us-west-1.amazonaws.com/laying.svg","mobile phone technology"],
-  ["sprinting","Running character","https://opendoodles.s3-us-west-1.amazonaws.com/sprinting.svg","running speed sport"],
-  ["zombieing","Funny zombie","https://opendoodles.s3-us-west-1.amazonaws.com/zombieing.svg","funny halloween"],
-  ["Doggie","Person with a dog","https://opendoodles.s3-us-west-1.amazonaws.com/Doggie.svg","dog pet animal"],
-  ["sitting","Sitting character","https://opendoodles.s3-us-west-1.amazonaws.com/sitting.svg","sitting thinking"],
-  ["floating","Floating character","https://opendoodles.s3-us-west-1.amazonaws.com/floating.svg","floating levitating"],
-  ["reading","Reading character","https://opendoodles.s3-us-west-1.amazonaws.com/reading.svg","reading book education"],
-  ["plant","Plant lover","https://opendoodles.s3-us-west-1.amazonaws.com/plant.svg","plant nature eco"],
-  ["walking","Rolling character","https://opendoodles.s3-us-west-1.amazonaws.com/rolling.svg","walking lifestyle"],
-  ["swing","Swinging character","https://opendoodles.s3-us-west-1.amazonaws.com/swinging.svg","swing play"],
-  ["falling","Falling with papers","https://opendoodles.s3-us-west-1.amazonaws.com/clumsy.svg","work office papers"],
-  ["strolling","Strolling character","https://opendoodles.s3-us-west-1.amazonaws.com/strolling.svg","walking fashion"],
-  ["icecream","Ice cream lover","https://opendoodles.s3-us-west-1.amazonaws.com/ice-cream.svg","food summer"],
-  ["dogjump","Dog and person","https://opendoodles.s3-us-west-1.amazonaws.com/dog-jump.svg","dog pet jumping"],
-  ["box","Surprise from a box","https://opendoodles.s3-us-west-1.amazonaws.com/unboxing.svg","surprise delivery"],
-  ["coffee","Coffee lover","https://opendoodles.s3-us-west-1.amazonaws.com/coffee.svg","coffee work cafe"],
-  ["meditating","Meditating character","https://opendoodles.s3-us-west-1.amazonaws.com/meditating.svg","meditation calm wellness"],
-  ["ballet","Ballet dancer","https://opendoodles.s3-us-west-1.amazonaws.com/ballet.svg","ballet dance"],
-  ["running","Running for joy","https://opendoodles.s3-us-west-1.amazonaws.com/running.svg","running fitness"],
-  ["levitate","Levitating character","https://opendoodles.s3-us-west-1.amazonaws.com/levitate.svg","levitate floating"],
-  ["bookfloor","Reading on the floor","https://opendoodles.s3-us-west-1.amazonaws.com/reading-side.svg","book reading"],
-  ["cheerful","Cheerful character","https://opendoodles.s3-us-west-1.amazonaws.com/strolling.svg","happy smiling"],
-  ["rollerskating","Roller skating","https://opendoodles.s3-us-west-1.amazonaws.com/roller-skating.svg","roller skating sport"],
-  ["rolling","Rolling character","https://opendoodles.s3-us-west-1.amazonaws.com/rolling.svg","rolling movement"],
-  ["clumsy","Clumsy character","https://opendoodles.s3-us-west-1.amazonaws.com/clumsy.svg","funny office papers"],
-  ["groovy","Groovy character","https://opendoodles.s3-us-west-1.amazonaws.com/groovy.svg","fashion dancing"],
-  ["sleek","Sleek walking character","https://opendoodles.s3-us-west-1.amazonaws.com/sleek.svg","fashion walking"],
-  ["reading-side","Reading on the floor","https://opendoodles.s3-us-west-1.amazonaws.com/reading-side.svg","book reading study"],
-  ["moshing","Dancing freely","https://opendoodles.s3-us-west-1.amazonaws.com/moshing.svg","music dancing"],
-  ["loving","Holding a heart","https://opendoodles.s3-us-west-1.amazonaws.com/loving.svg","love heart kindness"],
-  ["sitting-reading","Sitting with a book","https://opendoodles.s3-us-west-1.amazonaws.com/sitting-reading.svg","book sitting education"],
-].map(([id,label,imageUrl,keywords])=>({id:"open-doodles-"+id,label,symbol:"",category:"Characters",imageUrl,source:"Open Doodles · Pablo Stanley · CC0",keywords}));
-
+  ["groovy","Groovy dancer","groovy.svg","Dance & movement","dance music movement"],
+  ["dog-jump","Person jumping with a dog","dog-jump.svg","Pets & play","dog pet jumping"],
+  ["jumping","Jumping character","jumping.svg","Sports & movement","jumping celebration energy"],
+  ["sprinting","Sprinter","sprinting.svg","Sports & movement","running sprint sport"],
+  ["running","Runner","running.svg","Sports & movement","running fitness"],
+  ["roller-skating","Roller skater","roller-skating.svg","Sports & movement","roller skating sport"],
+  ["ballet","Ballet dancer","ballet.svg","Sports & movement","ballet dance"],
+  ["moshing","Dancing to music","moshing.svg","Dance & movement","music dancing"],
+  ["dancing","Free dancer","dancing.svg","Dance & movement","dance movement"],
+  ["swinging","Swinging character","swinging.svg","Sports & movement","swing play"],
+  ["rolling","Rolling character","rolling.svg","Sports & movement","rolling motion"],
+  ["levitate","Levitating character","levitate.svg","Fantasy & expression","levitate floating"],
+  ["float","Floating character","float.svg","Fantasy & expression","floating levitation"],
+  ["zombieing","Zombie walk","zombieing.svg","Fantasy & expression","funny halloween"],
+  ["selfie","Taking a selfie","selfie.svg","Everyday life","phone social media selfie"],
+  ["chilling","Relaxed character","chilling.svg","Everyday life","relax sitting lifestyle"],
+  ["laying","Using a phone","laying.svg","Everyday life","mobile phone technology"],
+  ["strolling","Strolling character","strolling.svg","Everyday life","walking lifestyle"],
+  ["sleek","Stylish walker","sleek.svg","Everyday life","fashion walking"],
+  ["ice-cream","Ice cream lover","ice-cream.svg","Everyday life","food summer"],
+  ["coffee","Coffee lover","coffee.svg","Everyday life","coffee cafe"],
+  ["plant","Plant lover","plant.svg","Everyday life","plant nature eco"],
+  ["loving","Holding a heart","loving.svg","Everyday life","love heart kindness"],
+  ["unboxing","Surprise from a box","unboxing.svg","Everyday life","surprise delivery package"],
+  ["clumsy","Papers flying","clumsy.svg","Work & study","work office papers"],
+  ["reading","Reading a book","reading.svg","Work & study","reading book education"],
+  ["reading-side","Reading on the floor","reading-side.svg","Work & study","book reading study"],
+  ["sitting-reading","Sitting with a book","sitting-reading.svg","Work & study","book sitting education"],
+  ["sitting","Sitting character","sitting.svg","Work & study","sitting thinking"],
+  ["meditating","Meditating character","meditating.svg","Wellbeing","meditation calm mindfulness"],
+  ["petting","Petting a dog","petting.svg","Pets & play","dog pet animal"],
+].map(([id,label,file,category,keywords])=>({
+  id:"open-doodles-"+id,
+  label,
+  symbol:"",
+  category,
+  imageUrl:"https://opendoodles.s3-us-west-1.amazonaws.com/"+file,
+  source:"Open Doodles · Pablo Stanley · CC0",
+  keywords
+}));
 const GOOGLE_MATERIAL_ICONS = ["home","search","menu","close","settings","account_circle","person","group","groups","favorite","star","check_circle","info","warning","error","help","add","remove","delete","edit","download","upload","share","link","visibility","visibility_off","lock","lock_open","mail","phone","calendar_month","schedule","event","location_on","map","flight","directions_car","train","restaurant","shopping_cart","payments","credit_card","receipt_long","inventory_2","package_2","storefront","business","apartment","factory","school","menu_book","lightbulb","rocket_launch","trending_up","trending_down","bar_chart","pie_chart","analytics","query_stats","monitoring","savings","attach_money","currency_exchange","language","public","cloud","computer","smartphone","devices","wifi","bolt","eco","energy_savings_leaf","recycling","water_drop","health_and_safety","medical_services","science","biotech","psychology","palette","brush","design_services","photo_camera","image","videocam","play_circle","pause_circle","music_note","headphones","sports_soccer","fitness_center","self_improvement","celebration","emoji_events","workspace_premium","verified","shield","security","key","notifications","chat","forum","campaign","support_agent","schedule_send","task_alt","checklist","dashboard","view_kanban","layers","widgets","grid_view","view_carousel","slideshow","present_to_all","auto_awesome","magic_button","wand_stars","flare","animation","motion_photos_on","speed","timer","hourglass_empty","arrow_forward","arrow_back","arrow_upward","arrow_downward","north_east","south_east","expand_more","expand_less","refresh","sync","tune","filter_list","sort","more_horiz","more_vert","drag_indicator","open_in_new","fullscreen","fullscreen_exit","zoom_in","zoom_out","crop","rotate_right","flip","format_bold","format_italic","format_underlined","format_color_text","text_fields","title","notes","description","article","insert_chart","table_chart","data_object","code","terminal","api","database","cloud_upload","cloud_download","folder","folder_open","file_present","picture_as_pdf","attach_file","bookmark","label","sell","new_releases","thumb_up","thumb_down","sentiment_satisfied","pets","park","forest","beach_access","landscape","sunny","nightlight","wb_sunny","ac_unit","thermostat","local_cafe","local_mall","local_offer","local_shipping","delivery_dining","support","handshake","volunteer_activism","diversity_3","travel_explore","explore","anchor","sailing","directions_bike","directions_walk","directions_run","airport_shuttle","hotel","bed","chair","weekend","chair_alt","table_restaurant","coffee","cake","icecream","shopping_bag","redeem","diamond","currency_bitcoin","account_balance","monitor_heart","favorite_border"] .map((name,i)=>({id:"gmi-"+i,label:name.replace(/_/g," "),symbol:name,category:"Google Icons",fontFamily:"Material Symbols Outlined",keywords:"google material symbols icon glyph interface ui"}));
 
-const CATEGORIES=["All assets","Characters","Google Icons","Symbols","Signs & arrows","Badges & labels","Business & tech","Places & travel","Lifestyle & hobbies"];
+const CATEGORIES=["All assets","People & poses","Sports & movement","Dance & movement","Everyday life","Work & study","Pets & play","Fantasy & expression","Wellbeing","Google Icons","Symbols","Signs & arrows","Badges & labels","Business & tech","Places & travel","Lifestyle & hobbies"];
 
 export default function AssetLibrary({onChoose,onClose,initialCategory="All assets"}:{onChoose:(asset:StudioAsset)=>void;onClose:()=>void;initialCategory?:string}) {
   const [category,setCategory]=useState(initialCategory);
@@ -65,8 +68,8 @@ export default function AssetLibrary({onChoose,onClose,initialCategory="All asse
     <section className="asset-library" role="dialog" aria-modal="true" aria-label="Asset library">
       <header className="asset-library-header"><div><span className="asset-library-mark"><Sparkles size={16}/></span><div><strong>Asset library</strong><small>Icons, symbols and illustrations for your slides</small></div></div><button className="asset-close" onClick={onClose} aria-label="Close asset library"><X size={18}/></button></header>
       <div className="asset-search"><Search size={16}/><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Search stickers, icons, arrows..." autoFocus/><kbd>⌘ K</kbd></div>
-      <div className="asset-library-body"><nav className="asset-category-sidebar" aria-label="Asset categories">{CATEGORIES.map(item=><button key={item} className={category===item?"active":""} onClick={()=>setCategory(item)}><span>{item==="All assets"?"All assets":item}</span><small>{item==="All assets"?GOOGLE_MATERIAL_ICONS.length+CHARACTER_ART.length+ASSETS.length:[...GOOGLE_MATERIAL_ICONS,...CHARACTER_ART,...ASSETS].filter(asset=>asset.category===item).length}</small></button>)}</nav><section className="asset-content"><div className="asset-results-head"><div><strong>{category}</strong><small>Choose an item to add it to your slide</small></div><span>{filtered.length} assets</span></div><div className="asset-grid">{filtered.map(asset=><button key={asset.id} className="asset-tile" title={asset.label} onClick={()=>onChoose(asset)}><span className={asset.imageUrl?"asset-character-preview":asset.fontFamily?"asset-symbol-preview":"asset-emoji-preview"}>{asset.imageUrl?<img src={asset.imageUrl} alt={asset.label} loading="lazy"/>:asset.symbol}</span><small>{asset.label}</small></button>)}</div>{filtered.length===0&&<div className="asset-empty"><strong>No assets found</strong><span>Try another search term or category.</span></div>}</section></div>
-      <footer className="asset-library-footer">Google Material Symbols · Apache 2.0. Select an icon to add an editable glyph to the active slide. Character illustrations: Open Doodles by Pablo Stanley, CC0.</footer>
+      <div className="asset-library-body"><nav className="asset-category-sidebar" aria-label="Asset categories">{CATEGORIES.map(item=><button key={item} className={category===item?"active":""} onClick={()=>setCategory(item)}><span>{item==="All assets"?"All assets":item}</span><small>{item==="All assets"?GOOGLE_MATERIAL_ICONS.length+CHARACTER_ART.length+ASSETS.length:[...GOOGLE_MATERIAL_ICONS,...CHARACTER_ART,...ASSETS].filter(asset=>asset.category===item).length}</small></button>)}</nav><section className="asset-content"><div className="asset-results-head"><div><strong>{category}</strong><small>Choose an item to add it to your slide</small></div><span>{filtered.length} assets</span></div><div className="asset-grid">{filtered.map(asset=><button key={asset.id} className="asset-tile" title={asset.label} onClick={()=>onChoose(asset.imageUrl?{...asset,imageUrl:"/api/assets/proxy?url="+encodeURIComponent(asset.imageUrl)}:asset)}><span className={asset.imageUrl?"asset-character-preview":asset.fontFamily?"asset-symbol-preview":"asset-emoji-preview"}>{asset.imageUrl?<img src={"/api/assets/proxy?url="+encodeURIComponent(asset.imageUrl)} alt={asset.label} loading="lazy"/>:asset.symbol}</span><small>{asset.label}</small></button>)}</div>{filtered.length===0&&<div className="asset-empty"><strong>No assets found</strong><span>Try another search term or category.</span></div>}</section></div>
+      <footer className="asset-library-footer">Google Material Symbols · Apache 2.0. Open Doodles by Pablo Stanley · CC0. Choose a visual to add it to the active slide.</footer>
     </section>
   </div>;
 }
