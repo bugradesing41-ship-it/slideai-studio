@@ -532,88 +532,91 @@ export default function DesignCanvas({
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || command.action !== "play-slide-animations") return;
-    const targets = canvas.getObjects().filter((object: any) => typeof object.animationPreset === "string" && object.animationPreset);
-    if (!targets.length) return;
-    type Frame = [number, number, number, number, number, number];
-    const F = (t:number,x=0,y=0,scale=1,angle=0,opacity=1):Frame => [t,x,y,scale,angle,opacity];
+    const targets = canvas.getObjects().filter((object:any)=>typeof object.animationPreset==="string"&&object.animationPreset);
+    if(!targets.length)return;
+
+    type Frame={at:number;x:number;y:number;sx:number;sy:number;angle:number;opacity:number;spacing:number;text:number};
+    const F=(at:number,x=0,y=0,sx=1,sy=sx,angle=0,opacity=1,spacing=0,text=1):Frame=>({at,x,y,sx,sy,angle,opacity,spacing,text});
     const presets:Record<string,Frame[]> = {
-      "Fade in":[F(0,0,0,1,0,0),F(1)],
-      "Typewriter":[F(0,0,0,1,0,1),F(1)],
-      "Rise up":[F(0,0,90,1,0,0),F(1)],
-      "Slide from left":[F(0,-260,0,1,0,0),F(1)],
-      "Slide from right":[F(0,260,0,1,0,0),F(1)],
-      "Zoom in":[F(0,0,0,.08,0,0),F(1)],
-      "Pop":[F(0,0,0,.35,0,0),F(.72,0,0,1.18),F(1)],
-      "Bounce":[F(0,0,-100,1,0,0),F(.62,0,12),F(.82,0,-7),F(1)],
-      "Elastic":[F(0,0,0,.18),F(.55,0,0,1.24),F(.78,0,0,.9),F(1)],
-      "Soft focus":[F(0,0,0,1.18,0,0),F(1)],
-      "Flip X":[F(0,0,0,.02),F(.55,0,0,1.12),F(1)],
-      "Flip Y":[F(0,0,0,.02),F(.55,0,0,1.12),F(1)],
-      "Rotate in":[F(0,0,0,.65,-100,0),F(1)],
-      "Float up":[F(0,0,50),F(1)],
-      "Drop in":[F(0,0,-180),F(.72,0,12),F(1)],
-      "Stretch":[F(0,0,0,.72),F(.6,0,0,1.12),F(1)],
-      "Tracking reveal":[F(0,0,0,1,0,0),F(1)],
-      "Focus in":[F(0,0,0,1.65,0,0),F(1)],
-      "Overshoot":[F(0,0,0,.35,0,0),F(.7,0,0,1.28),F(1)],
-      "Spring settle":[F(0,0,-65,.82,0,0),F(.65,0,14,1.08),F(.84,0,-5,.98),F(1)],
-      "Swing":[F(0,0,0,1,-28),F(.3,0,0,1,18),F(.55,0,0,1,-12),F(.78,0,0,1,7),F(1)],
-      "Wave":[F(0,0,0,1,-14),F(.25,0,-8,1,14),F(.5,0,5,1,-10),F(.75,0,-3,1,7),F(1)],
-      "Pulse":[F(0,0,0,.82),F(.5,0,0,1.2),F(1)],
-      "Glitch":[F(0,-14,0,1,-4),F(.16,12,-2,1,5),F(.32,-8,1,1,-3),F(.48,6,0,1,2),F(1)],
-      "Slide reveal":[F(0,-180,0,.92,0,0),F(1)],
-      "Jelly":[F(0,0,0,.72),F(.25,0,0,1.18),F(.5,0,0,.9),F(.75,0,0,1.06),F(1)],
-      "Rubber band":[F(0,0,0,1.35),F(.28,0,0,.72),F(.55,0,0,1.12),F(.78,0,0,.95),F(1)],
-      "Zoom through":[F(0,0,0,.04,0,0),F(.65,0,0,1.35),F(1)],
-      "Arc in":[F(0,-170,110,.72,-35,0),F(.6,-18,8,1.05,5),F(1)],
-      "Drop":[F(0,0,-220,.9,0,0),F(.68,0,14,1.04),F(1)],
-      "Spin in":[F(0,0,0,.45,-220,0),F(1)],
-      "Flip horizontal":[F(0,0,0,.015,0,0),F(1)],
-      "Flip vertical":[F(0,0,0,.015,0,0),F(1)],
+      "Fade in":[F(0,0,0,1,1,0,0),F(1)],
+      "Typewriter":[F(0,0,0,1,1,0,1,0,0),F(1,0,0,1,1,0,1,0,1)],
+      "Rise up":[F(0,0,72,1,1,0,0),F(1)],
+      "Slide from left":[F(0,-240,0,1,1,0,0),F(1)],
+      "Slide from right":[F(0,240,0,1,1,0,0),F(1)],
+      "Zoom in":[F(0,0,0,.16,.16,0,0),F(.72,0,0,1.06,1.06),F(1)],
+      "Pop":[F(0,0,0,.35,.35,0,0),F(.68,0,0,1.2,1.2),F(1)],
+      "Bounce":[F(0,0,-100,1,1,0,0),F(.62,0,14),F(.82,0,-7),F(1)],
+      "Elastic":[F(0,0,0,.18,.18),F(.55,0,0,1.24,1.24),F(.78,0,0,.9,.9),F(1)],
+      "Soft focus":[F(0,0,0,1.18,1.18,0,0),F(1)],
+      "Flip X":[F(0,0,0,.015,1,0,0),F(.58,0,0,1.06,1),F(1)],
+      "Flip Y":[F(0,0,0,1,.015,0,0),F(.58,0,0,1,1.06),F(1)],
+      "Rotate in":[F(0,0,0,.62,.62,-100,0),F(1)],
+      "Spin in":[F(0,0,0,.4,.4,-220,0),F(1)],
+      "Float up":[F(0,0,44),F(1)],
+      "Drop in":[F(0,0,-180,.9,.9,0,0),F(.72,0,12,1.04,1.04),F(1)],
+      "Stretch":[F(0,0,0,.62,1.42),F(.58,0,0,1.14,.9),F(1)],
+      "Tracking reveal":[F(0,0,0,1,1,0,1,460),F(1)],
+      "Focus in":[F(0,0,0,1.7,1.7,0,0),F(1)],
+      "Overshoot":[F(0,0,0,.35,.35,0,0),F(.7,0,0,1.28,1.28),F(1)],
+      "Spring settle":[F(0,0,-65,.82,.82,0,0),F(.65,0,14,1.08,1.08),F(.84,0,-5,.98,.98),F(1)],
+      "Swing":[F(0,0,0,1,1,-28),F(.3,0,0,1,1,18),F(.55,0,0,1,1,-12),F(.78,0,0,1,1,7),F(1)],
+      "Wave":[F(0,0,0,1,1,-14),F(.25,0,-8,1,1,14),F(.5,0,5,1,1,-10),F(.75,0,-3,1,1,7),F(1)],
+      "Pulse":[F(0,0,0,.84,.84),F(.5,0,0,1.18,1.18),F(1)],
+      "Glitch":[F(0,-14,0,1,1,-4,.7),F(.16,12,-2,1,1,5,1),F(.32,-8,1,1,1,-3,.75),F(.48,6,0,1,1,2,1),F(1)],
+      "Slide reveal":[F(0,-180,0,.92,1,0,0),F(1)],
+      "Jelly":[F(0,0,0,.72,1.28),F(.25,0,0,1.22,.78),F(.5,0,0,.9,1.1),F(.75,0,0,1.06,.94),F(1)],
+      "Rubber band":[F(0,0,0,1.35,.65),F(.28,0,0,.72,1.28),F(.55,0,0,1.12,.9),F(.78,0,0,.95,1.05),F(1)],
+      "Zoom through":[F(0,0,0,.04,.04,0,0),F(.65,0,0,1.35,1.35),F(1)],
+      "Arc in":[F(0,-170,110,.72,.72,-35,0),F(.6,-18,8,1.05,1.05,5),F(1)],
+      "Drop":[F(0,0,-220,.9,.9,0,0),F(.68,0,14,1.04,1.04),F(1)],
+      "Flip horizontal":[F(0,0,0,.015,1,0,0),F(1)],
+      "Flip vertical":[F(0,0,0,1,.015,0,0),F(1)],
       "Float":[F(0,0,36),F(1)],
-      "Drift":[F(0,-110,32,1,-4),F(1)],
-      "Wobble":[F(0,0,0,1,-18),F(.2,0,0,1,16),F(.4,0,0,1,-13),F(.6,0,0,1,10),F(.8,0,0,1,-5),F(1)],
-      "Heartbeat":[F(0,0,0,.85),F(.22,0,0,1.24),F(.42,0,0,.92),F(.64,0,0,1.18),F(1)],
-      "Shake":[F(0,-18),F(.2,16),F(.4,-13),F(.6,10),F(.8,-5),F(1)]
+      "Drift":[F(0,-110,32,1,1,-4),F(1)],
+      "Wobble":[F(0,0,0,1,1,-18),F(.2,0,0,1,1,16),F(.4,0,0,1,1,-13),F(.6,0,0,1,1,10),F(.8,0,0,1,1,-5),F(1)],
+      "Heartbeat":[F(0,0,0,.85,.85),F(.22,0,0,1.24,1.24),F(.42,0,0,.92,.92),F(.64,0,0,1.18,1.18),F(1)],
+      "Shake":[F(0,-18),F(.2,16),F(.4,-13),F(.6,10),F(.8,-5),F(1)],
+      "Whip pan":[F(0,-420,0,.72,.72,-18,0),F(.72,0,0,1.04,1.04),F(1)],
+      "Orbit in":[F(0,-180,120,.48,.48,-155,0),F(.7,-12,5,1.05,1.05,8),F(1)]
     };
-    const frameIds:number[] = [];
-    type AnimationOriginal = { target: any; left: number; top: number; scaleX: number; scaleY: number; angle: number; opacity: number; text: any; charSpacing: number; preset: string };
-    const originals: AnimationOriginal[] = targets.map((target: any): AnimationOriginal => ({
-      target, left:target.left??0, top:target.top??0, scaleX:target.scaleX??1,
-      scaleY:target.scaleY??1, angle:target.angle??0, opacity:target.opacity??1,
-      text:target.text, charSpacing:target.charSpacing??0,
+
+    const frameIds:number[]=[];
+    const originals=targets.map((target:any)=>({
+      target,left:target.left??0,top:target.top??0,scaleX:target.scaleX??1,scaleY:target.scaleY??1,
+      angle:target.angle??0,opacity:target.opacity??1,text:target.text,charSpacing:target.charSpacing??0,
       preset:target.animationPreset as string
     }));
-    const start = performance.now();
-    const duration = 1050;
-    const interpolate = (a:number,b:number,t:number) => a + (b-a)*t;
-    originals.forEach((original: AnimationOriginal, index: number) => {
-      const sequence = presets[original.preset] ?? presets["Fade in"];
-      const tick = (now:number) => {
-        const progress = Math.max(0,Math.min(1,(now-start-index*115)/duration));
-        let segment = sequence.findIndex((frame,frameIndex)=>frameIndex<sequence.length-1 && progress>=frame[0] && progress<=sequence[frameIndex+1][0]);
-        if(segment<0) segment=sequence.length-2;
+    const startedAt=performance.now();
+    const duration=1120;
+    const interpolate=(a:number,b:number,t:number)=>a+(b-a)*t;
+
+    originals.forEach((original,index)=>{
+      const sequence=presets[original.preset]??presets["Fade in"];
+      const tick=(now:number)=>{
+        const progress=Math.max(0,Math.min(1,(now-startedAt-index*95)/duration));
+        let segment=sequence.findIndex((frame,frameIndex)=>frameIndex<sequence.length-1&&progress>=frame.at&&progress<=sequence[frameIndex+1].at);
+        if(segment<0)segment=sequence.length-2;
         const from=sequence[segment],to=sequence[segment+1];
-        const local=Math.max(0,Math.min(1,(progress-from[0])/Math.max(.0001,to[0]-from[0])));
+        const local=Math.max(0,Math.min(1,(progress-from.at)/Math.max(.0001,to.at-from.at)));
         const eased=local*local*(3-2*local);
-        const value=(key:1|2|3|4|5,fallback:number)=>interpolate(from[key]??fallback,to[key]??fallback,eased);
-        const update:any={
-          left:original.left+value(1,0), top:original.top+value(2,0),
-          scaleX:original.scaleX*value(3,1), scaleY:original.scaleY*value(3,1),
-          angle:original.angle+value(4,0), opacity:original.opacity*value(5,1)
+        const value=(key:"x"|"y"|"sx"|"sy"|"angle"|"opacity"|"spacing"|"text")=>interpolate(from[key],to[key],eased);
+        const update:Record<string,number|string>={
+          left:original.left+value("x"),top:original.top+value("y"),
+          scaleX:original.scaleX*value("sx"),scaleY:original.scaleY*value("sy"),
+          angle:original.angle+value("angle"),opacity:original.opacity*value("opacity")
         };
-        if(original.preset==="Typewriter" && typeof original.text==="string") update.text=original.text.slice(0,Math.ceil(original.text.length*progress));
-        if(original.preset==="Tracking reveal") update.charSpacing=original.charSpacing+520*progress;
-        original.target.set(update); original.target.setCoords(); canvas.requestRenderAll();
-        if(progress<1) frameIds[index]=requestAnimationFrame(tick);
-        else {
+        if(original.preset==="Typewriter"&&typeof original.text==="string")update.text=original.text.slice(0,Math.ceil(original.text.length*value("text")));
+        if(original.preset==="Tracking reveal")update.charSpacing=original.charSpacing+value("spacing");
+        original.target.set(update);original.target.setCoords();canvas.requestRenderAll();
+        if(progress<1)frameIds[index]=requestAnimationFrame(tick);
+        else{
           original.target.set({left:original.left,top:original.top,scaleX:original.scaleX,scaleY:original.scaleY,angle:original.angle,opacity:original.opacity,text:original.text,charSpacing:original.charSpacing});
           original.target.setCoords();canvas.requestRenderAll();
         }
       };
       frameIds[index]=requestAnimationFrame(tick);
     });
-    return () => frameIds.forEach((id)=>cancelAnimationFrame(id));
+    return()=>frameIds.forEach(id=>cancelAnimationFrame(id));
   }, [command.token, command.action]);
 
   useEffect(() => {
