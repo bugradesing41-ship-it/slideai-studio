@@ -158,7 +158,7 @@ export default function StudioWorkspace() {
     const playbackWindow=Math.min(5200,Math.max(2800,1450+layers.length*82));
     const timer = window.setTimeout(() => { if (index >= slides.length - 1) setIsPlaying(false); else setActiveId(slides[index + 1].id); }, playbackWindow);
     return () => window.clearTimeout(timer);
-  }, [isPlaying, activeId, slides]);
+  }, [isPlaying, activeId, slides, layers.length]);
 
   useEffect(() => {
     function handleEditorShortcut(event: KeyboardEvent) {
