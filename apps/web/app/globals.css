@@ -186,3 +186,32 @@ h1{font:700 clamp(34px,4vw,49px)/1.12 Manrope,sans-serif;letter-spacing:-2.4px;m
 .animation-category-list button{border:1px solid #30333e;background:#171920;color:#aeb0bb;border-radius:16px;padding:6px 9px;font-size:8px;white-space:nowrap}
 .animation-category-list button.active{border-color:#8068b5;background:#302746;color:#e2d8ff}
 .animation-preset-card:active{transform:scale(.985)}
+
+
+/* Asset library grid: fixed preview and caption regions prevent overlap */
+.asset-grid{grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px;padding:14px 20px 20px;align-content:start}
+.asset-tile{height:128px;min-height:0;padding:10px 7px 8px;gap:8px;overflow:hidden;justify-content:space-between}
+.asset-tile:hover{transform:translateY(-2px)}
+.asset-tile .asset-character-preview,.asset-tile .asset-symbol-preview,.asset-tile .asset-emoji-preview{width:64px;height:76px;min-height:0;flex:0 0 76px;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:9px;background:#222431;padding:7px;font-size:30px;line-height:1}
+.asset-tile .asset-character-preview img{width:100%;height:100%;object-fit:contain;display:block}
+.asset-tile .asset-symbol-preview{font-family:"Material Symbols Outlined";font-size:34px;font-weight:normal;font-feature-settings:"liga";color:#d7c8ff}
+.asset-tile .asset-emoji-preview{font-size:30px}
+.asset-tile small{display:block;width:100%;max-width:100%;min-height:24px;max-height:24px;line-height:12px;font-size:9px;text-align:center;white-space:normal;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
+@media(max-width:700px){.asset-grid{grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;padding:12px}.asset-tile{height:118px}.asset-tile .asset-character-preview,.asset-tile .asset-symbol-preview,.asset-tile .asset-emoji-preview{width:58px;height:68px;flex-basis:68px}}
+.animation-panel-toggle{width:100%;min-height:58px;display:flex;align-items:center;gap:10px;padding:10px 13px;border:0;border-bottom:1px solid #292c37;background:transparent;color:#e8e6ef;text-align:left;cursor:pointer}
+.animation-panel-toggle .panel-heading-icon{width:30px;height:30px;flex:0 0 30px;border-radius:8px;background:#a78bfa20;color:#c9b7ff;display:grid;place-items:center}
+.animation-panel-heading-copy{display:grid;gap:3px;min-width:0;flex:1}
+.animation-panel-heading-copy strong{font-size:11px}
+.animation-panel-heading-copy small{font-size:9px;color:#858998}
+.animation-presets-panel.is-collapsed{height:58px;min-height:58px;overflow:hidden;align-self:start}
+.animation-presets-panel.is-open{min-height:0}
+.background-mode-switch{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:8px 0}
+.background-mode-switch button{border:1px solid #30333e;background:#171920;color:#aeb0bb;border-radius:6px;padding:7px;font-size:9px}
+.background-mode-switch button.active{border-color:#8b70c8;background:#282139;color:#e4d8ff}
+.gradient-editor{display:grid;gap:8px}
+.gradient-preview{height:30px;border:1px solid #ffffff30;border-radius:7px}
+.gradient-palette{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px}
+.gradient-palette button{width:100%;aspect-ratio:1;border:2px solid #ffffff22;border-radius:7px;cursor:pointer}
+.gradient-palette button.selected{outline:2px solid #c4b5fd;outline-offset:2px}
+.gradient-editor small{font-size:8px;color:#9699a7;line-height:1.5}
+.background-reset{margin-top:7px}
