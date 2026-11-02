@@ -10,10 +10,12 @@ declare module "fabric" {
   interface FabricObject {
     name?: string;
     animationPreset?: string;
+    animationKind?: string;
   }
   interface SerializedObjectProps {
     name?: string;
     animationPreset?: string;
+    animationKind?: string;
   }
 }
 
