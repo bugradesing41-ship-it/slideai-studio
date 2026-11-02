@@ -66,7 +66,7 @@ export default function AssetLibrary({onChoose,onClose,initialCategory="All asse
       <div className="asset-search"><Search size={16}/><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Search stickers, icons, arrows..." autoFocus/><kbd>⌘ K</kbd></div>
       <nav className="asset-categories">{CATEGORIES.map(item=><button key={item} className={category===item?"active":""} onClick={()=>setCategory(item)}>{item}</button>)}</nav>
       <div className="asset-results-head"><strong>{category}</strong><span>{filtered.length} assets</span></div>
-      <div className="asset-grid">{filtered.map(asset=><button key={asset.id} className="asset-tile" title={asset.label} onClick={()=>onChoose(asset)}><span className={asset.imageUrl?"asset-character-preview":asset.fontFamily?"material-symbol-preview":""}>{asset.imageUrl?<img src={asset.imageUrl} alt={asset.label} loading="lazy"/>:asset.symbol}</span><small>{asset.label}</small></button>)}</div>
+      <div className="asset-grid">{filtered.map(asset=><button key={asset.id} className="asset-tile" title={asset.label} onClick={()=>onChoose(asset)}><span className={asset.imageUrl?"asset-character-preview":asset.fontFamily?"asset-symbol-preview":"asset-emoji-preview"}>{asset.imageUrl?<img src={asset.imageUrl} alt={asset.label} loading="lazy"/>:asset.symbol}</span><small>{asset.label}</small></button>)}</div>
       {filtered.length===0&&<div className="asset-empty">No assets found. Try another search.</div>}
       <footer className="asset-library-footer">Google Material Symbols · Apache 2.0. Select an icon to add an editable glyph to the active slide. Character illustrations: Open Doodles by Pablo Stanley, CC0.</footer>
     </section>
