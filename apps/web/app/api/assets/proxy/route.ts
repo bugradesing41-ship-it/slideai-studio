@@ -17,7 +17,8 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Invalid asset URL" }, { status: 400 });
   }
 
-  if (remote.protocol !== "https:" || remote.hostname !== ALLOWED_HOST || !remote.pathname.toLowerCase().endsWith(".svg")) {
+  const extension = remote.pathname.toLowerCase().split(".").pop();
+  if (remote.protocol !== "https:" || remote.hostname !== ALLOWED_HOST || !["svg", "gif"].includes(extension ?? "")) {
     return NextResponse.json({ error: "Asset source is not allowed" }, { status: 403 });
   }
 
@@ -25,7 +26,8 @@ export async function GET(request: Request) {
     const upstream = await fetch(remote.toString(), {
       cache: "force-cache",
       signal: AbortSignal.timeout(10000),
-      headers: { Accept: "image/svg+xml" },
+      headers: { Accept: "image/svg+xml, image/gif" },
+      redirect: "error",
     });
 
     if (!upstream.ok) {
@@ -35,6 +37,24 @@ export async function GET(request: Request) {
     const declaredLength = Number(upstream.headers.get("content-length") ?? 0);
     if (declaredLength > MAX_BYTES) {
       return NextResponse.json({ error: "Illustration is too large" }, { status: 413 });
+    }
+
+    if (extension === "gif") {
+      const bytes = await upstream.arrayBuffer();
+      if (bytes.byteLength > MAX_BYTES) {
+        return NextResponse.json({ error: "Animation is too large" }, { status: 413 });
+      }
+      const header = String.fromCharCode(...new Uint8Array(bytes.slice(0, 6)));
+      if (header !== "GIF87a" && header !== "GIF89a") {
+        return NextResponse.json({ error: "Invalid GIF animation" }, { status: 415 });
+      }
+      return new NextResponse(bytes, {
+        headers: {
+          "Content-Type": "image/gif",
+          "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+          "X-Content-Type-Options": "nosniff",
+        },
+      });
     }
 
     const source = await upstream.text();
