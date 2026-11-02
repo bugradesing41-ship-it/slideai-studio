@@ -210,9 +210,24 @@ export default function DesignCanvas({
         syncText();
       }
 
-      canvas.on("object:modified", save);
+      canvas.on("object:moving", (event:any) => {
+        const target=event.target;
+        if(!target || !latestRef.current.snapToGuides) { setSnapLines({x:null,y:null}); return; }
+        const tolerance=9;const bounds=target.getBoundingRect();
+        const xs=[bounds.left,bounds.left+bounds.width/2,bounds.left+bounds.width];
+        const ys=[bounds.top,bounds.top+bounds.height/2,bounds.top+bounds.height];
+        const candidatesX=[0,640,1280];const candidatesY=[0,360,720];
+        for(const other of canvas.getObjects()){if(other===target||other.visible===false)continue;const r=other.getBoundingRect();candidatesX.push(r.left,r.left+r.width/2,r.left+r.width);candidatesY.push(r.top,r.top+r.height/2,r.top+r.height);}
+        let bx:{delta:number;line:number}|null=null;let by:{delta:number;line:number}|null=null;
+        for(const p of xs)for(const c of candidatesX){const d=c-p;if(Math.abs(d)<=tolerance&&(!bx||Math.abs(d)<Math.abs(bx.delta)))bx={delta:d,line:c};}
+        for(const p of ys)for(const c of candidatesY){const d=c-p;if(Math.abs(d)<=tolerance&&(!by||Math.abs(d)<Math.abs(by.delta)))by={delta:d,line:c};}
+        if(bx||by){target.set({left:(target.left??0)+(bx?.delta??0),top:(target.top??0)+(by?.delta??0)});target.setCoords();}
+        setSnapLines({x:bx?.line??null,y:by?.line??null});
+      });
+      canvas.on("object:modified", () => { setSnapLines({x:null,y:null}); save(); });
       canvas.on("object:added", save);
       canvas.on("object:removed", save);
+      canvas.on("mouse:up", () => setSnapLines({x:null,y:null}));
       canvas.on("text:changed", save);
       canvas.on("text:editing:exited", (event: any) => {
         const object = event.target;
