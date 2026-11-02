@@ -679,11 +679,11 @@ export default function DesignCanvas({
       const update:any={left:original.left+value("x",0),top:original.top+value("y",0),scaleX:original.scaleX*value("sx",1),scaleY:original.scaleY*value("sy",1),angle:original.angle+value("angle",0),opacity:original.opacity*value("opacity",1)};
       if (typeof original.text === "string" && name === "Typewriter") update.text=original.text.slice(0,Math.ceil(original.text.length*value("textProgress",1)));
       if (name === "Tracking reveal") update.charSpacing=value("charSpacing",original.charSpacing??0);
-      target.set(update); target.setCoords(); canvas.requestRenderAll();
-      if (progress < 1) frameId=requestAnimationFrame(tick); else { target.set(original); target.setCoords(); canvas.requestRenderAll(); }
+      target.set(update); if(name==="Typewriter"&&typeof target.initDimensions==="function")target.initDimensions(); target.setCoords(); canvas.requestRenderAll();
+      if (progress < 1) frameId=requestAnimationFrame(tick); else { target.set(original); if(name==="Typewriter"&&typeof target.initDimensions==="function")target.initDimensions(); target.setCoords(); canvas.requestRenderAll(); }
     };
     frameId=requestAnimationFrame(tick);
-    return () => { cancelAnimationFrame(frameId); target.set(original); target.setCoords(); canvas.requestRenderAll(); };
+    return () => { cancelAnimationFrame(frameId); target.set(original); if(name==="Typewriter"&&typeof target.initDimensions==="function")target.initDimensions(); target.setCoords(); canvas.requestRenderAll(); };
   }, [command.token, command.action]);
 
   useEffect(() => {
