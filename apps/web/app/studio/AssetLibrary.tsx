@@ -57,11 +57,11 @@ const CHARACTER_ART: StudioAsset[] = [
 }));
 
 const ANIMATED_CHARACTERS: StudioAsset[] = [
-  ["doggie","Dog & friend","doggie.gif","Pets & play","animated dog character friendship"],
-  ["levitate","Levitating character","levitate.gif","Fantasy & expression","animated floating levitation"],
-  ["sprinting","Sprint loop","sprinting.gif","Sports & movement","animated running sprint"],
-  ["coffee","Coffee break","coffee.gif","Everyday life","animated coffee break"],
-].map(([id,label,file,category,keywords])=>({
+  ["doggie","Dog & friend","doggie.gif","animated dog character friendship"],
+  ["levitate","Levitating character","levitate.gif","animated floating levitation"],
+  ["sprinting","Sprint loop","sprinting.gif","animated running sprint"],
+  ["coffee","Coffee break","coffee.gif","animated coffee break"],
+].map(([id,label,file,keywords])=>({
   id:"open-doodles-gif-"+id,
   label,
   symbol:"",
