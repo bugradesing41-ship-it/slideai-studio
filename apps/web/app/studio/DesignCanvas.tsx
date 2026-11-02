@@ -415,6 +415,17 @@ export default function DesignCanvas({
       if(mode==="bottom")updates.top=(active.top??0)+(720-(bounds.top+bounds.height));
       active.set(updates);active.setCoords();canvas.requestRenderAll();recordCommand();return;
     }
+    if(action.startsWith("text-style:") && active && ["textbox","i-text","text"].includes(String(active.type??"").toLowerCase())){
+      const style=action.split(":")[1];
+      if(style==="bold")active.set("fontWeight",Number(active.fontWeight)>=600?400:700);
+      if(style==="italic")active.set("fontStyle",active.fontStyle==="italic"?"normal":"italic");
+      if(style==="underline")active.set("underline",!active.underline);
+      if(style==="strike")active.set("linethrough",!active.linethrough);
+      canvas.requestRenderAll();recordCommand();return;
+    }
+    if(action.startsWith("text-align:") && active){active.set("textAlign",action.split(":")[1]);canvas.requestRenderAll();recordCommand();return;}
+    if(action.startsWith("text-spacing:") && active){active.set("charSpacing",Number(action.split(":")[1]));canvas.requestRenderAll();recordCommand();return;}
+    if(action.startsWith("line-height:") && active){active.set("lineHeight",Number(action.split(":")[1]));canvas.requestRenderAll();recordCommand();return;}
     if (!active) return;
     if (action.startsWith("apply-animation:")) {
       const [, kind, preset] = action.split(":");
