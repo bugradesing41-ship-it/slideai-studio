@@ -42,6 +42,8 @@ type Props = {
   backgroundColor: string;
   shadowEnabled: boolean;
   opacity: number;
+  textBorderEnabled: boolean;
+  textBorderWidth: number;
   initialData?: string;
   designElements: DesignElement[];
   onChange: (json: string) => void;
@@ -90,14 +92,14 @@ async function loadGoogleFont(family:string, weights:number[], weight:number|str
 
 export default function DesignCanvas({
   slideId, slideNumber, title, eyebrow, body, theme, tool, fill, stroke, strokeWidth,
-  fontFamily, fontWeights, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, initialData, designElements, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange, onReady
+  fontFamily, fontWeights, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, textBorderEnabled, textBorderWidth, initialData, designElements, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange, onReady
 }: Props) {
   const elementRef = useRef<HTMLCanvasElement>(null);
   const canvasRef = useRef<any>(null);
   const historyRef = useRef<{ items: string[]; index: number }>({ items: [], index: -1 });
   const restoringRef = useRef(false);
-  const latestRef = useRef({ title, slideNumber, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontWeights, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, initialData, designElements, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange, onReady });
-  latestRef.current = { title, slideNumber, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontWeights, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, initialData, designElements, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange, onReady };
+  const latestRef = useRef({ title, slideNumber, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontWeights, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, textBorderEnabled, textBorderWidth, initialData, designElements, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange, onReady });
+  latestRef.current = { title, slideNumber, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontWeights, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, textBorderEnabled, textBorderWidth, initialData, designElements, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange, onReady };
 
   useEffect(() => {
     let disposed = false;
@@ -223,7 +225,7 @@ export default function DesignCanvas({
         if (event.target != null && currentTool === "select") return;
         const pointer = canvas.getPointer(event.e);
         if (currentTool === "text") {
-          const text = new fabric.IText("Double-click to edit", { left: pointer.x, top: pointer.y, fontFamily: latestRef.current.fontFamily, fontSize: latestRef.current.fontSize, fontWeight: latestRef.current.fontWeight, fill: latestRef.current.fill, opacity: latestRef.current.opacity, shadow: latestRef.current.shadowEnabled ? new fabric.Shadow({ color: "rgba(0,0,0,0.32)", blur: 24, offsetX: 8, offsetY: 12 }) : undefined, editable: true });
+          const text = new fabric.IText("Double-click to edit", { left: pointer.x, top: pointer.y, fontFamily: latestRef.current.fontFamily, fontSize: latestRef.current.fontSize, fontWeight: latestRef.current.fontWeight, fill: latestRef.current.fill, stroke: latestRef.current.textBorderEnabled ? latestRef.current.stroke : undefined, strokeWidth: latestRef.current.textBorderEnabled ? latestRef.current.textBorderWidth : 0, opacity: latestRef.current.opacity, shadow: latestRef.current.shadowEnabled ? new fabric.Shadow({ color: "rgba(0,0,0,0.32)", blur: 24, offsetX: 8, offsetY: 12 }) : undefined, editable: true });
           canvas.add(text); canvas.setActiveObject(text); text.enterEditing(); canvas.requestRenderAll(); save();
           return;
         }
@@ -660,10 +662,11 @@ export default function DesignCanvas({
     if (object) {
       void import("fabric").then(({ Shadow }) => {
         if (!canvasRef.current) return;
+        const isTextObject = ["textbox", "i-text", "text"].includes(String(object.type ?? "").toLowerCase());
         object.set({
           fill: current.fill,
-          stroke: current.stroke,
-          strokeWidth: current.strokeWidth,
+          stroke: isTextObject ? (current.textBorderEnabled ? current.stroke : null) : current.stroke,
+          strokeWidth: isTextObject ? (current.textBorderEnabled ? current.textBorderWidth : 0) : current.strokeWidth,
           opacity: current.opacity,
           shadow: current.shadowEnabled ? new Shadow({ color: "rgba(0,0,0,0.32)", blur: 24, offsetX: 8, offsetY: 12 }) : null,
         });
@@ -671,7 +674,7 @@ export default function DesignCanvas({
         current.onChange(JSON.stringify(canvas.toObject(["name", "animationPreset", "animationKind"])));
       });
     }
-  }, [fill, stroke, strokeWidth, shadowEnabled, opacity]);
+  }, [fill, stroke, strokeWidth, shadowEnabled, opacity, textBorderEnabled, textBorderWidth]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
