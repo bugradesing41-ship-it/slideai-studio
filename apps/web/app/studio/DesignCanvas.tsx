@@ -43,7 +43,7 @@ type Props = {
   initialData?: string;
   designElements: DesignElement[];
   onChange: (json: string) => void;
-  onSelectionChange: (selected: boolean, objectType?: string, typography?: {fontFamily?:string;fontSize?:number;fontWeight?:number}) => void;
+  onSelectionChange: (selected: boolean, objectType?: string, typography?: {fontFamily?:string;fontSize?:number;fontWeight?:number}, animationPreset?: string) => void;
   onTextChange: (name: string, value: string) => void;
   command: CanvasCommand;
   assetCommand: AssetCommand;
@@ -96,7 +96,7 @@ export default function DesignCanvas({
 
     async function mount() {
       const fabric = await import("fabric");
-      fabric.FabricObject.customProperties = ["name", "animationPreset"];
+      fabric.FabricObject.customProperties = ["name", "animationPreset", "animationKind"];
       if (disposed || !elementRef.current) return;
       await loadGoogleFont(latestRef.current.fontFamily, latestRef.current.fontWeights, latestRef.current.fontWeight, latestRef.current.fontSize);
       const generatedFamilies = [...new Set(latestRef.current.designElements.filter((element) => element.type === "text").map((element) => element.fontFamily).filter(Boolean))];
@@ -115,7 +115,7 @@ export default function DesignCanvas({
       canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
 
       const save = () => {
-        const json = JSON.stringify(canvas.toObject(["name", "animationPreset"]));
+        const json = JSON.stringify(canvas.toObject(["name", "animationPreset", "animationKind"]));
         if (restoringRef.current) return;
         latestRef.current.onChange(json);
         const current = historyRef.current;
@@ -129,7 +129,7 @@ export default function DesignCanvas({
         const rawWeight = active?.get("fontWeight");
         const parsedWeight = typeof rawWeight === "number" ? rawWeight : rawWeight === "bold" ? 700 : rawWeight === "normal" ? 400 : Number(rawWeight ?? 400);
         const typography = active && "fontFamily" in active ? { fontFamily:String(active.get("fontFamily") ?? "").replace(/\s+Variable$/i,""), fontSize:Number(active.get("fontSize") ?? 0), fontWeight:Number.isFinite(parsedWeight) ? parsedWeight : 400 } : undefined;
-        latestRef.current.onSelectionChange(Boolean(active), active?.type ?? "", typography);
+        latestRef.current.onSelectionChange(Boolean(active), active?.type ?? "", typography, typeof active?.animationPreset === "string" ? active.animationPreset : "");
         if (active && latestRef.current.cornerRadius > 0) {
           void import("fabric").then(({ Rect }) => {
             if (!canvasRef.current || canvas.getActiveObject() !== active) return;
@@ -365,7 +365,7 @@ export default function DesignCanvas({
     const active = canvas.getActiveObject();
     if (!active) return;
     const recordCommand = () => {
-      const json = JSON.stringify(canvas.toObject(["name", "animationPreset"]));
+      const json = JSON.stringify(canvas.toObject(["name", "animationPreset", "animationKind"]));
       latestRef.current.onChange(json);
       const current = historyRef.current;
       if (current.items[current.index] !== json) {
@@ -374,6 +374,15 @@ export default function DesignCanvas({
         latestRef.current.onHistoryChange(items.length > 1, false);
       }
     };
+    if (action.startsWith("apply-animation:")) {
+      const [, kind, preset] = action.split(":");
+      if (kind !== "text" && kind !== "element") return;
+      active.set({ animationPreset: preset, animationKind: kind });
+      canvas.requestRenderAll();
+      recordCommand();
+      latestRef.current.onSelectionChange(true, active.type ?? "", undefined, preset);
+      return;
+    }
     if (action.startsWith("effect:")) {
       const [,kind,preset] = action.split(":");
       const index = preset.split("-")[0];
@@ -582,7 +591,7 @@ export default function DesignCanvas({
           shadow: current.shadowEnabled ? new Shadow({ color: "rgba(0,0,0,0.32)", blur: 24, offsetX: 8, offsetY: 12 }) : null,
         });
         canvas.requestRenderAll();
-        current.onChange(JSON.stringify(canvas.toObject(["name", "animationPreset"])));
+        current.onChange(JSON.stringify(canvas.toObject(["name", "animationPreset", "animationKind"])));
       });
     }
   }, [fill, stroke, strokeWidth, fontFamily, fontSize, fontWeight, shadowEnabled, opacity]);
@@ -617,7 +626,7 @@ export default function DesignCanvas({
     if (bodyObject) bodyObject.set("text", current.body);
     canvas.backgroundColor = current.backgroundColor;
     canvas.requestRenderAll();
-    current.onChange(JSON.stringify(canvas.toObject(["name", "animationPreset"])));
+    current.onChange(JSON.stringify(canvas.toObject(["name", "animationPreset", "animationKind"])));
   }, [title, eyebrow, body, theme, backgroundColor, slideNumber]);
 
   return <div className="design-canvas-shell"><canvas ref={elementRef} /></div>;
