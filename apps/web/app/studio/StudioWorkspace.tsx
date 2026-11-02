@@ -31,11 +31,13 @@ export default function StudioWorkspace() {
   const [activeId, setActiveId] = useState(1);
   const [title, setTitle] = useState("Untitled presentation");
   const [zoom, setZoom] = useState(82);
-  const [theme, setTheme] = useState<"violet" | "blue" | "light">("violet");
+  const [theme, setTheme] = useState<"violet" | "blue" | "light">("light");
   const [tool, setTool] = useState<Tool>("select");
   const [fill, setFill] = useState("#a78bfa");
   const [stroke, setStroke] = useState("#d8ccff");
   const [strokeWidth, setStrokeWidth] = useState(3);
+  const [textBorderEnabled, setTextBorderEnabled] = useState(false);
+  const [textBorderWidth, setTextBorderWidth] = useState(1);
   const [fontFamily, setFontFamily] = useState("Manrope");
   const [fontCatalog, setFontCatalog] = useState<string[]>([]);
   const [fontWeightsByFamily, setFontWeightsByFamily] = useState<Record<string,number[]>>({});
@@ -67,7 +69,7 @@ export default function StudioWorkspace() {
   const [animationPanelOpen, setAnimationPanelOpen] = useState(true);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const activeSlideAnimation = slideAnimations[activeId] ?? "Fade";
-  const backgroundColor = slideBackgrounds[activeId] ?? (theme === "light" ? "#f1eee7" : theme === "blue" ? "#102333" : "#171525");
+  const backgroundColor = slideBackgrounds[activeId] ?? (theme === "light" ? "#ffffff" : theme === "blue" ? "#102333" : "#171525");
   const SLIDE_MOTION:Record<string,{initial:TargetAndTransition;animate:TargetAndTransition;transition:Transition}> = {
     "Fade":{initial:{opacity:0},animate:{opacity:[0,1]},transition:{duration:.72,ease:"easeOut"}},
     "Slide left":{initial:{x:760},animate:{x:[760,0]},transition:{duration:.78,ease:"easeOut"}},
@@ -84,23 +86,37 @@ export default function StudioWorkspace() {
   const activeSlide = useMemo(() => slides.find((slide) => slide.id === activeId) ?? slides[0], [slides, activeId]);
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("slideai-studio-local-project-v1");
-      if (saved) {
-        const parsed = JSON.parse(saved) as { title?: string; theme?: "violet" | "blue" | "light"; slides?: Slide[]; canvasDataBySlide?: Record<number,string>; slideBackgrounds?: Record<number,string>; slideAnimations?: Record<number,string> };
-        if (Array.isArray(parsed.slides) && parsed.slides.length) {
-          const validation = validateDeck({ ...sampleDeck, title: parsed.title || sampleDeck.title, theme: parsed.theme || "violet", slides: parsed.slides });
-          if (validation.success) {
-            setSlides(validation.data.slides);
-            setTitle(parsed.title || sampleDeck.title);
-            setTheme(parsed.theme || "violet");
-            setCanvasDataBySlide(parsed.canvasDataBySlide || {});
-            setSlideBackgrounds(parsed.slideBackgrounds || {});
-            setSlideAnimations(parsed.slideAnimations || {});
-            setActiveId(validation.data.slides[0].id);
+      const startBlank = new URLSearchParams(window.location.search).get("blank") === "1";
+      if (startBlank) {
+        setSlides([BLANK_SLIDE]);
+        setTitle("Untitled presentation");
+        setTheme("light");
+        setCanvasDataBySlide({});
+        setSlideBackgrounds({ 1: "#ffffff" });
+        setSlideAnimations({});
+        setActiveId(1);
+        setLocalSaveState("New blank slide");
+      } else {
+        const saved = localStorage.getItem("slideai-studio-local-project-v1");
+        if (saved) {
+          const parsed = JSON.parse(saved) as { title?: string; theme?: "violet" | "blue" | "light"; slides?: Slide[]; canvasDataBySlide?: Record<number,string>; slideBackgrounds?: Record<number,string>; slideAnimations?: Record<number,string>; textBorderEnabled?: boolean; textBorderWidth?: number };
+          if (Array.isArray(parsed.slides) && parsed.slides.length) {
+            const validation = validateDeck({ ...sampleDeck, title: parsed.title || sampleDeck.title, theme: parsed.theme || "violet", slides: parsed.slides });
+            if (validation.success) {
+              setSlides(validation.data.slides);
+              setTitle(parsed.title || sampleDeck.title);
+              setTheme(parsed.theme || "violet");
+              setCanvasDataBySlide(parsed.canvasDataBySlide || {});
+              setSlideBackgrounds(parsed.slideBackgrounds || {});
+              setSlideAnimations(parsed.slideAnimations || {});
+              setTextBorderEnabled(parsed.textBorderEnabled ?? false);
+              setTextBorderWidth(parsed.textBorderWidth ?? 1);
+              setActiveId(validation.data.slides[0].id);
+            }
           }
         }
+        setLocalSaveState("Saved locally");
       }
-      setLocalSaveState("Saved locally");
     } catch {
       setLocalSaveState("Local restore unavailable");
     } finally {
@@ -111,12 +127,12 @@ export default function StudioWorkspace() {
   useEffect(() => {
     if (!isRestored) return;
     try {
-      localStorage.setItem("slideai-studio-local-project-v1", JSON.stringify({ title, theme, slides, canvasDataBySlide, slideBackgrounds, slideAnimations }));
+      localStorage.setItem("slideai-studio-local-project-v1", JSON.stringify({ title, theme, slides, canvasDataBySlide, slideBackgrounds, slideAnimations, textBorderEnabled, textBorderWidth }));
       setLocalSaveState("Saved locally");
     } catch {
       setLocalSaveState("Export project to keep a backup");
     }
-  }, [isRestored, title, theme, slides, canvasDataBySlide, slideBackgrounds, slideAnimations]);
+  }, [isRestored, title, theme, slides, canvasDataBySlide, slideBackgrounds, slideAnimations, textBorderEnabled, textBorderWidth]);
 
   useEffect(() => {
     let cancelled = false;
@@ -237,14 +253,23 @@ export default function StudioWorkspace() {
   }
 
   function buildProjectBlob() {
-    const project = { format: "slideai-studio-project", version: 1, title, theme, slides, canvasDataBySlide, slideBackgrounds, slideAnimations,
+    const project = { format: "slideai-studio-project", version: 1, schemaVersion: "1.0", exportedAt: new Date().toISOString(), title, theme, slides, canvasDataBySlide, slideBackgrounds, slideAnimations, textBorderEnabled, textBorderWidth,
     };
     return new Blob([JSON.stringify(project, null, 2)], { type: "application/json" });
   }
+  function downloadBlob(blob: Blob, filename: string) {
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+  }
+
   function exportProject() {
-    const blob = buildProjectBlob();
-    const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url;
-    anchor.download = `${title.trim().replace(/[^a-z0-9-_]+/gi, "-") || "slideai-project"}.slideai.json`; anchor.click(); URL.revokeObjectURL(url);
+    downloadBlob(buildProjectBlob(), `${title.trim().replace(/[^a-z0-9-_]+/gi, "-") || "slideai-project"}.slideai.json`);
   }
   async function shareProject() {
     const shareText = `${title} — SlideAI Studio\n${slides.length} slides. Project file can be exported from the editor.`;
@@ -258,7 +283,7 @@ export default function StudioWorkspace() {
     const response = await fetch("/api/export/pptx", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, theme, slides, slideBackgrounds }),
+      body: JSON.stringify({ title, theme, slides, slideBackgrounds, canvasDataBySlide }),
     });
     if (!response.ok) {
       const message = await response.text();
@@ -266,19 +291,29 @@ export default function StudioWorkspace() {
       return;
     }
     const blob = await response.blob();
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `${title.trim().replace(/[^a-z0-9-_]+/gi, "-") || "slideai-presentation"}.pptx`;
-    anchor.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `${title.trim().replace(/[^a-z0-9-_]+/gi, "-") || "slideai-presentation"}.pptx`);
   }
 
   function exportSlidePng() {
-    const canvas = document.querySelector<HTMLCanvasElement>(".canvas-container canvas");
-    if (!canvas) { window.alert("Tuval henüz hazır değil."); return; }
-    const anchor = document.createElement("a"); anchor.href = canvas.toDataURL("image/png");
-    anchor.download = `${title.trim().replace(/[^a-z0-9-_]+/gi, "-") || "slide"}-${activeId}.png`; anchor.click();
+    const source = document.querySelector<HTMLCanvasElement>(".design-canvas-shell .lower-canvas");
+    if (!source || source.width === 0 || source.height === 0) { window.alert("Tuval henüz hazır değil."); return; }
+    try {
+      const output = document.createElement("canvas");
+      output.width = source.width * 2;
+      output.height = source.height * 2;
+      const context = output.getContext("2d");
+      if (!context) throw new Error("PNG canvas context unavailable");
+      context.drawImage(source, 0, 0, output.width, output.height);
+      const anchor = document.createElement("a");
+      anchor.href = output.toDataURL("image/png");
+      anchor.download = `${title.trim().replace(/[^a-z0-9-_]+/gi, "-") || "slide"}-${activeId}.png`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+    } catch (error) {
+      console.error("PNG export failed", error);
+      window.alert("PNG oluşturulamadı. Harici görselin güvenlik kısıtlamasını veya tuvalin hazır olmasını kontrol edin.");
+    }
   }
 
   return (
@@ -371,6 +406,8 @@ export default function StudioWorkspace() {
                 fill={fill}
                 stroke={stroke}
                 strokeWidth={strokeWidth}
+                textBorderEnabled={textBorderEnabled}
+                textBorderWidth={textBorderWidth}
                 fontFamily={fontFamily}
                 fontWeights={fontWeights}
                 fontSize={fontSize}
@@ -414,7 +451,7 @@ export default function StudioWorkspace() {
           </div>
           <div className="inspector-section">
             <div className="inspector-label">SLIDE BACKGROUND</div>
-            <div className="background-mode-switch"><button className={!backgroundColor.startsWith("gradient:")?"active":""} onClick={()=>setSlideBackgrounds((current)=>({...current,[activeId]:backgroundColor.startsWith("gradient:")?(theme==="light"?"#f1eee7":theme==="blue"?"#102333":"#171525"):backgroundColor}))}>Solid</button><button className={backgroundColor.startsWith("gradient:")?"active":""} onClick={()=>setSlideBackgrounds((current)=>({...current,[activeId]:current[activeId]?.startsWith("gradient:")?current[activeId]:"gradient:#8b5cf6,#22d3ee"}))}>Gradient</button></div>
+            <div className="background-mode-switch"><button className={!backgroundColor.startsWith("gradient:")?"active":""} onClick={()=>setSlideBackgrounds((current)=>({...current,[activeId]:backgroundColor.startsWith("gradient:")?(theme==="light"?"#ffffff":theme==="blue"?"#102333":"#171525"):backgroundColor}))}>Solid</button><button className={backgroundColor.startsWith("gradient:")?"active":""} onClick={()=>setSlideBackgrounds((current)=>({...current,[activeId]:current[activeId]?.startsWith("gradient:")?current[activeId]:"gradient:#8b5cf6,#22d3ee"}))}>Gradient</button></div>
             {!backgroundColor.startsWith("gradient:") ? <div className="color-control-row"><label>Background <input type="color" value={backgroundColor} onChange={(event)=>setSlideBackgrounds((current)=>({...current,[activeId]:event.target.value}))}/></label></div> : <div className="gradient-editor"><div className="gradient-preview" style={{backgroundImage:`linear-gradient(90deg,${backgroundColor.slice(9).split(",").join(",")})`}}/><div className="gradient-palette">{["#8b5cf6","#22d3ee","#ec4899","#f97316","#facc15","#22c55e","#2563eb","#f8fafc","#111827","#ef4444","#a3e635","#14b8a6"].map((color)=><button key={color} className={backgroundColor.slice(9).split(",").includes(color)?"selected":""} style={{backgroundColor:color}} title={color} onClick={()=>setSlideBackgrounds((current)=>{const chosen=(current[activeId]?.startsWith("gradient:")?current[activeId].slice(9).split(","):["#8b5cf6","#22d3ee"]).filter(Boolean);const next=chosen.includes(color)?chosen.filter((item)=>item!==color):chosen.length<3?[...chosen,color]:[...chosen.slice(1),color];return {...current,[activeId]:`gradient:${next.length>=2?next.join(","):"#8b5cf6,#22d3ee"}`};})}/>)}</div><small>Paletten 2 veya 3 renk seç. En fazla 3 renk kullanılabilir.</small></div>}
             <button className="quick-action background-reset" onClick={()=>setSlideBackgrounds((current)=>{const next={...current};delete next[activeId];return next;})}>Reset background</button>
             <div className="inspector-label preset-label">COLORS & STROKE</div>
@@ -443,6 +480,8 @@ export default function StudioWorkspace() {
             <div className="color-control-row typography-color-row"><label>Text color <input type="color" value={fill} onChange={(event)=>setFill(event.target.value)}/></label></div>
             <label className="range-label">Font weight <span>{fontWeight}</span></label><select className="inspector-input" value={fontWeight} onChange={(event) => setFontWeight(event.target.value)}>{fontWeights.map((weight)=><option key={weight} value={String(weight)}>{weight===100?"Thin":weight===200?"Extra light":weight===300?"Light":weight===400?"Regular":weight===500?"Medium":weight===600?"Semi bold":weight===700?"Bold":weight===800?"Extra bold":weight===900?"Black":`Weight ${weight}`} {weight}</option>)}</select>
             <label className="range-label">Font size <span>{fontSize}px</span></label><input className="range-control" type="range" min="12" max="100" value={fontSize} onChange={(event) => setFontSize(Number(event.target.value))}/>
+            <label className="text-border-toggle"><input type="checkbox" checked={textBorderEnabled} onChange={(event) => setTextBorderEnabled(event.target.checked)}/> Add text border</label>
+            <label className="range-label">Text border size <span>{textBorderWidth}px</span></label><input className="range-control" type="range" min="1" max="12" value={textBorderWidth} onChange={(event) => setTextBorderWidth(Number(event.target.value))} disabled={!textBorderEnabled}/>
           </div>
           <div className="inspector-section motion-library-section">
             <div className="inspector-label">SLIDE TRANSITION <span>10 STYLES</span></div>
