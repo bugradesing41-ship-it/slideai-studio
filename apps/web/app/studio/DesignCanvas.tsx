@@ -52,7 +52,7 @@ type Props = {
   initialData?: string;
   designElements: DesignElement[];
   onChange: (json: string) => void;
-  onSelectionChange: (selected: boolean, objectType?: string, typography?: {fontFamily?:string;fontSize?:number;fontWeight?:number}, animationPreset?: string) => void;
+  onSelectionChange: (selected: boolean, objectType?: string, typography?: {fontFamily?:string;fontSize?:number;fontWeight?:number;charSpacing?:number;lineHeight?:number}, animationPreset?: string) => void;
   onTextChange: (name: string, value: string) => void;
   command: CanvasCommand;
   assetCommand: AssetCommand;
@@ -147,7 +147,7 @@ export default function DesignCanvas({
         const active = canvas.getActiveObject();
         const rawWeight = active?.get("fontWeight");
         const parsedWeight = typeof rawWeight === "number" ? rawWeight : rawWeight === "bold" ? 700 : rawWeight === "normal" ? 400 : Number(rawWeight ?? 400);
-        const typography = active && "fontFamily" in active ? { fontFamily:String(active.get("fontFamily") ?? "").replace(/\s+Variable$/i,""), fontSize:Number(active.get("fontSize") ?? 0), fontWeight:Number.isFinite(parsedWeight) ? parsedWeight : 400 } : undefined;
+        const typography = active && "fontFamily" in active ? { fontFamily:String(active.get("fontFamily") ?? "").replace(/\s+Variable$/i,""), fontSize:Number(active.get("fontSize") ?? 0), fontWeight:Number.isFinite(parsedWeight) ? parsedWeight : 400, charSpacing:Number(active.get("charSpacing")??0), lineHeight:Number(active.get("lineHeight")??1.2) } : undefined;
         latestRef.current.onSelectionChange(Boolean(active), active?.type ?? "", typography, typeof active?.animationPreset === "string" ? active.animationPreset : "");
         latestRef.current.onLayersChange(canvas.getObjects().map((object:any,index:number)=>({index,id:String(index),name:String(object.name||object.type||"Object"),type:String(object.type||"object"),visible:object.visible!==false,locked:object.locked===true,active:active===object})).reverse());
         // Selection is read-only: do not mutate Fabric objects or save from a selection event.
@@ -397,6 +397,11 @@ export default function DesignCanvas({
       const object=canvas.getObjects()[Number(action.split(":")[1])];
       if(object){canvas.setActiveObject(object);canvas.requestRenderAll();latestRef.current.onSelectionChange(true,object.type??"");latestRef.current.onLayersChange(canvas.getObjects().map((item:any,index:number)=>({index,id:String(index),name:String(item.name||item.type||"Object"),type:String(item.type||"object"),visible:item.visible!==false,locked:item.locked===true,active:item===object})).reverse());}
       return;
+    }
+    if(action.startsWith("layer-up:")||action.startsWith("layer-down:")){
+      const object=canvas.getObjects()[Number(action.split(":")[1])];if(!object)return;
+      if(action.startsWith("layer-up:"))canvas.bringObjectForward(object);else canvas.sendObjectBackwards(object);
+      canvas.requestRenderAll();recordCommand();return;
     }
     if(action.startsWith("toggle-visible:")||action.startsWith("toggle-lock:")) {
       const parts=action.split(":");const object=canvas.getObjects()[Number(parts[1])];if(!object)return;
