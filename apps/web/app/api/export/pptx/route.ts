@@ -38,6 +38,12 @@ type FabricObject = {
   objects?: FabricObject[];
 };
 
+type PptxSlideLike = {
+  addImage(options: Record<string, unknown>): unknown;
+  addText(text: string, options: Record<string, unknown>): unknown;
+  addShape(shape: string, options: Record<string, unknown>): unknown;
+};
+
 type ExportRequest = {
   title?: string;
   theme?: "violet" | "blue" | "light";
@@ -73,7 +79,7 @@ function slideBackground(value: string | undefined, theme: string) {
   return colorValue(firstGradientColor, fallback).color;
 }
 
-async function addGradientBackground(slide: any, value: string | undefined) {
+async function addGradientBackground(slide: PptxSlideLike, value: string | undefined) {
   if (!value?.startsWith("gradient:")) return;
   const colors = value.slice(9).split(",").filter((color) => /^#[0-9a-f]{6}$/i.test(color)).slice(0, 3);
   if (colors.length < 2) return;
@@ -113,7 +119,7 @@ function readCanvasObjects(serialized: string | undefined): Promise<FabricObject
 }
 
 function renderFabricObject(
-  slide: any,
+  slide: PptxSlideLike,
   object: FabricObject,
   parentX = 0,
   parentY = 0,
@@ -185,7 +191,7 @@ function renderFabricObject(
       const bg = colorValue(object.backgroundColor, "FFFFFF");
       textOptions.fill = { color: bg.color, transparency: bg.transparency };
     }
-    slide.addText(text, textOptions as any);
+    slide.addText(text, textOptions);
     return;
   }
 
@@ -209,14 +215,14 @@ function renderFabricObject(
   };
   const shape = shapeTypes[type];
   if (!shape) return;
-  slide.addShape(shape as any, {
+  slide.addShape(shape, {
     x, y, w: Math.max(0.01, w), h: Math.max(0.01, h),
     rotate: rotation,
     fill: { color: fill.color, transparency: Math.min(100, fill.transparency + Math.round((1 - opacity) * 100)) },
     line: object.stroke && lineWidth > 0
       ? { color: stroke.color, width: lineWidth, transparency: stroke.transparency }
       : { color: fill.color, transparency: 100, width: 0.1 },
-  } as any);
+  });
 }
 
 export async function POST(request: Request) {
@@ -239,7 +245,7 @@ export async function POST(request: Request) {
     pptx.company = "SlideAI Studio";
 
     for (const [index, item] of slides.entries()) {
-      const slide = pptx.addSlide();
+      const slide = pptx.addSlide() as unknown as PptxSlideLike;
       slide.background = { color: slideBackground(backgrounds[item.id], theme) };
       addGradientBackground(slide, backgrounds[item.id]);
       const objects = await readCanvasObjects(canvasData[item.id]);
