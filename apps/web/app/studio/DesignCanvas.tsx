@@ -787,7 +787,7 @@ export default function DesignCanvas({
   }, [title, eyebrow, body, theme, backgroundColor, slideNumber]);
 
   const addVerticalGuide=(event:MouseEvent<HTMLDivElement>)=>{const rect=event.currentTarget.getBoundingClientRect();const x=Math.round(Math.max(0,Math.min(1280,(event.clientX-rect.left)/rect.width*1280)));setVerticalGuides(items=>[...items,x]);};
-  const addHorizontalGuide=(event:React.MouseEvent<HTMLDivElement>)=>{const rect=event.currentTarget.getBoundingClientRect();const y=Math.round(Math.max(0,Math.min(720,(event.clientY-rect.top)/rect.height*720)));setHorizontalGuides(items=>[...items,y]);};
+  const addHorizontalGuide=(event:MouseEvent<HTMLDivElement>)=>{const rect=event.currentTarget.getBoundingClientRect();const y=Math.round(Math.max(0,Math.min(720,(event.clientY-rect.top)/rect.height*720)));setHorizontalGuides(items=>[...items,y]);};
   const clearGuides=()=>{setVerticalGuides([]);setHorizontalGuides([]);};
   return <div className={`design-canvas-with-rulers ${showRulers?"rulers-visible":""}`}>
     {showRulers&&<div className="canvas-ruler-corner">px</div>}
