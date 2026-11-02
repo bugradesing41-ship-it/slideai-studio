@@ -70,7 +70,6 @@ export default function StudioWorkspace() {
   const [selectedObjectType, setSelectedObjectType] = useState("");
   const [selectedAnimationPreset, setSelectedAnimationPreset] = useState("");
   const [animationCategory, setAnimationCategory] = useState("All");
-  const [animationPanelOpen, setAnimationPanelOpen] = useState(true);
   const [leftPanelTab,setLeftPanelTab]=useState<"layers"|"arrange"|"animations">("layers");
   const [layers,setLayers]=useState<CanvasLayer[]>([]);
   const [showRulers,setShowRulers]=useState(true);
