@@ -34,6 +34,7 @@ type FabricObject = {
   backgroundColor?: string;
   src?: string;
   path?: unknown[][];
+  points?: { x: number; y: number }[];
   objects?: FabricObject[];
 };
 
@@ -69,11 +70,31 @@ function slideBackground(value: string | undefined, theme: string) {
   return colorValue(firstGradientColor, fallback).color;
 }
 
-function readCanvasObjects(serialized: string | undefined): FabricObject[] {
+async function readCanvasObjects(serialized: string | undefined): Promise<FabricObject[]> {
   if (!serialized) return [];
   try {
     const parsed = JSON.parse(serialized) as { objects?: FabricObject[] };
-    return Array.isArray(parsed.objects) ? parsed.objects : [];
+    const objects = Array.isArray(parsed.objects) ? parsed.objects : [];
+    const inlineRemoteImages = async (object: FabricObject): Promise<void> => {
+      if (String(object.type ?? "").toLowerCase() === "image" && typeof object.src === "string" && object.src.startsWith("https://")) {
+        try {
+          const url = new URL(object.src);
+          if (url.hostname === "opendoodles.s3-us-west-1.amazonaws.com") {
+            const response = await fetch(url, { signal: AbortSignal.timeout(8000) });
+            const mime = (response.headers.get("content-type") || "").split(";")[0].toLowerCase();
+            if (response.ok && ["image/svg+xml", "image/png", "image/jpeg", "image/webp"].includes(mime)) {
+              const bytes = Buffer.from(await response.arrayBuffer());
+              if (bytes.byteLength <= 8 * 1024 * 1024) object.src = `data:${mime};base64,${bytes.toString("base64")}`;
+            }
+          }
+        } catch {
+          // Keep the rest of the slide exportable if an optional remote illustration is unavailable.
+        }
+      }
+      if (object.objects?.length) await Promise.all(object.objects.map(inlineRemoteImages));
+    };
+    await Promise.all(objects.map(inlineRemoteImages));
+    return objects;
   } catch {
     return [];
   }
@@ -156,8 +177,10 @@ function renderFabricObject(
     return;
   }
 
-  if (type === "path" && Array.isArray(object.path) && object.path.length > 0 && w > 0 && h > 0) {
-    const pathData = object.path.map((command) => command.join(" ")).join(" ");
+  if ((type === "path" && Array.isArray(object.path) && object.path.length > 0) || (type === "polygon" && Array.isArray(object.points) && object.points.length > 2)) {
+    const pathData = type === "polygon"
+      ? `M ${object.points!.map((point) => `${point.x} ${point.y}`).join(" L ")} Z`
+      : object.path!.map((command) => command.join(" ")).join(" ");
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${Math.max(1, Math.round(widthPx))}" height="${Math.max(1, Math.round(heightPx))}" viewBox="0 0 ${Math.max(1, Number(object.width) || 1)} ${Math.max(1, Number(object.height) || 1)}"><path d="${pathData}" fill="${object.fill ? "#" + fill.color : "none"}" fill-opacity="${opacity}" stroke="${object.stroke ? "#" + stroke.color : "none"}" stroke-width="${Math.max(0, Number(object.strokeWidth) || 0)}"/></svg>`;
     slide.addImage({
       data: `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`,
@@ -202,10 +225,10 @@ export async function POST(request: Request) {
     pptx.title = title;
     pptx.company = "SlideAI Studio";
 
-    payload.slides.forEach((item, index) => {
+    for (const [index, item] of payload.slides.entries()) {
       const slide = pptx.addSlide();
       slide.background = { color: slideBackground(backgrounds[item.id], theme) };
-      const objects = readCanvasObjects(canvasData[item.id]);
+      const objects = await readCanvasObjects(canvasData[item.id]);
       if (objects.length > 0) {
         objects.forEach((object) => renderFabricObject(slide, object));
       } else {
@@ -223,7 +246,7 @@ export async function POST(request: Request) {
         }
         slide.addText(`${String(index + 1).padStart(2, "0")} / ${String(payload.slides.length).padStart(2, "0")}`, { x: 11.4, y: 6.85, w: 1.0, h: 0.25, fontFace: "Aptos", fontSize: 9, color: muted, align: "right", margin: 0 });
       }
-    });
+    }
 
     const file = await pptx.write({ outputType: "nodebuffer" });
     const bytes = new Uint8Array(file as ArrayBuffer);
