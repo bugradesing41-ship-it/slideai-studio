@@ -325,3 +325,5 @@ h1{font:700 clamp(34px,4vw,49px)/1.12 Manrope,sans-serif;letter-spacing:-2.4px;m
 .canvas-guide-overlay{z-index:4}
 .canvas-snap-line{z-index:10}
 @media(max-width:700px){.design-canvas-with-rulers{grid-template-columns:22px minmax(0,1fr);grid-template-rows:20px auto}.canvas-ruler-corner{font-size:7px}.canvas-ruler-top{height:20px}.canvas-ruler-left{width:22px}.canvas-ruler-top span small,.canvas-ruler-left span small{font-size:7px}}
+
+.asset-character-preview{position:relative}.asset-animation-badge{position:absolute;right:5px;bottom:5px;padding:3px 5px;border:1px solid #8f7bc0;border-radius:4px;background:#2b2340;color:#e4d9ff;font:700 7px/1 "DM Sans",sans-serif;font-style:normal;letter-spacing:.06em}
