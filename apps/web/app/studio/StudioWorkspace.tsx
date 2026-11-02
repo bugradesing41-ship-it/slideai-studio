@@ -5,8 +5,6 @@ import { motion, type TargetAndTransition, type Transition } from "motion/react"
 import Link from "next/link";
 import DesignCanvas, { type Tool } from "./DesignCanvas";
 import AssetLibrary, { type StudioAsset } from "./AssetLibrary";
-import MotionAssetLibrary, { type MotionAsset } from "./MotionAssetLibrary";
-import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import { sampleDeck, validateDeck, type SlideSpec } from "@slideai/shared";
 import {
   ArrowLeft, ArrowUpRight, Check, ChevronDown, ChevronDown as MoveDown, ChevronUp as MoveUp, Copy, Download, ImagePlus,
@@ -20,6 +18,8 @@ type Slide = SlideSpec;
 
 const DEFAULT_FONT_WEIGHTS=[400];
 const SLIDE_ANIMATIONS=["Fade","Slide left","Slide right","Rise","Zoom","Flip","Blur","Wipe","Rotate","Bounce"];
+const TEXT_OBJECT_ANIMATIONS=["Fade in","Typewriter","Rise up","Slide from left","Slide from right","Pop","Elastic","Soft focus","Flip X","Flip Y","Rotate in","Float up","Drop in","Stretch","Tracking reveal","Focus in","Overshoot","Spring settle","Wobble","Heartbeat"];
+const ELEMENT_ANIMATIONS=["Fade in","Rise up","Slide from left","Slide from right","Zoom in","Pop","Bounce","Elastic","Rotate in","Drop in","Swing","Wave","Pulse","Glitch","Slide reveal","Spring settle","Jelly","Rubber band","Zoom through","Arc in","Drop","Spin in","Flip horizontal","Flip vertical","Float","Drift","Shake"];
 
 
 export default function StudioWorkspace() {
@@ -59,9 +59,9 @@ export default function StudioWorkspace() {
   const [assetCommand, setAssetCommand] = useState<{symbol:string;label:string;imageUrl?:string;fontFamily?:string;token:number}>({ symbol: "", label: "", token: 0 });
   const [imageCommand, setImageCommand] = useState({ dataUrl: "", name: "", token: 0 });
   const imageInputRef = useRef<HTMLInputElement>(null);
-  const [motionLibraryOpen, setMotionLibraryOpen] = useState(false);
-  const [motionAssetsBySlide, setMotionAssetsBySlide] = useState<Record<number, MotionAsset[]>>({});
-  const [motionSize, setMotionSize] = useState(34);
+  const [selectedObjectType, setSelectedObjectType] = useState("");
+  const [selectedAnimationPreset, setSelectedAnimationPreset] = useState("");
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const activeSlideAnimation = slideAnimations[activeId] ?? "Fade";
   const backgroundColor = slideBackgrounds[activeId] ?? (theme === "light" ? "#f1eee7" : theme === "blue" ? "#102333" : "#171525");
   const SLIDE_MOTION:Record<string,{initial:TargetAndTransition;animate:TargetAndTransition;transition:Transition}> = {
@@ -230,7 +230,7 @@ export default function StudioWorkspace() {
 
   function buildProjectBlob() {
     const project = { format: "slideai-studio-project", version: 1, title, theme, slides, canvasDataBySlide, slideBackgrounds, slideAnimations,
-      motionAssetsBySlide: Object.fromEntries(Object.entries(motionAssetsBySlide).map(([id, assets]) => [id, assets.map(asset => ({ ...asset, data: asset.data instanceof ArrayBuffer ? Array.from(new Uint8Array(asset.data)) : asset.data }))])) };
+    };
     return new Blob([JSON.stringify(project, null, 2)], { type: "application/json" });
   }
   function exportProject() {
@@ -278,23 +278,23 @@ export default function StudioWorkspace() {
       <header className="studio-topbar">
         <Link className="studio-back" href="/"><ArrowLeft size={16} /><span>Back to workspace</span></Link>
         <div className="studio-doc-title"><span className="doc-icon"><LayoutTemplate size={15} /></span><span>{title}</span><span className="saved-pill"><Check size={12} /> {localSaveState}</span></div>
-        <div className="studio-top-actions"><button className="icon-button" aria-label="More options"><MoreHorizontal size={18}/></button><button className="share-button" onClick={shareProject}>Share <ArrowUpRight size={14}/></button><button className="export-button" onClick={exportProject}><Download size={14}/> Export project</button></div>
+        <div className="studio-top-actions"><button className="share-button" onClick={() => void shareProject()}>Share <ArrowUpRight size={14}/></button><div className="export-menu-wrap"><button className="export-button" onClick={() => setExportMenuOpen((open) => !open)}><Download size={14}/> Export <ChevronDown size={13}/></button>{exportMenuOpen && <div className="export-menu"><button onClick={() => { exportProject(); setExportMenuOpen(false); }}><Download size={14}/> Editable project (.json)</button><button onClick={() => { exportSlidePng(); setExportMenuOpen(false); }}><ImagePlus size={14}/> Current slide (.png)</button><button onClick={() => { void exportPowerPoint(); setExportMenuOpen(false); }}><Download size={14}/> PowerPoint (.pptx)</button></div>}</div></div>
       </header>
 
       <div className="studio-body">
-        <aside className="chat-panel motion-assets-panel">
-          <div className="panel-heading"><div className="panel-heading-icon"><Play size={16}/></div><div><strong>Motion library</strong><span>Real Lottie / dotLottie files</span></div></div>
-          <div className="chat-context"><span className="context-dot"/> IMPORT · PREVIEW · PLACE ON SLIDE</div>
-          <div className="motion-panel-content">
-            <p>Hazır animasyon dosyalarını içe aktar, önizle ve aktif slayta ekle. JSON ve .lottie desteklenir.</p>
-            <button className="motion-library-open" onClick={() => setMotionLibraryOpen(true)}><Plus size={15}/> Animation library</button>
-            <div className="motion-panel-links"><a href="https://lottiefiles.com/free-animations" target="_blank" rel="noreferrer">LottieFiles Community <ArrowUpRight size={12}/></a><a href="https://rive.app/community/" target="_blank" rel="noreferrer">Rive Community <ArrowUpRight size={12}/></a></div>
-            <div className="motion-added-heading">THIS SLIDE <span>{(motionAssetsBySlide[activeId] ?? []).length}</span></div>
-            {(motionAssetsBySlide[activeId] ?? []).map((asset,index)=><div className="motion-added-item" key={`${asset.name}-${index}`}><span>{asset.name}</span><button aria-label="Remove animation" onClick={()=>setMotionAssetsBySlide(current=>({...current,[activeId]:(current[activeId]??[]).filter((_,i)=>i!==index)}))}><Trash2 size={13}/></button></div>)}
-            <label className="field-label">Preview size <span>{motionSize}%</span></label><input className="range-control" type="range" min="15" max="75" value={motionSize} onChange={event=>setMotionSize(Number(event.target.value))}/>
-            <p className="inspector-hint">Animasyonlar Fabric tuvalinden ayrı bir katmanda oynatılır. PNG dışa aktarımı animasyon karesini içermez; proje JSON'u animasyon verisini saklar.</p>
+        <aside className="chat-panel animation-presets-panel">
+          <div className="panel-heading"><div className="panel-heading-icon"><Play size={16}/></div><div><strong>Object animations</strong><span>Text & element motion presets</span></div></div>
+          <div className="chat-context"><span className="context-dot"/> SELECT AN OBJECT · APPLY · PREVIEW</div>
+          <div className="animation-library-content">
+            {#if false}{/if}
+            <p className="animation-library-intro">Tuvalde bir metin veya tasarım öğesi seç. Seçtiğin nesne türüne uygun animasyonları buradan uygula.</p>
+            {!hasSelection ? <div className="animation-empty-state"><MousePointer2 size={22}/><strong>Henüz nesne seçilmedi</strong><span>Animasyon eklemek için slayttaki bir metne, şekle veya görsele tıkla.</span></div> : <>
+              <div className="animation-target-label"><span>{["textbox","i-text","text"].includes(selectedObjectType.toLowerCase()) ? "TEXT ANIMATIONS" : "ELEMENT ANIMATIONS"}</span><small>{selectedObjectType}</small></div>
+              <div className="animation-preset-list">{(["textbox","i-text","text"].includes(selectedObjectType.toLowerCase()) ? TEXT_OBJECT_ANIMATIONS : ELEMENT_ANIMATIONS).map((preset,index)=><button key={preset} className={selectedAnimationPreset===preset?"animation-preset-card selected":"animation-preset-card"} onClick={()=>{const kind=["textbox","i-text","text"].includes(selectedObjectType.toLowerCase())?"text":"element";setSelectedAnimationPreset(preset);issueCanvasCommand(`apply-animation:${kind}:${preset}`);}}><span className="animation-preset-index">{String(index+1).padStart(2,"0")}</span><span className="animation-preset-copy"><strong>{preset}</strong><small>{preset==="Typewriter"?"Character-by-character reveal":preset==="Tracking reveal"?"Letter spacing reveal":preset==="Spring settle"||preset==="Elastic"?"Soft spring motion":preset==="Glitch"?"Digital displacement":"Smooth entrance motion"}</small></span><span className="animation-preset-check">{selectedAnimationPreset===preset?"✓":"＋"}</span></button>)}</div>
+              <button className="animation-preview-button" disabled={!selectedAnimationPreset} onClick={()=>issueCanvasCommand(`preview-animation:${["textbox","i-text","text"].includes(selectedObjectType.toLowerCase())?"text":"element"}:${selectedAnimationPreset}`)}><Play size={14}/> Preview selected animation</button>
+              {selectedAnimationPreset && <p className="inspector-hint">“{selectedAnimationPreset}” nesneye kaydedildi. Proje JSON dışa aktarımında animasyon ayarı korunur.</p>}
+            </>}
           </div>
-          <div className="motion-panel-footer"><button className="quick-action" onClick={exportSlidePng}><ImagePlus size={14}/> Export current slide PNG</button><button className="quick-action" onClick={exportProject}><Download size={14}/> Download editable project</button><button className="quick-action" onClick={()=>void exportPowerPoint()}><Download size={14}/> Export PowerPoint (.pptx)</button></div>
         </aside>
 
         <section className="editor-main">
@@ -304,8 +304,6 @@ export default function StudioWorkspace() {
               <span className="toolbar-divider"/>
               <button className="tool-button" onClick={() => issueCanvasCommand("undo")} disabled={!canUndo} title="Undo"><Undo2 size={15}/></button>
               <button className="tool-button" onClick={() => issueCanvasCommand("redo")} disabled={!canRedo} title="Redo"><Redo2 size={15}/></button>
-              <button className="tool-button" onClick={exportSlidePng} title="Export current slide as PNG"><Download size={15}/><span>PNG</span></button>
-              <button className="tool-button" onClick={()=>void exportPowerPoint()} title="Export Microsoft PowerPoint"><Download size={15}/><span>PPTX</span></button>
               <button className="tool-button asset-launch-button" onClick={() => {setAssetLibraryCategory("All assets");setAssetLibraryOpen(true);}} title="Open asset library"><ImagePlus size={15}/><span>Assets</span></button>
               <button className="tool-button" onClick={() => setMotionLibraryOpen(true)} title="Add an animation"><Play size={15}/><span>Motion</span></button>
               <button className="tool-button" onClick={() => {setIsPlaying(true);setPlaybackToken((token) => token + 1);setActiveId(slides[0].id);}} title="Play all slides"><Play size={15}/><span>Play all</span></button>
@@ -361,7 +359,7 @@ export default function StudioWorkspace() {
                 initialData={canvasDataBySlide[activeId]}
                 designElements={activeSlide.elements ?? []}
                 onChange={saveCanvas}
-                onSelectionChange={(selected, type, typography) => {setHasSelection(selected);if(typography){if(typography.fontFamily)setFontFamily(typography.fontFamily);if(typography.fontSize)setFontSize(typography.fontSize);if(typography.fontWeight)setFontWeight(String(typography.fontWeight));}}}
+                onSelectionChange={(selected, type, typography, animationPreset) => {setHasSelection(selected);setSelectedObjectType(type??"");setSelectedAnimationPreset(animationPreset??"");if(typography){if(typography.fontFamily)setFontFamily(typography.fontFamily);if(typography.fontSize)setFontSize(typography.fontSize);if(typography.fontWeight)setFontWeight(String(typography.fontWeight));}}}
                 command={canvasCommand}
                 assetCommand={assetCommand}
                 imageCommand={imageCommand}
@@ -373,7 +371,7 @@ export default function StudioWorkspace() {
                 }}
               />
               </motion.div>
-              {(motionAssetsBySlide[activeId] ?? []).map((asset,index)=><div className="slide-motion-overlay" key={`${asset.name}-${index}`} style={{width:`${motionSize}%`,height:`${motionSize}%`}}><DotLottieReact data={asset.data} src={asset.src} autoplay loop /></div>)}
+              
             </div>
           </div>
 
@@ -458,7 +456,6 @@ export default function StudioWorkspace() {
           <div className="inspector-tip"><Sparkles size={15}/><div><strong>Pro tip</strong><p>Select any shape or text on the canvas to resize, rotate, recolor and layer it.</p></div></div>
         </aside>
       </div>
-      {motionLibraryOpen && <MotionAssetLibrary onClose={()=>setMotionLibraryOpen(false)} onChoose={(asset)=>{setMotionAssetsBySlide(current=>({...current,[activeId]:[...(current[activeId]??[]),asset]}));setMotionLibraryOpen(false);}} />}
       {assetLibraryOpen && <AssetLibrary initialCategory={assetLibraryCategory} onClose={() => setAssetLibraryOpen(false)} onChoose={(asset: StudioAsset) => { setAssetCommand((current) => ({ symbol: asset.symbol, label: asset.label, imageUrl: asset.imageUrl, fontFamily: asset.fontFamily, token: current.token + 1 })); setAssetLibraryOpen(false); setTool("select"); }} />}
     </main>
   );
