@@ -39,6 +39,7 @@ type FabricObject = {
 };
 
 type PptxSlideLike = {
+  background: { color: string };
   addImage(options: Record<string, unknown>): unknown;
   addText(text: string, options: Record<string, unknown>): unknown;
   addShape(shape: string, options: Record<string, unknown>): unknown;
