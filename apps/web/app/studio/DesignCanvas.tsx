@@ -11,17 +11,19 @@ declare module "fabric" {
     name?: string;
     animationPreset?: string;
     animationKind?: string;
+    isAnimated?: boolean;
   }
   interface SerializedObjectProps {
     name?: string;
     animationPreset?: string;
     animationKind?: string;
+    isAnimated?: boolean;
   }
 }
 
 type Tool = "select" | "draw" | "rect" | "circle" | "triangle" | "line" | "arrow" | "star" | "diamond" | "hexagon" | "pentagon" | "heart" | "speech" | "text";
 type CanvasCommand = { action: string; token: number };
-type AssetCommand = { symbol: string; label: string; imageUrl?: string; fontFamily?: string; token: number };
+type AssetCommand = { symbol: string; label: string; imageUrl?: string; fontFamily?: string; animated?: boolean; token: number };
 type ImageCommand = { dataUrl: string; name: string; token: number };
 type CanvasLayer = { index:number; id:string; name:string; type:string; visible:boolean; locked:boolean; active:boolean };
 type Props = {
@@ -105,6 +107,17 @@ export default function DesignCanvas({
   const [pointerPosition,setPointerPosition]=useState<{x:number;y:number;visible:boolean}>({x:0,y:0,visible:false});
   const elementRef = useRef<HTMLCanvasElement>(null);
   const canvasRef = useRef<any>(null);
+  const gifRenderFrameRef = useRef<number|null>(null);
+  const ensureAnimatedRender=(canvas:any)=>{
+    if(gifRenderFrameRef.current!==null)return;
+    const render=()=>{
+      if(canvasRef.current!==canvas){gifRenderFrameRef.current=null;return;}
+      if(!canvas.getObjects().some((object:any)=>object.isAnimated)){gifRenderFrameRef.current=null;return;}
+      canvas.requestRenderAll();
+      gifRenderFrameRef.current=requestAnimationFrame(render);
+    };
+    gifRenderFrameRef.current=requestAnimationFrame(render);
+  };
   const historyRef = useRef<{ items: string[]; index: number }>({ items: [], index: -1 });
   const restoringRef = useRef(false);
   const latestRef = useRef({ title, slideNumber, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontWeights, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, textBorderEnabled, textBorderWidth, showRulers, showGuides, snapToGuides, onLayersChange, verticalGuides, horizontalGuides, initialData, designElements, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange, onReady });
@@ -117,7 +130,7 @@ export default function DesignCanvas({
 
     async function mount() {
       const fabric = await import("fabric");
-      fabric.FabricObject.customProperties = ["name", "animationPreset", "animationKind", "locked"];
+      fabric.FabricObject.customProperties = ["name", "animationPreset", "animationKind", "locked", "isAnimated"];
       if (disposed || !elementRef.current) return;
       await loadGoogleFont(latestRef.current.fontFamily, latestRef.current.fontWeights, latestRef.current.fontWeight, latestRef.current.fontSize);
       const generatedFamilies = [...new Set(latestRef.current.designElements.filter((element) => element.type === "text").map((element) => element.fontFamily).filter(Boolean))];
@@ -229,7 +242,7 @@ export default function DesignCanvas({
         setSnapLines({x:bx?.line??null,y:by?.line??null});
       });
       canvas.on("object:modified", () => { setSnapLines({x:null,y:null}); save(); });
-      canvas.on("object:added", save);
+      canvas.on("object:added", (event:any)=>{if(event.target?.isAnimated)ensureAnimatedRender(canvas);save();});
       canvas.on("object:removed", save);
       canvas.on("mouse:up", () => setSnapLines({x:null,y:null}));
       canvas.on("text:changed", save);
@@ -339,6 +352,7 @@ export default function DesignCanvas({
       save();
       latestRef.current.onReady?.();
       cleanup = () => {
+        if(gifRenderFrameRef.current!==null){cancelAnimationFrame(gifRenderFrameRef.current);gifRenderFrameRef.current=null;}
         canvas.dispose();
         canvasRef.current = null;
       };
@@ -678,15 +692,22 @@ export default function DesignCanvas({
         try {
           const response=await fetch(assetCommand.imageUrl);
           if(!response.ok)throw new Error(`Illustration request failed (${response.status})`);
-          const svg=await response.text();
-          if(!/<svg[\\s>]/i.test(svg))throw new Error("Illustration source did not return a valid SVG");
-          const dataUrl=`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+          let dataUrl:string;
+          if(assetCommand.animated){
+            const blob=await response.blob();
+            dataUrl=await new Promise<string>((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result));reader.onerror=()=>reject(new Error("Could not read animated image"));reader.readAsDataURL(blob);});
+            if(!dataUrl.startsWith("data:image/gif;base64,"))throw new Error("Animated character did not return a GIF");
+          }else{
+            const svg=await response.text();
+            if(!/<svg[\\s>]/i.test(svg))throw new Error("Illustration source did not return a valid SVG");
+            dataUrl=`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+          }
           const image = await FabricImage.fromURL(dataUrl);
           if (!canvasRef.current) return;
           const scale = Math.min(360/(image.width||1), 500/(image.height||1), 1);
-          image.set({ left:790, top:120, scaleX:scale, scaleY:scale, name:assetCommand.label });
-          canvas.add(image); canvas.setActiveObject(image); canvas.requestRenderAll();
-          const json=JSON.stringify(canvas.toObject(["name","animationPreset"])); latestRef.current.onChange(json);
+          image.set({ left:790, top:120, scaleX:scale, scaleY:scale, name:assetCommand.label, isAnimated:assetCommand.animated===true });
+          canvas.add(image); canvas.setActiveObject(image); canvas.requestRenderAll();if(assetCommand.animated)ensureAnimatedRender(canvas);
+          const json=JSON.stringify(canvas.toObject(["name","animationPreset","isAnimated"])); latestRef.current.onChange(json);
           const history=historyRef.current,items=[...history.items.slice(0,history.index+1),json].slice(-60); historyRef.current={items,index:items.length-1};
           latestRef.current.onHistoryChange(items.length>1,false); latestRef.current.onSelectionChange(true,"image");
         } catch(error) { console.error("Could not load character illustration",error); }
