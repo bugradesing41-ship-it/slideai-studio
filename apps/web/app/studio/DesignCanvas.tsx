@@ -97,7 +97,7 @@ async function loadGoogleFont(family:string, weights:number[], weight:number|str
 
 export default function DesignCanvas({
   slideId, slideNumber, title, eyebrow, body, theme, tool, fill, stroke, strokeWidth,
-  fontFamily, fontWeights, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, textBorderEnabled, textBorderWidth, showRulers, showGuides, snapToGuides, onLayersChange, verticalGuides, horizontalGuides, initialData, designElements, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange, onReady
+  fontFamily, fontWeights, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, textBorderEnabled, textBorderWidth, showRulers, showGuides, snapToGuides, onLayersChange, initialData, designElements, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange, onReady
 }: Props) {
   const [snapLines,setSnapLines]=useState<{x:number|null;y:number|null}>({x:null,y:null});
   const [verticalGuides,setVerticalGuides]=useState<number[]>([]);
