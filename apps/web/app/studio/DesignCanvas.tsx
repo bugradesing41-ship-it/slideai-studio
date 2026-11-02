@@ -551,7 +551,7 @@ export default function DesignCanvas({
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !command.action.startsWith("preview-animation:")) return;
+    if (!canvas || (!command.action.startsWith("preview-animation:") && !command.action.startsWith("apply-animation:"))) return;
     const target = canvas.getActiveObject();
     if (!target) return;
     const original = { left:target.left??0, top:target.top??0, scaleX:target.scaleX??1, scaleY:target.scaleY??1, angle:target.angle??0, opacity:target.opacity??1, text:target.text, charSpacing:target.charSpacing??0 };
