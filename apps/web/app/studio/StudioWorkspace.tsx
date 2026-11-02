@@ -61,6 +61,7 @@ export default function StudioWorkspace() {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [selectedObjectType, setSelectedObjectType] = useState("");
   const [selectedAnimationPreset, setSelectedAnimationPreset] = useState("");
+  const [animationCategory, setAnimationCategory] = useState("All");
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const activeSlideAnimation = slideAnimations[activeId] ?? "Fade";
   const backgroundColor = slideBackgrounds[activeId] ?? (theme === "light" ? "#f1eee7" : theme === "blue" ? "#102333" : "#171525");
@@ -288,15 +289,28 @@ export default function StudioWorkspace() {
       <div className="studio-body">
         <aside className="chat-panel animation-presets-panel">
           <div className="panel-heading"><div className="panel-heading-icon"><Play size={16}/></div><div><strong>Object animations</strong><span>Text & element motion presets</span></div></div>
-          <div className="chat-context"><span className="context-dot"/> SELECT AN OBJECT · APPLY · PREVIEW</div>
+          <div className="chat-context"><span className="context-dot"/> CLICK AN ANIMATION · APPLIED INSTANTLY</div>
           <div className="animation-library-content">
-            <p className="animation-library-intro">Tuvalde bir metin veya tasarım öğesi seç. Seçtiğin nesne türüne uygun animasyonları buradan uygula.</p>
-            {!hasSelection ? <div className="animation-empty-state"><MousePointer2 size={22}/><strong>Henüz nesne seçilmedi</strong><span>Animasyon eklemek için slayttaki bir metne, şekle veya görsele tıkla.</span></div> : <>
-              <div className="animation-target-label"><span>{["textbox","i-text","text"].includes(selectedObjectType.toLowerCase()) ? "TEXT ANIMATIONS" : "ELEMENT ANIMATIONS"}</span><small>{selectedObjectType}</small></div>
-              <div className="animation-preset-list">{(["textbox","i-text","text"].includes(selectedObjectType.toLowerCase()) ? TEXT_OBJECT_ANIMATIONS : ELEMENT_ANIMATIONS).map((preset,index)=><button key={preset} className={selectedAnimationPreset===preset?"animation-preset-card selected":"animation-preset-card"} onClick={()=>{const kind=["textbox","i-text","text"].includes(selectedObjectType.toLowerCase())?"text":"element";setSelectedAnimationPreset(preset);issueCanvasCommand(`apply-animation:${kind}:${preset}`);}}><span className="animation-preset-index">{String(index+1).padStart(2,"0")}</span><span className="animation-preset-copy"><strong>{preset}</strong><small>{preset==="Typewriter"?"Character-by-character reveal":preset==="Tracking reveal"?"Letter spacing reveal":preset==="Spring settle"||preset==="Elastic"?"Soft spring motion":preset==="Glitch"?"Digital displacement":"Smooth entrance motion"}</small></span><span className="animation-preset-check">{selectedAnimationPreset===preset?"✓":"＋"}</span></button>)}</div>
-              <button className="animation-preview-button" disabled={!selectedAnimationPreset} onClick={()=>issueCanvasCommand(`preview-animation:${["textbox","i-text","text"].includes(selectedObjectType.toLowerCase())?"text":"element"}:${selectedAnimationPreset}`)}><Play size={14}/> Preview selected animation</button>
-              {selectedAnimationPreset && <p className="inspector-hint">“{selectedAnimationPreset}” nesneye kaydedildi. Proje JSON dışa aktarımında animasyon ayarı korunur.</p>}
-            </>}
+            <p className="animation-library-intro">Metin ve tasarım öğeleri için ayrı, kategorilere ayrılmış hazır animasyonlar. Bir preset'e tıklaman yeterli.</p>
+            {!hasSelection ? <div className="animation-empty-state"><MousePointer2 size={22}/><strong>Henüz nesne seçilmedi</strong><span>Animasyonları görmek ve uygulamak için slayttaki bir metne, şekle veya görsele tıkla.</span></div> : (() => {
+              const isText = ["textbox","i-text","text"].includes(selectedObjectType.toLowerCase());
+              const presets = isText ? TEXT_OBJECT_ANIMATIONS : ELEMENT_ANIMATIONS;
+              const categories = ["All","Entrance","Reveal","Emphasis","Movement","Distortion"];
+              const categoryFor = (preset:string) => {
+                if (["Typewriter","Tracking reveal","Soft focus","Focus in","Slide reveal","Zoom through"].includes(preset)) return "Reveal";
+                if (["Bounce","Elastic","Pulse","Heartbeat","Wobble","Shake","Jelly","Rubber band","Swing","Wave","Overshoot","Spring settle"].includes(preset)) return "Emphasis";
+                if (["Float up","Float","Drift","Slide from left","Slide from right","Rise up","Arc in"].includes(preset)) return "Movement";
+                if (["Glitch","Stretch","Flip X","Flip Y","Flip horizontal","Flip vertical"].includes(preset)) return "Distortion";
+                return "Entrance";
+              };
+              const filtered = presets.filter((preset) => animationCategory === "All" || categoryFor(preset) === animationCategory);
+              return <>
+                <div className="animation-target-label"><span>{isText ? "TEXT ANIMATIONS" : "ELEMENT ANIMATIONS"}</span><small>{selectedObjectType}</small></div>
+                <div className="animation-category-list">{categories.map((category) => <button key={category} className={animationCategory===category?"active":""} onClick={()=>setAnimationCategory(category)}>{category}</button>)}</div>
+                <div className="animation-preset-list">{filtered.map((preset,index)=><button key={preset} title={`${preset} animasyonunu uygula`} className={selectedAnimationPreset===preset?"animation-preset-card selected":"animation-preset-card"} onClick={()=>{const kind=isText?"text":"element";setSelectedAnimationPreset(preset);issueCanvasCommand(`apply-animation:${kind}:${preset}`);}}><span className="animation-preset-index">{String(index+1).padStart(2,"0")}</span><span className="animation-preset-copy"><strong>{preset}</strong><small>{categoryFor(preset)} · Tıkla ve uygula</small></span><span className="animation-preset-check">{selectedAnimationPreset===preset?"✓":"＋"}</span></button>)}</div>
+                {selectedAnimationPreset && <p className="inspector-hint">“{selectedAnimationPreset}” seçili nesneye kaydedildi. Sunum oynatıldığında animasyon çalışır.</p>}
+              </>;
+            })()}
           </div>
         </aside>
 
