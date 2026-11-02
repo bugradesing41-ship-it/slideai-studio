@@ -133,16 +133,8 @@ export default function DesignCanvas({
         const parsedWeight = typeof rawWeight === "number" ? rawWeight : rawWeight === "bold" ? 700 : rawWeight === "normal" ? 400 : Number(rawWeight ?? 400);
         const typography = active && "fontFamily" in active ? { fontFamily:String(active.get("fontFamily") ?? "").replace(/\s+Variable$/i,""), fontSize:Number(active.get("fontSize") ?? 0), fontWeight:Number.isFinite(parsedWeight) ? parsedWeight : 400 } : undefined;
         latestRef.current.onSelectionChange(Boolean(active), active?.type ?? "", typography, typeof active?.animationPreset === "string" ? active.animationPreset : "");
-        if (active && latestRef.current.cornerRadius > 0) {
-          void import("fabric").then(({ Rect }) => {
-            if (!canvasRef.current || canvas.getActiveObject() !== active) return;
-            const width = Math.max(1, active.width ?? 1);
-            const height = Math.max(1, active.height ?? 1);
-            active.set({ clipPath: new Rect({ width, height, rx: Math.min(latestRef.current.cornerRadius,width/2), ry: Math.min(latestRef.current.cornerRadius,height/2), originX:"center", originY:"center" }), rx:latestRef.current.cornerRadius, ry:latestRef.current.cornerRadius });
-            canvas.requestRenderAll();
-            save();
-          });
-        }
+        // Selection is read-only: do not mutate Fabric objects or save from a selection event.
+        // This prevents selection -> save -> parent render -> selection update loops.
       };
       const syncText = () => {
         const current = latestRef.current;
@@ -674,9 +666,6 @@ export default function DesignCanvas({
           fill: current.fill,
           stroke: current.stroke,
           strokeWidth: current.strokeWidth,
-          fontFamily: current.fontFamily,
-          fontSize: current.fontSize,
-          fontWeight: current.fontWeight,
           opacity: current.opacity,
           shadow: current.shadowEnabled ? new Shadow({ color: "rgba(0,0,0,0.32)", blur: 24, offsetX: 8, offsetY: 12 }) : null,
         });
@@ -684,7 +673,7 @@ export default function DesignCanvas({
         current.onChange(JSON.stringify(canvas.toObject(["name", "animationPreset", "animationKind"])));
       });
     }
-  }, [fill, stroke, strokeWidth, fontFamily, fontSize, fontWeight, shadowEnabled, opacity]);
+  }, [fill, stroke, strokeWidth, shadowEnabled, opacity]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
