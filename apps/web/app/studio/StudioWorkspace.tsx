@@ -22,8 +22,8 @@ const BLANK_SLIDE: Slide = { id: 1, title: " ", eyebrow: "", body: "", kind: "co
 
 const DEFAULT_FONT_WEIGHTS=[400];
 const SLIDE_ANIMATIONS=["Fade","Slide left","Slide right","Rise","Zoom","Flip","Blur","Wipe","Rotate","Bounce"];
-const TEXT_OBJECT_ANIMATIONS=["Fade in","Typewriter","Rise up","Slide from left","Slide from right","Pop","Elastic","Soft focus","Flip X","Flip Y","Rotate in","Float up","Drop in","Stretch","Tracking reveal","Focus in","Overshoot","Spring settle","Wobble","Heartbeat"];
-const ELEMENT_ANIMATIONS=["Fade in","Rise up","Slide from left","Slide from right","Zoom in","Pop","Bounce","Elastic","Rotate in","Drop in","Swing","Wave","Pulse","Glitch","Slide reveal","Spring settle","Jelly","Rubber band","Zoom through","Arc in","Drop","Spin in","Flip horizontal","Flip vertical","Float","Drift","Shake"];
+const TEXT_OBJECT_ANIMATIONS=["Fade in","Typewriter","Rise up","Slide from left","Slide from right","Zoom in","Spin in","Arc in","Drop in","Swing","Pulse","Shake","Glitch","Tracking reveal","Flip X","Flip Y","Whip pan","Orbit in"];
+const ELEMENT_ANIMATIONS=["Fade in","Rise up","Slide from left","Slide from right","Zoom in","Spin in","Arc in","Drop in","Swing","Pulse","Shake","Glitch","Rubber band","Flip X","Flip Y","Whip pan","Orbit in"];
 
 
 export default function StudioWorkspace() {
@@ -377,14 +377,14 @@ export default function StudioWorkspace() {
             <p className="left-panel-hint">Objects snap to slide edges, center lines and nearby object edges while moving.</p>
           </div>}
           {leftPanelTab==="animations"&&<div className="left-panel-content motion-tab-content">
-            <div className="chat-context"><span className="context-dot"/> CLICK AN ANIMATION · APPLIED INSTANTLY</div>
+            <div className="chat-context"><span className="context-dot"/> SELECT ANIMATION · PREVIEW ON SLIDE</div>
             <div className="animation-library-content">
-              <p className="animation-library-intro">Metin ve tasarım öğeleri için ayrı, kategorilere ayrılmış animasyonlar. Bir preset&apos;e tıklaman yeterli.</p>
+              <p className="animation-library-intro">Her efekt farklı bir hareket dili kullanır. Seçtiğinde slaytta önizlemesini görür, sunum oynatımında tekrar çalıştırırsın.</p>
               {!hasSelection?<div className="animation-empty-state"><MousePointer2 size={22}/><strong>Henüz nesne seçilmedi</strong><span>Animasyon uygulamak için slayttaki bir metne, şekle veya görsele tıkla.</span></div>:(()=>{
                 const isText=["textbox","i-text","text"].includes(selectedObjectType.toLowerCase());
                 const presets=isText?TEXT_OBJECT_ANIMATIONS:ELEMENT_ANIMATIONS;
-                const categories=["All","Entrance","Reveal","Emphasis","Movement","Distortion"];
-                const categoryFor=(preset:string)=>{if(["Typewriter","Tracking reveal","Soft focus","Focus in","Slide reveal","Zoom through"].includes(preset))return "Reveal";if(["Bounce","Elastic","Pulse","Heartbeat","Wobble","Shake","Jelly","Rubber band","Swing","Wave","Overshoot","Spring settle"].includes(preset))return "Emphasis";if(["Float up","Float","Drift","Slide from left","Slide from right","Rise up","Arc in"].includes(preset))return "Movement";if(["Glitch","Stretch","Flip X","Flip Y","Flip horizontal","Flip vertical"].includes(preset))return "Distortion";return "Entrance";};
+                const categories=["All","Entrance","Reveal","Movement","Emphasis","Distortion"];
+                const categoryFor=(preset:string)=>{if(["Typewriter","Tracking reveal","Soft focus","Focus in","Slide reveal"].includes(preset))return "Reveal";if(["Pulse","Shake","Rubber band","Swing","Wave","Bounce","Elastic"].includes(preset))return "Emphasis";if(["Rise up","Slide from left","Slide from right","Arc in","Drop in","Whip pan","Orbit in","Float up","Drift"].includes(preset))return "Movement";if(["Glitch","Flip X","Flip Y","Flip horizontal","Flip vertical","Stretch","Jelly"].includes(preset))return "Distortion";return "Entrance";};
                 const filtered=presets.filter(preset=>animationCategory==="All"||categoryFor(preset)===animationCategory);
                 return <><div className="animation-target-label"><span>{isText?"TEXT ANIMATIONS":"ELEMENT ANIMATIONS"}</span><small>{selectedObjectType}</small></div>
                   <div className="animation-category-list">{categories.map(category=><button key={category} className={animationCategory===category?"active":""} onClick={()=>setAnimationCategory(category)}>{category}</button>)}</div>
