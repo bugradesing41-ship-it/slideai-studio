@@ -674,7 +674,12 @@ export default function DesignCanvas({
       if (!canvasRef.current) return;
       if (assetCommand.imageUrl) {
         try {
-          const image = await FabricImage.fromURL(assetCommand.imageUrl, { crossOrigin: "anonymous" });
+          const response=await fetch(assetCommand.imageUrl);
+          if(!response.ok)throw new Error(`Illustration request failed (${response.status})`);
+          const svg=await response.text();
+          if(!/<svg[\\s>]/i.test(svg))throw new Error("Illustration source did not return a valid SVG");
+          const dataUrl=`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+          const image = await FabricImage.fromURL(dataUrl);
           if (!canvasRef.current) return;
           const scale = Math.min(360/(image.width||1), 500/(image.height||1), 1);
           image.set({ left:790, top:120, scaleX:scale, scaleY:scale, name:assetCommand.label });
