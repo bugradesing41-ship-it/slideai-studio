@@ -110,10 +110,11 @@ export default function DesignCanvas({
   const gifRenderFrameRef = useRef<number|null>(null);
   const ensureAnimatedRender=(canvas:any)=>{
     if(gifRenderFrameRef.current!==null)return;
-    const render=()=>{
+    let lastRender=0;
+    const render=(now:number)=>{
       if(canvasRef.current!==canvas){gifRenderFrameRef.current=null;return;}
       if(!canvas.getObjects().some((object:any)=>object.isAnimated)){gifRenderFrameRef.current=null;return;}
-      canvas.requestRenderAll();
+      if(now-lastRender>=33){canvas.requestRenderAll();lastRender=now;}
       gifRenderFrameRef.current=requestAnimationFrame(render);
     };
     gifRenderFrameRef.current=requestAnimationFrame(render);
