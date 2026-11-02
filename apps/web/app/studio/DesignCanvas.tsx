@@ -3,7 +3,7 @@
 /* Fabric's canvas event payloads are intentionally dynamic at this integration boundary. */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import type { DesignElement } from "@slideai/shared";
 
 declare module "fabric" {
@@ -786,7 +786,7 @@ export default function DesignCanvas({
     current.onChange(JSON.stringify(canvas.toObject(["name", "animationPreset", "animationKind"])));
   }, [title, eyebrow, body, theme, backgroundColor, slideNumber]);
 
-  const addVerticalGuide=(event:React.MouseEvent<HTMLDivElement>)=>{const rect=event.currentTarget.getBoundingClientRect();const x=Math.round(Math.max(0,Math.min(1280,(event.clientX-rect.left)/rect.width*1280)));setVerticalGuides(items=>[...items,x]);};
+  const addVerticalGuide=(event:MouseEvent<HTMLDivElement>)=>{const rect=event.currentTarget.getBoundingClientRect();const x=Math.round(Math.max(0,Math.min(1280,(event.clientX-rect.left)/rect.width*1280)));setVerticalGuides(items=>[...items,x]);};
   const addHorizontalGuide=(event:React.MouseEvent<HTMLDivElement>)=>{const rect=event.currentTarget.getBoundingClientRect();const y=Math.round(Math.max(0,Math.min(720,(event.clientY-rect.top)/rect.height*720)));setHorizontalGuides(items=>[...items,y]);};
   const clearGuides=()=>{setVerticalGuides([]);setHorizontalGuides([]);};
   return <div className={`design-canvas-with-rulers ${showRulers?"rulers-visible":""}`}>
