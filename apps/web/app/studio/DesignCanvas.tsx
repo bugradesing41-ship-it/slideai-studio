@@ -380,7 +380,7 @@ export default function DesignCanvas({
     }
 
     const active = canvas.getActiveObject();
-    if (!active) return;
+    if (!active && !action.startsWith("select-layer:") && !action.startsWith("toggle-visible:") && !action.startsWith("toggle-lock:")) return;
     const recordCommand = () => {
       const json = JSON.stringify(canvas.toObject(["name", "animationPreset", "animationKind"]));
       latestRef.current.onChange(json);
@@ -391,6 +391,30 @@ export default function DesignCanvas({
         latestRef.current.onHistoryChange(items.length > 1, false);
       }
     };
+    if(action.startsWith("select-layer:")) {
+      const object=canvas.getObjects()[Number(action.split(":")[1])];
+      if(object){canvas.setActiveObject(object);canvas.requestRenderAll();latestRef.current.onSelectionChange(true,object.type??"");}
+      return;
+    }
+    if(action.startsWith("toggle-visible:")||action.startsWith("toggle-lock:")) {
+      const parts=action.split(":");const object=canvas.getObjects()[Number(parts[2])];if(!object)return;
+      if(parts[0]==="toggle-visible"){object.set("visible",object.visible===false);if(object.visible===false&&canvas.getActiveObject()===object)canvas.discardActiveObject();}
+      else {const locked=object.locked!==true;object.set({locked,selectable:!locked,evented:!locked,hasControls:!locked,lockMovementX:locked,lockMovementY:locked,lockScalingX:locked,lockScalingY:locked,lockRotation:locked});}
+      canvas.requestRenderAll();recordCommand();return;
+    }
+    if(action==="group" && active?.type==="activeselection"){active.toGroup();canvas.requestRenderAll();recordCommand();return;}
+    if(action==="ungroup" && active?.type==="group"){active.toActiveSelection();canvas.requestRenderAll();recordCommand();return;}
+    if(action.startsWith("align:") && active){
+      const mode=action.split(":")[1];const bounds=active.getBoundingRect();const updates:Record<string,number>={};
+      if(mode==="left")updates.left=(active.left??0)-bounds.left;
+      if(mode==="center-x")updates.left=(active.left??0)+(640-(bounds.left+bounds.width/2));
+      if(mode==="right")updates.left=(active.left??0)+(1280-(bounds.left+bounds.width));
+      if(mode==="top")updates.top=(active.top??0)-bounds.top;
+      if(mode==="center-y")updates.top=(active.top??0)+(360-(bounds.top+bounds.height/2));
+      if(mode==="bottom")updates.top=(active.top??0)+(720-(bounds.top+bounds.height));
+      active.set(updates);active.setCoords();canvas.requestRenderAll();recordCommand();return;
+    }
+    if (!active) return;
     if (action.startsWith("apply-animation:")) {
       const [, kind, preset] = action.split(":");
       if (kind !== "text" && kind !== "element") return;
@@ -731,5 +755,5 @@ export default function DesignCanvas({
     current.onChange(JSON.stringify(canvas.toObject(["name", "animationPreset", "animationKind"])));
   }, [title, eyebrow, body, theme, backgroundColor, slideNumber]);
 
-  return <div className="design-canvas-shell"><canvas ref={elementRef} /></div>;
+  return <div className="design-canvas-shell"><canvas ref={elementRef} />{showGuides&&<div className="canvas-guide-overlay"><i/><b/></div>}{snapLines.x!==null&&<i className="canvas-snap-line vertical" style={{left:(snapLines.x/1280*100)+"%"}}/>}{snapLines.y!==null&&<i className="canvas-snap-line horizontal" style={{top:(snapLines.y/720*100)+"%"}}/>}{showRulers&&<><div className="canvas-ruler canvas-ruler-top">{Array.from({length:13},(_,i)=><span key={i} style={{left:(i/12*100)+"%"}}>{i*100}</span>)}</div><div className="canvas-ruler canvas-ruler-left">{Array.from({length:8},(_,i)=><span key={i} style={{top:(i/7*100)+"%"}}>{i*100}</span>)}</div></>}</div>;
 }
