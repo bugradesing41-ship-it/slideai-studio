@@ -97,14 +97,17 @@ async function loadGoogleFont(family:string, weights:number[], weight:number|str
 
 export default function DesignCanvas({
   slideId, slideNumber, title, eyebrow, body, theme, tool, fill, stroke, strokeWidth,
-  fontFamily, fontWeights, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, textBorderEnabled, textBorderWidth, showRulers, showGuides, snapToGuides, onLayersChange, initialData, designElements, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange, onReady
+  fontFamily, fontWeights, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, textBorderEnabled, textBorderWidth, showRulers, showGuides, snapToGuides, onLayersChange, verticalGuides, horizontalGuides, initialData, designElements, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange, onReady
 }: Props) {
   const [snapLines,setSnapLines]=useState<{x:number|null;y:number|null}>({x:null,y:null});
+  const [verticalGuides,setVerticalGuides]=useState<number[]>([]);
+  const [horizontalGuides,setHorizontalGuides]=useState<number[]>([]);
+  const [pointerPosition,setPointerPosition]=useState<{x:number;y:number;visible:boolean}>({x:0,y:0,visible:false});
   const elementRef = useRef<HTMLCanvasElement>(null);
   const canvasRef = useRef<any>(null);
   const historyRef = useRef<{ items: string[]; index: number }>({ items: [], index: -1 });
   const restoringRef = useRef(false);
-  const latestRef = useRef({ title, slideNumber, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontWeights, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, textBorderEnabled, textBorderWidth, showRulers, showGuides, snapToGuides, onLayersChange, initialData, designElements, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange, onReady });
+  const latestRef = useRef({ title, slideNumber, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontWeights, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, textBorderEnabled, textBorderWidth, showRulers, showGuides, snapToGuides, onLayersChange, verticalGuides, horizontalGuides, initialData, designElements, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange, onReady });
   latestRef.current = { title, slideNumber, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontWeights, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, textBorderEnabled, textBorderWidth, showRulers, showGuides, snapToGuides, onLayersChange, initialData, designElements, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange, onReady };
 
   useEffect(() => {
@@ -217,7 +220,7 @@ export default function DesignCanvas({
         const tolerance=9;const bounds=target.getBoundingRect();
         const xs=[bounds.left,bounds.left+bounds.width/2,bounds.left+bounds.width];
         const ys=[bounds.top,bounds.top+bounds.height/2,bounds.top+bounds.height];
-        const candidatesX=[0,640,1280];const candidatesY=[0,360,720];
+        const candidatesX=[0,640,1280,...latestRef.current.verticalGuides];const candidatesY=[0,360,720,...latestRef.current.horizontalGuides];
         for(const other of canvas.getObjects()){if(other===target||other.visible===false)continue;const r=other.getBoundingRect();candidatesX.push(r.left,r.left+r.width/2,r.left+r.width);candidatesY.push(r.top,r.top+r.height/2,r.top+r.height);}
         let bx:{delta:number;line:number}|null=null;let by:{delta:number;line:number}|null=null;
         for(const p of xs)for(const c of candidatesX){const d=c-p;if(Math.abs(d)<=tolerance&&(!bx||Math.abs(d)<Math.abs(bx.delta)))bx={delta:d,line:c};}
@@ -773,5 +776,21 @@ export default function DesignCanvas({
     current.onChange(JSON.stringify(canvas.toObject(["name", "animationPreset", "animationKind"])));
   }, [title, eyebrow, body, theme, backgroundColor, slideNumber]);
 
-  return <div className="design-canvas-shell"><canvas ref={elementRef} />{showGuides&&<div className="canvas-guide-overlay"><i/><b/></div>}{snapLines.x!==null&&<i className="canvas-snap-line vertical" style={{left:(snapLines.x/1280*100)+"%"}}/>}{snapLines.y!==null&&<i className="canvas-snap-line horizontal" style={{top:(snapLines.y/720*100)+"%"}}/>}{showRulers&&<><div className="canvas-ruler canvas-ruler-top">{Array.from({length:13},(_,i)=><span key={i} style={{left:(i/12*100)+"%"}}>{i*100}</span>)}</div><div className="canvas-ruler canvas-ruler-left">{Array.from({length:8},(_,i)=><span key={i} style={{top:(i/7*100)+"%"}}>{i*100}</span>)}</div></>}</div>;
+  const addVerticalGuide=(event:React.MouseEvent<HTMLDivElement>)=>{const rect=event.currentTarget.getBoundingClientRect();const x=Math.round(Math.max(0,Math.min(1280,(event.clientX-rect.left)/rect.width*1280)));setVerticalGuides(items=>[...items,x]);};
+  const addHorizontalGuide=(event:React.MouseEvent<HTMLDivElement>)=>{const rect=event.currentTarget.getBoundingClientRect();const y=Math.round(Math.max(0,Math.min(720,(event.clientY-rect.top)/rect.height*720)));setHorizontalGuides(items=>[...items,y]);};
+  const clearGuides=()=>{setVerticalGuides([]);setHorizontalGuides([]);};
+  return <div className={`design-canvas-with-rulers ${showRulers?"rulers-visible":""}`}>
+    {showRulers&&<div className="canvas-ruler-corner">px</div>}
+    {showRulers&&<div className="canvas-ruler canvas-ruler-top" title="Click to add a vertical guide · Double-click to clear guides" onClick={addVerticalGuide} onDoubleClick={clearGuides}>{Array.from({length:65},(_,i)=>{const value=i*20;return <span key={value} className={value%100===0?"major":value%50===0?"medium":"minor"} style={{left:(value/1280*100)+"%"}}>{value%100===0&&<small>{value}</small>}</span>})}</div>}
+    {showRulers&&<div className="canvas-ruler canvas-ruler-left" title="Click to add a horizontal guide · Double-click to clear guides" onClick={addHorizontalGuide} onDoubleClick={clearGuides}>{Array.from({length:37},(_,i)=>{const value=i*20;return <span key={value} className={value%100===0?"major":value%50===0?"medium":"minor"} style={{top:(value/720*100)+"%"}}>{value%100===0&&<small>{value}</small>}</span>})}</div>}
+    <div className="design-canvas-shell" onPointerMove={event=>{const rect=event.currentTarget.getBoundingClientRect();const x=Math.round(Math.max(0,Math.min(1280,(event.clientX-rect.left)/rect.width*1280)));const y=Math.round(Math.max(0,Math.min(720,(event.clientY-rect.top)/rect.height*720)));setPointerPosition(previous=>previous.x===x&&previous.y===y&&previous.visible?previous:{x,y,visible:true});}} onPointerLeave={()=>setPointerPosition(previous=>previous.visible?{...previous,visible:false}:previous)}>
+      <canvas ref={elementRef}/>
+      {showGuides&&<div className="canvas-guide-overlay"><i/><b/></div>}
+      {showGuides&&verticalGuides.map((x,index)=><i key={"vx"+index} className="canvas-user-guide vertical" style={{left:(x/1280*100)+"%"}} onDoubleClick={()=>setVerticalGuides(items=>items.filter((_,i)=>i!==index))}/>)}
+      {showGuides&&horizontalGuides.map((y,index)=><i key={"hy"+index} className="canvas-user-guide horizontal" style={{top:(y/720*100)+"%"}} onDoubleClick={()=>setHorizontalGuides(items=>items.filter((_,i)=>i!==index))}/>)}
+      {snapLines.x!==null&&<i className="canvas-snap-line vertical" style={{left:(snapLines.x/1280*100)+"%"}}/>}
+      {snapLines.y!==null&&<i className="canvas-snap-line horizontal" style={{top:(snapLines.y/720*100)+"%"}}/>}
+      {pointerPosition.visible&&<div className="canvas-coordinate-readout">X {pointerPosition.x.toLocaleString()} <span>·</span> Y {pointerPosition.y.toLocaleString()}</div>}
+    </div>
+  </div>;
 }
