@@ -64,6 +64,13 @@ function normalizeSerializedFonts(value:unknown, families:Set<string>) {
   Object.values(record).forEach((item)=>normalizeSerializedFonts(item,families));
 }
 
+function resolveCanvasBackground(fabric: any, value: string) {
+  if (!value.startsWith("gradient:")) return value;
+  const colors = value.slice(9).split(",").filter((color) => /^#[0-9a-f]{6}$/i.test(color));
+  if (colors.length < 2) return colors[0] ?? "#171525";
+  return new fabric.Gradient({ type:"linear", coords:{x1:0,y1:0,x2:1280,y2:0}, colorStops:colors.slice(0,3).map((color,index,list)=>({offset:index/(list.length-1),color})) });
+}
+
 async function loadGoogleFont(family:string, weights:number[], weight:number|string=400, size=32):Promise<boolean> {
   if (!family.trim()) return false;
   const safeFamily=family.trim().replace(/\s+Variable$/i,"");
@@ -108,7 +115,7 @@ export default function DesignCanvas({
       const canvas = new fabric.Canvas(elementRef.current, {
         width: 1280,
         height: 720,
-        backgroundColor: latestRef.current.backgroundColor,
+        backgroundColor: resolveCanvasBackground(fabric, latestRef.current.backgroundColor),
         preserveObjectStacking: true,
         selection: true,
         stopContextMenu: true,
@@ -147,7 +154,7 @@ export default function DesignCanvas({
         if (titleObject) titleObject.set("text", current.title);
         if (eyebrowObject) eyebrowObject.set("text", current.eyebrow);
         if (bodyObject) bodyObject.set("text", current.body);
-        canvas.backgroundColor = current.backgroundColor;
+        canvas.backgroundColor = resolveCanvasBackground(fabric, current.backgroundColor);
         canvas.requestRenderAll();
         save();
       };
@@ -187,31 +194,10 @@ export default function DesignCanvas({
       if (canvas.getObjects().length === 0) {
         const current = latestRef.current;
         const light = current.theme === "light";
-        canvas.add(
-          new fabric.Textbox(current.eyebrow || "FIELD NOTES / 2026", {
-            name: "slide-eyebrow", left: 84, top: 115, width: 900, fontSize: 18,
-            fontFamily: "DM Sans", fontWeight: 600, charSpacing: 190,
-            fill: light ? "#7558bc" : current.theme === "blue" ? "#8bc7e7" : "#b39bff",
-            editable: true,
-          }),
-          new fabric.Textbox(current.title || "Your presentation starts here", {
-            name: "slide-title", left: 80, top: 205, width: 1030, height: 190,
-            fontSize: 66, fontFamily: "Manrope", fontWeight: 600,
-            lineHeight: 1.05, fill: light ? "#252333" : "#f4f1ff",
-            editable: true,
-          }),
-          new fabric.Textbox(current.body || "Add a clear supporting message to make your story memorable.", {
-            name: "slide-body", left: 84, top: 440, width: 800, height: 110,
-            fontSize: 25, fontFamily: "DM Sans", fontWeight: 400, lineHeight: 1.35,
-            fill: light ? "#666174" : "#bcb8cd", editable: true,
-          }),
-          new fabric.Textbox("THINK CLEARLY. CREATE BOLDLY.", {
-            name: "slide-footer", left: 84, top: 650, width: 700, fontSize: 12,
-            fontFamily: "DM Sans", fontWeight: 600, charSpacing: 140,
-            fill: light ? "#777287" : "#aaa3c4", selectable: false, evented: false,
-          }),
-          new fabric.Textbox(latestRef.current.slideNumber, { name:"slide-number", left:1050, top:650, width:150, fontSize:14, fontFamily:"DM Sans", fontWeight:600, textAlign:"right", fill:light ? "#777287" : "#aaa3c4", selectable:false, evented:false })
-        );
+        if (current.eyebrow.trim()) canvas.add(new fabric.Textbox(current.eyebrow,{name:"slide-eyebrow",left:84,top:115,width:900,fontSize:18,fontFamily:"DM Sans",fontWeight:600,charSpacing:190,fill:light?"#7558bc":current.theme==="blue"?"#8bc7e7":"#b39bff",editable:true}));
+        if (current.title.trim()) canvas.add(new fabric.Textbox(current.title,{name:"slide-title",left:80,top:205,width:1030,height:190,fontSize:66,fontFamily:"Manrope",fontWeight:600,lineHeight:1.05,fill:light?"#252333":"#f4f1ff",editable:true}));
+        if (current.body.trim()) canvas.add(new fabric.Textbox(current.body,{name:"slide-body",left:84,top:440,width:800,height:110,fontSize:25,fontFamily:"DM Sans",fontWeight:400,lineHeight:1.35,fill:light?"#666174":"#bcb8cd",editable:true}));
+        canvas.add(new fabric.Textbox(latestRef.current.slideNumber,{name:"slide-number",left:1050,top:650,width:150,fontSize:14,fontFamily:"DM Sans",fontWeight:600,textAlign:"right",fill:light?"#777287":"#aaa3c4",selectable:false,evented:false}));
       } else {
         syncText();
       }
@@ -339,8 +325,13 @@ export default function DesignCanvas({
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    canvas.backgroundColor = backgroundColor;
-    canvas.requestRenderAll();
+    let cancelled = false;
+    void import("fabric").then((fabric) => {
+      if (cancelled || !canvasRef.current) return;
+      canvas.backgroundColor = resolveCanvasBackground(fabric, backgroundColor);
+      canvas.requestRenderAll();
+    });
+    return () => { cancelled = true; };
   }, [backgroundColor, slideId]);
 
   useEffect(() => {
