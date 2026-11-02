@@ -179,3 +179,10 @@ h1{font:700 clamp(34px,4vw,49px)/1.12 Manrope,sans-serif;letter-spacing:-2.4px;m
 .export-menu button{display:flex;align-items:center;gap:9px;padding:10px;border:0;border-radius:6px;background:transparent;color:#d8d7e1;font-size:10px;text-align:left;white-space:nowrap}
 .export-menu button:hover{background:#2a2538;color:#fff}
 @media(max-width:700px){.animation-library-content{padding:10px}.studio-topbar{padding:0 10px}.studio-top-actions{gap:5px}.export-menu{right:0;min-width:190px}}
+
+
+/* Categorized instant-apply animation browser */
+.animation-category-list{display:flex;flex-wrap:wrap;gap:5px;padding:2px 0 5px}
+.animation-category-list button{border:1px solid #30333e;background:#171920;color:#aeb0bb;border-radius:16px;padding:6px 9px;font-size:8px;white-space:nowrap}
+.animation-category-list button.active{border-color:#8068b5;background:#302746;color:#e2d8ff}
+.animation-preset-card:active{transform:scale(.985)}
