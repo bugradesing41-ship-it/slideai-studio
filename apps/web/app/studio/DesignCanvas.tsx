@@ -595,7 +595,8 @@ export default function DesignCanvas({
     };
 
     const frameIds:number[]=[];
-    const originals=targets.map((target:any)=>({
+    type AnimationOriginal={target:any;left:number;top:number;scaleX:number;scaleY:number;angle:number;opacity:number;text:unknown;charSpacing:number;preset:string};
+    const originals:AnimationOriginal[]=targets.map((target:any)=>({
       target,left:target.left??0,top:target.top??0,scaleX:target.scaleX??1,scaleY:target.scaleY??1,
       angle:target.angle??0,opacity:target.opacity??1,text:target.text,charSpacing:target.charSpacing??0,
       preset:target.animationPreset as string
@@ -604,7 +605,7 @@ export default function DesignCanvas({
     const duration=1120;
     const interpolate=(a:number,b:number,t:number)=>a+(b-a)*t;
 
-    originals.forEach((original,index)=>{
+    originals.forEach((original:AnimationOriginal,index:number)=>{
       const sequence=presets[original.preset]??presets["Fade in"];
       const tick=(now:number)=>{
         const progress=Math.max(0,Math.min(1,(now-startedAt-index*95)/duration));
