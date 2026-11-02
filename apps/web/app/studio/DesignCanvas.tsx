@@ -3,7 +3,7 @@
 /* Fabric's canvas event payloads are intentionally dynamic at this integration boundary. */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { DesignElement } from "@slideai/shared";
 
 declare module "fabric" {
@@ -23,6 +23,7 @@ type Tool = "select" | "draw" | "rect" | "circle" | "triangle" | "line" | "arrow
 type CanvasCommand = { action: string; token: number };
 type AssetCommand = { symbol: string; label: string; imageUrl?: string; fontFamily?: string; token: number };
 type ImageCommand = { dataUrl: string; name: string; token: number };
+type CanvasLayer = { index:number; id:string; name:string; type:string; visible:boolean; locked:boolean; active:boolean };
 type Props = {
   slideId: number;
   slideNumber: string;
@@ -44,6 +45,10 @@ type Props = {
   opacity: number;
   textBorderEnabled: boolean;
   textBorderWidth: number;
+  showRulers: boolean;
+  showGuides: boolean;
+  snapToGuides: boolean;
+  onLayersChange: (layers:CanvasLayer[]) => void;
   initialData?: string;
   designElements: DesignElement[];
   onChange: (json: string) => void;
@@ -92,13 +97,14 @@ async function loadGoogleFont(family:string, weights:number[], weight:number|str
 
 export default function DesignCanvas({
   slideId, slideNumber, title, eyebrow, body, theme, tool, fill, stroke, strokeWidth,
-  fontFamily, fontWeights, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, textBorderEnabled, textBorderWidth, initialData, designElements, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange, onReady
+  fontFamily, fontWeights, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, textBorderEnabled, textBorderWidth, showRulers, showGuides, snapToGuides, onLayersChange, initialData, designElements, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange, onReady
 }: Props) {
+  const [snapLines,setSnapLines]=useState<{x:number|null;y:number|null}>({x:null,y:null});
   const elementRef = useRef<HTMLCanvasElement>(null);
   const canvasRef = useRef<any>(null);
   const historyRef = useRef<{ items: string[]; index: number }>({ items: [], index: -1 });
   const restoringRef = useRef(false);
-  const latestRef = useRef({ title, slideNumber, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontWeights, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, textBorderEnabled, textBorderWidth, initialData, designElements, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange, onReady });
+  const latestRef = useRef({ title, slideNumber, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontWeights, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, textBorderEnabled, textBorderWidth, showRulers, showGuides, snapToGuides, onLayersChange, initialData, designElements, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange, onReady });
   latestRef.current = { title, slideNumber, eyebrow, body, theme, tool, fill, stroke, strokeWidth, fontFamily, fontWeights, fontSize, fontWeight, cornerRadius, backgroundColor, shadowEnabled, opacity, textBorderEnabled, textBorderWidth, initialData, designElements, onChange, onSelectionChange, onTextChange, command, assetCommand, imageCommand, onHistoryChange, onReady };
 
   useEffect(() => {
@@ -108,7 +114,7 @@ export default function DesignCanvas({
 
     async function mount() {
       const fabric = await import("fabric");
-      fabric.FabricObject.customProperties = ["name", "animationPreset", "animationKind"];
+      fabric.FabricObject.customProperties = ["name", "animationPreset", "animationKind", "locked"];
       if (disposed || !elementRef.current) return;
       await loadGoogleFont(latestRef.current.fontFamily, latestRef.current.fontWeights, latestRef.current.fontWeight, latestRef.current.fontSize);
       const generatedFamilies = [...new Set(latestRef.current.designElements.filter((element) => element.type === "text").map((element) => element.fontFamily).filter(Boolean))];
