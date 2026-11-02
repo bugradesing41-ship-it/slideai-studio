@@ -155,7 +155,8 @@ export default function StudioWorkspace() {
   useEffect(() => {
     if (!isPlaying) return;
     const index = slides.findIndex((slide) => slide.id === activeId);
-    const timer = window.setTimeout(() => { if (index >= slides.length - 1) setIsPlaying(false); else setActiveId(slides[index + 1].id); }, 2300);
+    const playbackWindow=Math.min(5200,Math.max(2800,1450+layers.length*82));
+    const timer = window.setTimeout(() => { if (index >= slides.length - 1) setIsPlaying(false); else setActiveId(slides[index + 1].id); }, playbackWindow);
     return () => window.clearTimeout(timer);
   }, [isPlaying, activeId, slides]);
 
@@ -351,8 +352,8 @@ export default function StudioWorkspace() {
               <button onClick={()=>issueCanvasCommand("group")} disabled={selectedObjectType!=="activeselection"} title="Group selected objects"><Group size={14}/> Group</button>
               <button onClick={()=>issueCanvasCommand("ungroup")} disabled={selectedObjectType!=="group"} title="Ungroup selected group"><Ungroup size={14}/> Ungroup</button>
             </div>
-            {layers.length===0?<div className="left-empty-state"><Layers3 size={22}/><strong>No layers yet</strong><span>Add text, shapes or images to see them listed here.</span></div>:<div className="layer-list">{layers.map(layer=><div key={layer.id} className={"layer-row "+(layer.active?"active":"")}>
-              <button className="layer-select" onClick={()=>issueCanvasCommand("select-layer:"+layer.index)} title={"Select "+layer.name}><span className="layer-type-icon">{layer.type==="image"?"▧":layer.type.includes("text")?"T":"◇"}</span><span><strong>{layer.name}</strong><small>{layer.type}</small></span></button>
+            {layers.length===0?<div className="left-empty-state"><Layers3 size={22}/><strong>No layers yet</strong><span>Add text, shapes or images to see them listed here.</span></div>:<div className="layer-list">{layers.map(layer=><div key={layer.id} className={"layer-row "+(layer.active?"active":"")} draggable onDragStart={event=>{event.dataTransfer.effectAllowed="move";event.dataTransfer.setData("text/plain",String(layer.index));}} onDragOver={event=>{event.preventDefault();event.dataTransfer.dropEffect="move";}} onDrop={event=>{event.preventDefault();const from=Number(event.dataTransfer.getData("text/plain"));if(Number.isInteger(from)&&from!==layer.index)issueCanvasCommand(`reorder-layer:${from}:${layer.index}`);}} title="Drag to reorder layers">
+              <button className="layer-select" onClick={()=>issueCanvasCommand("select-layer:"+layer.index)} title={"Select "+layer.name}><span className="layer-type-icon"><span className="layer-drag-grip">⠿</span>{layer.type==="image"?"▧":layer.type.includes("text")?"T":"◇"}</span><span><strong>{layer.name}</strong><small>{layer.type}</small></span></button>
               <button className="layer-utility" onClick={()=>issueCanvasCommand("layer-up:"+layer.index)} title="Move layer up"><MoveUp size={13}/></button>
               <button className="layer-utility" onClick={()=>issueCanvasCommand("layer-down:"+layer.index)} title="Move layer down"><MoveDown size={13}/></button>
               <button className="layer-utility" onClick={()=>issueCanvasCommand("toggle-visible:"+layer.index)} title={layer.visible?"Hide layer":"Show layer"}>{layer.visible?<Eye size={13}/>:<EyeOff size={13}/>}</button>
