@@ -149,6 +149,7 @@ export default function DesignCanvas({
         const parsedWeight = typeof rawWeight === "number" ? rawWeight : rawWeight === "bold" ? 700 : rawWeight === "normal" ? 400 : Number(rawWeight ?? 400);
         const typography = active && "fontFamily" in active ? { fontFamily:String(active.get("fontFamily") ?? "").replace(/\s+Variable$/i,""), fontSize:Number(active.get("fontSize") ?? 0), fontWeight:Number.isFinite(parsedWeight) ? parsedWeight : 400 } : undefined;
         latestRef.current.onSelectionChange(Boolean(active), active?.type ?? "", typography, typeof active?.animationPreset === "string" ? active.animationPreset : "");
+        latestRef.current.onLayersChange(canvas.getObjects().map((object:any,index:number)=>({index,id:String(index),name:String(object.name||object.type||"Object"),type:String(object.type||"object"),visible:object.visible!==false,locked:object.locked===true,active:active===object})).reverse());
         // Selection is read-only: do not mutate Fabric objects or save from a selection event.
         // This prevents selection -> save -> parent render -> selection update loops.
       };
@@ -393,11 +394,11 @@ export default function DesignCanvas({
     };
     if(action.startsWith("select-layer:")) {
       const object=canvas.getObjects()[Number(action.split(":")[1])];
-      if(object){canvas.setActiveObject(object);canvas.requestRenderAll();latestRef.current.onSelectionChange(true,object.type??"");}
+      if(object){canvas.setActiveObject(object);canvas.requestRenderAll();latestRef.current.onSelectionChange(true,object.type??"");latestRef.current.onLayersChange(canvas.getObjects().map((item:any,index:number)=>({index,id:String(index),name:String(item.name||item.type||"Object"),type:String(item.type||"object"),visible:item.visible!==false,locked:item.locked===true,active:item===object})).reverse());}
       return;
     }
     if(action.startsWith("toggle-visible:")||action.startsWith("toggle-lock:")) {
-      const parts=action.split(":");const object=canvas.getObjects()[Number(parts[2])];if(!object)return;
+      const parts=action.split(":");const object=canvas.getObjects()[Number(parts[1])];if(!object)return;
       if(parts[0]==="toggle-visible"){object.set("visible",object.visible===false);if(object.visible===false&&canvas.getActiveObject()===object)canvas.discardActiveObject();}
       else {const locked=object.locked!==true;object.set({locked,selectable:!locked,evented:!locked,hasControls:!locked,lockMovementX:locked,lockMovementY:locked,lockScalingX:locked,lockScalingY:locked,lockRotation:locked});}
       canvas.requestRenderAll();recordCommand();return;
