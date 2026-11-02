@@ -64,7 +64,7 @@ export default function StudioWorkspace() {
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [assetLibraryOpen, setAssetLibraryOpen] = useState(false);
-  const [assetCommand, setAssetCommand] = useState<{symbol:string;label:string;imageUrl?:string;fontFamily?:string;token:number}>({ symbol: "", label: "", token: 0 });
+  const [assetCommand, setAssetCommand] = useState<{symbol:string;label:string;imageUrl?:string;fontFamily?:string;animated?:boolean;token:number}>({ symbol: "", label: "", token: 0 });
   const [imageCommand, setImageCommand] = useState({ dataUrl: "", name: "", token: 0 });
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [selectedObjectType, setSelectedObjectType] = useState("");
@@ -569,7 +569,7 @@ export default function StudioWorkspace() {
           <div className="inspector-tip"><Sparkles size={15}/><div><strong>Pro tip</strong><p>Select any shape or text on the canvas to resize, rotate, recolor and layer it.</p></div></div>
         </aside>
       </div>
-      {assetLibraryOpen && <AssetLibrary initialCategory={assetLibraryCategory} onClose={() => setAssetLibraryOpen(false)} onChoose={(asset: StudioAsset) => { setAssetCommand((current) => ({ symbol: asset.symbol, label: asset.label, imageUrl: asset.imageUrl, fontFamily: asset.fontFamily, token: current.token + 1 })); setAssetLibraryOpen(false); setTool("select"); }} />}
+      {assetLibraryOpen && <AssetLibrary initialCategory={assetLibraryCategory} onClose={() => setAssetLibraryOpen(false)} onChoose={(asset: StudioAsset) => { setAssetCommand((current) => ({ symbol: asset.symbol, label: asset.label, imageUrl: asset.imageUrl, fontFamily: asset.fontFamily, animated: asset.animated, token: current.token + 1 })); setAssetLibraryOpen(false); setTool("select"); }} />}
     </main>
   );
 }
