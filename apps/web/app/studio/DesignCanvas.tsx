@@ -246,6 +246,7 @@ export default function DesignCanvas({
       canvas.on("object:added", (event:any)=>{if(event.target?.isAnimated)ensureAnimatedRender(canvas);save();});
       canvas.on("object:removed", save);
       canvas.on("mouse:up", () => setSnapLines({x:null,y:null}));
+      canvas.on("mouse:move",(event:any)=>{const point=canvas.getPointer(event.e);const x=Math.round(Math.max(0,Math.min(1280,point.x))*10)/10;const y=Math.round(Math.max(0,Math.min(720,point.y))*10)/10;setPointerPosition(previous=>previous.x===x&&previous.y===y&&previous.visible?previous:{x,y,visible:true});});
       canvas.on("text:changed", save);
       canvas.on("text:editing:exited", (event: any) => {
         const object = event.target;
@@ -399,7 +400,7 @@ export default function DesignCanvas({
     }
 
     const active = canvas.getActiveObject();
-    if (!active && !action.startsWith("select-layer:") && !action.startsWith("toggle-visible:") && !action.startsWith("toggle-lock:")) return;
+    if (!active && !action.startsWith("select-layer:") && !action.startsWith("toggle-visible:") && !action.startsWith("toggle-lock:") && !action.startsWith("layer-up:") && !action.startsWith("layer-down:") && !action.startsWith("reorder-layer:")) return;
     const recordCommand = () => {
       const json = JSON.stringify(canvas.toObject(["name", "animationPreset", "animationKind"]));
       latestRef.current.onChange(json);
@@ -420,6 +421,12 @@ export default function DesignCanvas({
       const object=canvas.getObjects()[Number(action.split(":")[1])];if(!object)return;
       if(action.startsWith("layer-up:"))canvas.bringObjectForward(object);else canvas.sendObjectBackwards(object);
       canvas.requestRenderAll();recordCommand();return;
+    }
+    if(action.startsWith("reorder-layer:")){
+      const [,fromValue,toValue]=action.split(":");const from=Number(fromValue),to=Number(toValue);const objects=canvas.getObjects();
+      if(!Number.isInteger(from)||!Number.isInteger(to)||from<0||to<0||from>=objects.length||to>=objects.length||from===to)return;
+      const object=objects[from];canvas.moveObjectTo(object,to);canvas.setActiveObject(object);canvas.requestRenderAll();recordCommand();
+      latestRef.current.onSelectionChange(true,object.type??"",undefined,typeof object.animationPreset==="string"?object.animationPreset:"");return;
     }
     if(action.startsWith("toggle-visible:")||action.startsWith("toggle-lock:")) {
       const parts=action.split(":");const object=canvas.getObjects()[Number(parts[1])];if(!object)return;
@@ -547,7 +554,7 @@ export default function DesignCanvas({
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || command.action !== "play-slide-animations") return;
-    const targets = canvas.getObjects().filter((object:any)=>typeof object.animationPreset==="string"&&object.animationPreset);
+    const targets = canvas.getObjects().filter((object:any)=>object.visible!==false&&typeof object.animationPreset==="string"&&object.animationPreset);
     if(!targets.length)return;
 
     type Frame={at:number;x:number;y:number;sx:number;sy:number;angle:number;opacity:number;spacing:number;text:number};
@@ -603,13 +610,13 @@ export default function DesignCanvas({
       preset:target.animationPreset as string
     }));
     const startedAt=performance.now();
-    const duration=1120;
+    const duration=1350;
     const interpolate=(a:number,b:number,t:number)=>a+(b-a)*t;
 
     originals.forEach((original:AnimationOriginal,index:number)=>{
       const sequence=presets[original.preset]??presets["Fade in"];
       const tick=(now:number)=>{
-        const progress=Math.max(0,Math.min(1,(now-startedAt-index*95)/duration));
+        const progress=Math.max(0,Math.min(1,(now-startedAt-index*75)/duration));
         let segment=sequence.findIndex((frame,frameIndex)=>frameIndex<sequence.length-1&&progress>=frame.at&&progress<=sequence[frameIndex+1].at);
         if(segment<0)segment=sequence.length-2;
         const from=sequence[segment],to=sequence[segment+1];
@@ -623,11 +630,11 @@ export default function DesignCanvas({
         };
         if(original.preset==="Typewriter"&&typeof original.text==="string")update.text=original.text.slice(0,Math.ceil(original.text.length*value("text")));
         if(original.preset==="Tracking reveal")update.charSpacing=original.charSpacing+value("spacing");
-        original.target.set(update);original.target.setCoords();canvas.requestRenderAll();
+        original.target.set(update);if(original.preset==="Typewriter"&&typeof original.target.initDimensions==="function")original.target.initDimensions();original.target.setCoords();canvas.requestRenderAll();
         if(progress<1)frameIds[index]=requestAnimationFrame(tick);
         else{
           original.target.set({left:original.left,top:original.top,scaleX:original.scaleX,scaleY:original.scaleY,angle:original.angle,opacity:original.opacity,text:original.text,charSpacing:original.charSpacing});
-          original.target.setCoords();canvas.requestRenderAll();
+          if(original.preset==="Typewriter"&&typeof original.target.initDimensions==="function")original.target.initDimensions();original.target.setCoords();canvas.requestRenderAll();
         }
       };
       frameIds[index]=requestAnimationFrame(tick);
@@ -701,7 +708,7 @@ export default function DesignCanvas({
             if(!dataUrl.startsWith("data:image/gif;base64,"))throw new Error("Animated character did not return a GIF");
           }else{
             const svg=await response.text();
-            if(!/<svg[\\s>]/i.test(svg))throw new Error("Illustration source did not return a valid SVG");
+            if(!/<svg\b/i.test(svg))throw new Error("Illustration source did not return a valid SVG");
             dataUrl=`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
           }
           const image = await FabricImage.fromURL(dataUrl);
@@ -816,14 +823,15 @@ export default function DesignCanvas({
     {showRulers&&<div className="canvas-ruler-corner">px</div>}
     {showRulers&&<div className="canvas-ruler canvas-ruler-top" title="Click to add a vertical guide · Double-click to clear guides" onClick={addVerticalGuide} onDoubleClick={clearGuides}>{Array.from({length:65},(_,i)=>{const value=i*20;return <span key={value} className={value%100===0?"major":value%50===0?"medium":"minor"} style={{left:(value/1280*100)+"%"}}>{value%100===0&&<small>{value}</small>}</span>})}</div>}
     {showRulers&&<div className="canvas-ruler canvas-ruler-left" title="Click to add a horizontal guide · Double-click to clear guides" onClick={addHorizontalGuide} onDoubleClick={clearGuides}>{Array.from({length:37},(_,i)=>{const value=i*20;return <span key={value} className={value%100===0?"major":value%50===0?"medium":"minor"} style={{top:(value/720*100)+"%"}}>{value%100===0&&<small>{value}</small>}</span>})}</div>}
-    <div className="design-canvas-shell" onPointerMove={event=>{const rect=event.currentTarget.getBoundingClientRect();const x=Math.round(Math.max(0,Math.min(1280,(event.clientX-rect.left)/rect.width*1280)));const y=Math.round(Math.max(0,Math.min(720,(event.clientY-rect.top)/rect.height*720)));setPointerPosition(previous=>previous.x===x&&previous.y===y&&previous.visible?previous:{x,y,visible:true});}} onPointerLeave={()=>setPointerPosition(previous=>previous.visible?{...previous,visible:false}:previous)}>
+    <div className="design-canvas-shell" onPointerMove={event=>{const rect=event.currentTarget.getBoundingClientRect();const canvas=canvasRef.current;const point=canvas?.getPointer(event.nativeEvent);const x=Math.round(Math.max(0,Math.min(1280,point?.x??((event.clientX-rect.left)/rect.width*1280)))*10)/10;const y=Math.round(Math.max(0,Math.min(720,point?.y??((event.clientY-rect.top)/rect.height*720)))*10)/10;setPointerPosition(previous=>previous.x===x&&previous.y===y&&previous.visible?previous:{x,y,visible:true});}} onPointerLeave={()=>setPointerPosition(previous=>previous.visible?{...previous,visible:false}:previous)}>
       <canvas ref={elementRef}/>
       {showGuides&&<div className="canvas-guide-overlay"><i/><b/></div>}
       {showGuides&&verticalGuides.map((x,index)=><i key={"vx"+index} className="canvas-user-guide vertical" style={{left:(x/1280*100)+"%"}} onDoubleClick={()=>setVerticalGuides(items=>items.filter((_,i)=>i!==index))}/>)}
       {showGuides&&horizontalGuides.map((y,index)=><i key={"hy"+index} className="canvas-user-guide horizontal" style={{top:(y/720*100)+"%"}} onDoubleClick={()=>setHorizontalGuides(items=>items.filter((_,i)=>i!==index))}/>)}
       {snapLines.x!==null&&<i className="canvas-snap-line vertical" style={{left:(snapLines.x/1280*100)+"%"}}/>}
       {snapLines.y!==null&&<i className="canvas-snap-line horizontal" style={{top:(snapLines.y/720*100)+"%"}}/>}
-      {pointerPosition.visible&&<div className="canvas-coordinate-readout">X {pointerPosition.x.toLocaleString()} <span>·</span> Y {pointerPosition.y.toLocaleString()}</div>}
+      {pointerPosition.visible&&showRulers&&<><i className="canvas-cursor-guide vertical" style={{left:(pointerPosition.x/1280*100)+"%"}}/><i className="canvas-cursor-guide horizontal" style={{top:(pointerPosition.y/720*100)+"%"}}/></>}
+      {pointerPosition.visible&&<div className="canvas-coordinate-readout">X {pointerPosition.x.toFixed(1)} <span>·</span> Y {pointerPosition.y.toFixed(1)}</div>}
     </div>
   </div>;
 }
