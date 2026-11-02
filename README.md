@@ -24,7 +24,7 @@ A browser-based presentation editor focused on hands-on slide design, typography
 
 - The editable project export retains slide data, Fabric canvas JSON and each object's selected animation preset.
 - PNG export captures the current slide canvas as a still image; object animations are intended for presentation playback.
-- PowerPoint export currently maps slide eyebrow, title and body text into editable PowerPoint text boxes. It does not yet reproduce every Fabric object, imported animation, transition or custom font exactly.
+- PowerPoint export currently maps slide eyebrow, title and body text into editable PowerPoint text boxes. It does not yet reproduce every Fabric object, object animation preset, slide transition or custom font exactly.
 - The Share action shares the project file when the browser supports file sharing. Otherwise it falls back to sharing/copying project information; it does not create a permanent hosted URL.
 - OneDrive sign-in, Microsoft Graph cloud save and collaborative editing are not connected yet. PowerPoint file export is the current Microsoft 365 compatibility path.
 
