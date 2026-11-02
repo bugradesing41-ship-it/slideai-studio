@@ -121,6 +121,10 @@ export default function StudioWorkspace() {
   }, []);
 
   useEffect(() => {
+    if (isPlaying) issueCanvasCommand("play-slide-animations");
+  }, [isPlaying, activeId]);
+
+  useEffect(() => {
     if (!isPlaying) return;
     const index = slides.findIndex((slide) => slide.id === activeId);
     const timer = window.setTimeout(() => { if (index >= slides.length - 1) setIsPlaying(false); else setActiveId(slides[index + 1].id); }, 2300);
