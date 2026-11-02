@@ -405,14 +405,6 @@ export default function StudioWorkspace() {
               <button onClick={() => applyStylePreset("outline")}><i className="preset-outline"/>Outline</button>
               <button onClick={() => applyStylePreset("sunset")}><i className="preset-sunset"/>Sunset</button>
             </div>
-            <div className="inspector-label preset-label">QUICK STYLE PRESETS</div>
-            <div className="style-preset-grid">
-              <button onClick={() => applyStylePreset("violet")}><i className="preset-violet"/>Violet</button>
-              <button onClick={() => applyStylePreset("glass")}><i className="preset-glass"/>Glass</button>
-              <button onClick={() => applyStylePreset("neon")}><i className="preset-neon"/>Neon</button>
-              <button onClick={() => applyStylePreset("outline")}><i className="preset-outline"/>Outline</button>
-              <button onClick={() => applyStylePreset("sunset")}><i className="preset-sunset"/>Sunset</button>
-            </div>
             <button className={`quick-action ${shadowEnabled?"selected-effect":""}`} onClick={() => setShadowEnabled((value) => !value)}><Layers3 size={14}/> {shadowEnabled?"Shadow enabled":"Add soft shadow"}</button>
           </div>
           <div className="inspector-section">
@@ -431,7 +423,7 @@ export default function StudioWorkspace() {
             <div className="inspector-label">SLIDE TRANSITION <span>10 STYLES</span></div>
             <select className="inspector-input" value={activeSlideAnimation} onChange={(event) => setSlideAnimations((current) => ({...current,[activeId]:event.target.value}))}>{SLIDE_ANIMATIONS.map((name) => <option key={name}>{name}</option>)}</select>
             <p className="inspector-hint">Slayt geçişi sunum önizlemesinde uygulanır. Ayrı animasyon katmanları için Motion Library'yi kullan.</p>
-            <button className="quick-action" onClick={()=>setMotionLibraryOpen(true)}><Play size={14}/> Open animation library</button>
+            <p className="inspector-hint">Metin ve öğe animasyonlarını sol taraftaki Object animations panelinden seçip önizleyebilirsin.</p>
           </div>
           <div className="inspector-section">
             <div className="inspector-label">SLIDE CONTENT</div>
