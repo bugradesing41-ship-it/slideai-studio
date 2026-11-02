@@ -332,7 +332,7 @@ export default function StudioWorkspace() {
           {animationPanelOpen && <>
           <div className="chat-context"><span className="context-dot"/> CLICK AN ANIMATION · APPLIED INSTANTLY</div>
           <div className="animation-library-content">
-            <p className="animation-library-intro">Metin ve tasarım öğeleri için ayrı, kategorilere ayrılmış hazır animasyonlar. Bir preset'e tıklaman yeterli.</p>
+            <p className="animation-library-intro">Metin ve tasarım öğeleri için ayrı, kategorilere ayrılmış hazır animasyonlar. Bir preset&apos;e tıklaman yeterli.</p>
             {!hasSelection ? <div className="animation-empty-state"><MousePointer2 size={22}/><strong>Henüz nesne seçilmedi</strong><span>Animasyonları görmek ve uygulamak için slayttaki bir metne, şekle veya görsele tıkla.</span></div> : (() => {
               const isText = ["textbox","i-text","text"].includes(selectedObjectType.toLowerCase());
               const presets = isText ? TEXT_OBJECT_ANIMATIONS : ELEMENT_ANIMATIONS;
@@ -486,7 +486,7 @@ export default function StudioWorkspace() {
           <div className="inspector-section motion-library-section">
             <div className="inspector-label">SLIDE TRANSITION <span>10 STYLES</span></div>
             <select className="inspector-input" value={activeSlideAnimation} onChange={(event) => setSlideAnimations((current) => ({...current,[activeId]:event.target.value}))}>{SLIDE_ANIMATIONS.map((name) => <option key={name}>{name}</option>)}</select>
-            <p className="inspector-hint">Slayt geçişi sunum önizlemesinde uygulanır. Ayrı animasyon katmanları için Motion Library'yi kullan.</p>
+            <p className="inspector-hint">Slayt geçişi sunum önizlemesinde uygulanır. Ayrı animasyon katmanları için Motion Library&apos;yi kullan.</p>
             <p className="inspector-hint">Metin ve öğe animasyonlarını sol taraftaki Object animations panelinden seçip önizleyebilirsin.</p>
           </div>
           <div className="inspector-section">
