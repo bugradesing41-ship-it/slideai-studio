@@ -47,6 +47,8 @@ export default function StudioWorkspace() {
   const [fontSearch, setFontSearch] = useState("");
   const [fontCatalogStatus, setFontCatalogStatus] = useState("Google Fonts kataloğu yükleniyor…");
   const [fontSize, setFontSize] = useState(32);
+  const [letterSpacing,setLetterSpacing]=useState(0);
+  const [lineHeight,setLineHeight]=useState(120);
   const [fontWeight, setFontWeight] = useState("400");
   const [cornerRadius, setCornerRadius] = useState(18);
   const [slideBackgrounds, setSlideBackgrounds] = useState<Record<number,string>>({});
@@ -520,6 +522,17 @@ export default function StudioWorkspace() {
             <div className="color-control-row typography-color-row"><label>Text color <input type="color" value={fill} onChange={(event)=>setFill(event.target.value)}/></label></div>
             <label className="range-label">Font weight <span>{fontWeight}</span></label><select className="inspector-input" value={fontWeight} onChange={(event) => setFontWeight(event.target.value)}>{fontWeights.map((weight)=><option key={weight} value={String(weight)}>{weight===100?"Thin":weight===200?"Extra light":weight===300?"Light":weight===400?"Regular":weight===500?"Medium":weight===600?"Semi bold":weight===700?"Bold":weight===800?"Extra bold":weight===900?"Black":`Weight ${weight}`} {weight}</option>)}</select>
             <label className="range-label">Font size <span>{fontSize}px</span></label><input className="range-control" type="range" min="12" max="100" value={fontSize} onChange={(event) => setFontSize(Number(event.target.value))}/>
+            <div className="text-format-toolbar" aria-label="Text formatting">
+              <button onClick={()=>issueCanvasCommand("text-style:bold")} disabled={!hasSelection} title="Toggle bold"><strong>B</strong></button>
+              <button onClick={()=>issueCanvasCommand("text-style:italic")} disabled={!hasSelection} title="Toggle italic"><em>I</em></button>
+              <button onClick={()=>issueCanvasCommand("text-style:underline")} disabled={!hasSelection} title="Toggle underline"><u>U</u></button>
+              <button onClick={()=>issueCanvasCommand("text-style:strike")} disabled={!hasSelection} title="Toggle strikethrough"><s>S</s></button>
+              <button onClick={()=>issueCanvasCommand("text-align:left")} disabled={!hasSelection} title="Align left"><AlignLeft size={14}/></button>
+              <button onClick={()=>issueCanvasCommand("text-align:center")} disabled={!hasSelection} title="Align center"><AlignCenter size={14}/></button>
+              <button onClick={()=>issueCanvasCommand("text-align:right")} disabled={!hasSelection} title="Align right"><AlignRight size={14}/></button>
+            </div>
+            <label className="range-label">Letter spacing <span>{letterSpacing}</span></label><input className="range-control" type="range" min="0" max="300" step="10" value={letterSpacing} onChange={event=>{const value=Number(event.target.value);setLetterSpacing(value);issueCanvasCommand("text-spacing:"+value);}} disabled={!hasSelection}/>
+            <label className="range-label">Line height <span>{(lineHeight/100).toFixed(2)}</span></label><input className="range-control" type="range" min="80" max="220" step="5" value={lineHeight} onChange={event=>{const value=Number(event.target.value);setLineHeight(value);issueCanvasCommand("line-height:"+(value/100));}} disabled={!hasSelection}/>
             <label className="text-border-toggle"><input type="checkbox" checked={textBorderEnabled} onChange={(event) => setTextBorderEnabled(event.target.checked)}/> Add text border</label>
             <label className="range-label">Text border size <span>{textBorderWidth}px</span></label><input className="range-control" type="range" min="1" max="12" value={textBorderWidth} onChange={(event) => setTextBorderWidth(Number(event.target.value))} disabled={!textBorderEnabled}/>
           </div>
