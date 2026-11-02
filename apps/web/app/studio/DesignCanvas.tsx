@@ -385,6 +385,7 @@ export default function DesignCanvas({
     const recordCommand = () => {
       const json = JSON.stringify(canvas.toObject(["name", "animationPreset", "animationKind"]));
       latestRef.current.onChange(json);
+      latestRef.current.onLayersChange(canvas.getObjects().map((object:any,index:number)=>({index,id:String(index),name:String(object.name||object.type||"Object"),type:String(object.type||"object"),visible:object.visible!==false,locked:object.locked===true,active:canvas.getActiveObject()===object})).reverse());
       const current = historyRef.current;
       if (current.items[current.index] !== json) {
         const items = [...current.items.slice(0, current.index + 1), json].slice(-60);
