@@ -121,7 +121,7 @@ export default function StudioWorkspace() {
   }, []);
 
   useEffect(() => {
-    if (isPlaying) issueCanvasCommand("play-slide-animations");
+    if (isPlaying) setCanvasCommand((current) => ({ action: "play-slide-animations", token: current.token + 1 }));
   }, [isPlaying]);
 
   useEffect(() => {
