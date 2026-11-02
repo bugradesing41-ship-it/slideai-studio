@@ -47,10 +47,13 @@ type ExportRequest = {
 };
 
 const SLIDE_W = 13.333333;
-const SLIDE_H = 7.5;
 const PX_TO_IN = SLIDE_W / 1280;
 
-function colorValue(value: unknown, fallback = "FFFFFF") {
+function colorValue(value: unknown, fallback = "FFFFFF"): { color: string; transparency: number } {
+  if (value && typeof value === "object") {
+    const stops = (value as { colorStops?: { color?: string }[] }).colorStops;
+    if (Array.isArray(stops) && stops.length > 0) return colorValue(stops[0].color, fallback);
+  }
   if (typeof value !== "string") return { color: fallback, transparency: 0 };
   const hex = value.match(/#([0-9a-f]{6})/i)?.[1];
   if (hex) return { color: hex.toUpperCase(), transparency: 0 };
@@ -244,7 +247,9 @@ export async function POST(request: Request) {
         if (item.body?.trim()) {
           slide.addText(item.body.slice(0, 5000), { x: 0.9, y: 4.0, w: 9.8, h: 1.4, fontFace: "Aptos", fontSize: 17, color: muted, margin: 0.02, valign: "top", fit: "shrink" });
         }
-        slide.addText(`${String(index + 1).padStart(2, "0")} / ${String(payload.slides.length).padStart(2, "0")}`, { x: 11.4, y: 6.85, w: 1.0, h: 0.25, fontFace: "Aptos", fontSize: 9, color: muted, align: "right", margin: 0 });
+        if (item.eyebrow?.trim() || item.title?.trim() || item.body?.trim()) {
+          slide.addText(`${String(index + 1).padStart(2, "0")} / ${String(payload.slides.length).padStart(2, "0")}`, { x: 11.4, y: 6.85, w: 1.0, h: 0.25, fontFace: "Aptos", fontSize: 9, color: muted, align: "right", margin: 0 });
+        }
       }
     }
 
