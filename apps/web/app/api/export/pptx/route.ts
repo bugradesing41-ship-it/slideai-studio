@@ -79,7 +79,7 @@ function slideBackground(value: string | undefined, theme: string) {
   return colorValue(firstGradientColor, fallback).color;
 }
 
-async function addGradientBackground(slide: PptxSlideLike, value: string | undefined) {
+function addGradientBackground(slide: PptxSlideLike, value: string | undefined) {
   if (!value?.startsWith("gradient:")) return;
   const colors = value.slice(9).split(",").filter((color) => /^#[0-9a-f]{6}$/i.test(color)).slice(0, 3);
   if (colors.length < 2) return;
@@ -88,7 +88,7 @@ async function addGradientBackground(slide: PptxSlideLike, value: string | undef
   slide.addImage({ data: `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`, x: 0, y: 0, w: SLIDE_W, h: 7.5 });
 }
 
-function readCanvasObjects(serialized: string | undefined): Promise<FabricObject[]> {
+async function readCanvasObjects(serialized: string | undefined): Promise<FabricObject[]> {
   if (!serialized) return [];
   try {
     const parsed = JSON.parse(serialized) as { objects?: FabricObject[] };
