@@ -60,7 +60,6 @@ apps/
         StudioWorkspace.tsx
         DesignCanvas.tsx
         AssetLibrary.tsx
-        MotionAssetLibrary.tsx
 packages/
   shared/
 ```
