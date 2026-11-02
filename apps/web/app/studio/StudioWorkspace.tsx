@@ -374,7 +374,7 @@ export default function StudioWorkspace() {
             <label className="editor-toggle-row"><span><Ruler size={15}/> Rulers</span><input type="checkbox" checked={showRulers} onChange={event=>setShowRulers(event.target.checked)}/></label>
             <label className="editor-toggle-row"><span><Grid3X3 size={15}/> Center guides</span><input type="checkbox" checked={showGuides} onChange={event=>setShowGuides(event.target.checked)}/></label>
             <label className="editor-toggle-row"><span><AlignCenter size={15}/> Smart snapping</span><input type="checkbox" checked={snapToGuides} onChange={event=>setSnapToGuides(event.target.checked)}/></label>
-            <p className="left-panel-hint">Objects snap to slide edges, center lines and nearby object edges while moving.</p>
+            <p className="left-panel-hint">Objects snap to slide edges, center lines and custom guides. Click a ruler to add a guide; double-click a ruler to clear guides. Coordinates use the 1280 × 720 slide grid.</p>
           </div>}
           {leftPanelTab==="animations"&&<div className="left-panel-content motion-tab-content">
             <div className="chat-context"><span className="context-dot"/> SELECT ANIMATION · PREVIEW ON SLIDE</div>
