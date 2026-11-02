@@ -292,7 +292,7 @@ export default function StudioWorkspace() {
       <div className="studio-body">
         <aside className={`chat-panel animation-presets-panel ${animationPanelOpen?"is-open":"is-collapsed"}`}>
           <button className="animation-panel-toggle" onClick={()=>setAnimationPanelOpen((open)=>!open)} aria-expanded={animationPanelOpen}>
-            <span className="panel-heading-icon"><Play size={16}/></span><span className="animation-panel-heading-copy"><strong>Object animations</strong><small>Text & element motion presets</small></span>{animationPanelOpen?<ChevronUp size={16}/>:<ChevronDown size={16}/>}
+            <span className="panel-heading-icon"><Play size={16}/></span><span className="animation-panel-heading-copy"><strong>Object animations</strong><small>Text & element motion presets</small></span>{animationPanelOpen?<MoveUp size={16}/>:<ChevronDown size={16}/>}
           </button>
           {animationPanelOpen && <>
           <div className="chat-context"><span className="context-dot"/> CLICK AN ANIMATION · APPLIED INSTANTLY</div>
