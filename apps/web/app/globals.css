@@ -296,3 +296,32 @@ h1{font:700 clamp(34px,4vw,49px)/1.12 Manrope,sans-serif;letter-spacing:-2.4px;m
 @media(max-width:700px){.studio-body{grid-template-columns:1fr}.left-tools-panel{display:none}}
 
 .text-format-toolbar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin:12px 0 5px}.text-format-toolbar button{height:31px;display:grid;place-items:center;border:1px solid #34313f;border-radius:6px;background:#191a23;color:#c9c4d4;font-size:11px}.text-format-toolbar button:hover:not(:disabled){border-color:#8068b5;background:#282139;color:#eee7ff}.text-format-toolbar button:disabled{opacity:.35;cursor:not-allowed}
+
+/* Precision rulers: coordinate scale follows the actual 1280 × 720 slide bounds. */
+.design-canvas-with-rulers{width:100%;max-width:960px;display:grid;grid-template-columns:30px minmax(0,1fr);grid-template-rows:24px auto;align-items:stretch}
+.design-canvas-with-rulers:not(.rulers-visible){display:block}
+.canvas-ruler-corner{grid-column:1;grid-row:1;display:grid;place-items:center;border-right:1px solid #494257;border-bottom:1px solid #494257;background:#211d2b;color:#9d96ad;font:8px/1 "DM Sans",sans-serif;letter-spacing:.04em}
+.canvas-ruler{position:relative;z-index:5;pointer-events:auto;user-select:none;background:linear-gradient(180deg,#252130,#1a1922);color:#c4bdd3;font:8px/1 "DM Sans",sans-serif}
+.canvas-ruler-top{grid-column:2;grid-row:1;height:24px;border:0;border-bottom:1px solid #514765;cursor:crosshair;overflow:hidden}
+.canvas-ruler-left{grid-column:1;grid-row:2;width:30px;border:0;border-right:1px solid #514765;cursor:crosshair;overflow:hidden}
+.canvas-ruler-top span,.canvas-ruler-left span{position:absolute;display:block;pointer-events:none}
+.canvas-ruler-top span{top:0;height:100%;border-left:1px solid #625973}
+.canvas-ruler-top span.minor{height:5px;border-color:#4b4558}
+.canvas-ruler-top span.medium{height:9px;border-color:#706580}
+.canvas-ruler-top span.major{height:100%;border-color:#a89abf}
+.canvas-ruler-top span small{position:absolute;left:3px;top:4px;color:#d2c9e1;font-size:8px;font-weight:600;white-space:nowrap}
+.canvas-ruler-left span{left:0;width:100%;border-top:1px solid #625973}
+.canvas-ruler-left span.minor{width:5px;border-color:#4b4558}
+.canvas-ruler-left span.medium{width:9px;border-color:#706580}
+.canvas-ruler-left span.major{width:100%;border-color:#a89abf}
+.canvas-ruler-left span small{position:absolute;left:3px;top:3px;color:#d2c9e1;font-size:8px;font-weight:600;white-space:nowrap}
+.design-canvas-with-rulers .design-canvas-shell{grid-column:2;grid-row:2;width:100%;min-width:0;aspect-ratio:16/9;position:relative;overflow:hidden}
+.design-canvas-with-rulers:not(.rulers-visible) .design-canvas-shell{width:100%}
+.canvas-user-guide{position:absolute;z-index:7;display:block;pointer-events:auto}
+.canvas-user-guide.vertical{top:0;bottom:0;width:1px;border-left:1px dashed #28d7c5;cursor:ew-resize}
+.canvas-user-guide.horizontal{left:0;right:0;height:1px;border-top:1px dashed #28d7c5;cursor:ns-resize}
+.canvas-coordinate-readout{position:absolute;right:9px;top:9px;z-index:12;padding:5px 8px;border:1px solid #ffffff24;border-radius:5px;background:#14121dd9;color:#e8e1f5;font:600 9px/1.2 "DM Sans",sans-serif;font-variant-numeric:tabular-nums;pointer-events:none;box-shadow:0 3px 12px #0003}
+.canvas-coordinate-readout span{padding:0 4px;color:#8f83a7}
+.canvas-guide-overlay{z-index:4}
+.canvas-snap-line{z-index:10}
+@media(max-width:700px){.design-canvas-with-rulers{grid-template-columns:22px minmax(0,1fr);grid-template-rows:20px auto}.canvas-ruler-corner{font-size:7px}.canvas-ruler-top{height:20px}.canvas-ruler-left{width:22px}.canvas-ruler-top span small,.canvas-ruler-left span small{font-size:7px}}
