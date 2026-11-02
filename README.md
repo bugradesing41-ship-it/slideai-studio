@@ -11,8 +11,10 @@ A browser-based presentation editor focused on hands-on slide design, typography
 - Theme, background, fill, stroke, opacity, shadow and corner-radius controls
 - Slide transition previews
 - Built-in animation presets for selected text objects and visual elements, with separate curated sets
+- Animation presets are organized into Entrance, Reveal, Emphasis, Movement and Distortion categories
+- Clicking an animation applies it to the selected object and immediately previews the motion
 - Per-object animation settings are saved in the editable project and replay during slide presentation preview
-- Dedicated animation preview for the currently selected object
+- Selecting text does not automatically apply Quick Style Presets; styles change only after an explicit preset click
 - Automatic browser-local saving for the current project
 - Export the editable SlideAI project as `.slideai.json`
 - Export the current slide as PNG
