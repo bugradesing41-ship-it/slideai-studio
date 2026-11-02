@@ -280,18 +280,23 @@ export default function StudioWorkspace() {
     window.alert("Proje bilgisi panoya kopyalandı. Paylaşılabilir bağlantı için çevrimiçi proje depolama hesabı gerekir.");
   }
   async function exportPowerPoint() {
-    const response = await fetch("/api/export/pptx", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, theme, slides, slideBackgrounds, canvasDataBySlide }),
-    });
-    if (!response.ok) {
-      const message = await response.text();
-      window.alert(message || "PowerPoint dosyası oluşturulamadı.");
-      return;
+    try {
+      const response = await fetch("/api/export/pptx", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, theme, slides, slideBackgrounds, canvasDataBySlide }),
+      });
+      if (!response.ok) {
+        const message = await response.text();
+        window.alert(message || "PowerPoint dosyası oluşturulamadı.");
+        return;
+      }
+      const blob = await response.blob();
+      downloadBlob(blob, `${title.trim().replace(/[^a-z0-9-_]+/gi, "-") || "slideai-presentation"}.pptx`);
+    } catch (error) {
+      console.error("PowerPoint export failed", error);
+      window.alert("PowerPoint dışa aktarma işlemi tamamlanamadı. Bağlantıyı kontrol edip tekrar deneyin.");
     }
-    const blob = await response.blob();
-    downloadBlob(blob, `${title.trim().replace(/[^a-z0-9-_]+/gi, "-") || "slideai-presentation"}.pptx`);
   }
 
   function exportSlidePng() {
