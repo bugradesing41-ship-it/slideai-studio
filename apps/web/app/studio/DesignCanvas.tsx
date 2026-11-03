@@ -700,19 +700,36 @@ export default function DesignCanvas({
       if (cancelled || canvasRef.current !== canvas) return;
       if (assetCommand.imageUrl) {
         try {
-          const response=await fetch(assetCommand.imageUrl);
-          if(!response.ok)throw new Error(`Illustration request failed (${response.status})`);
-          let dataUrl:string;
-          if(assetCommand.animated){
-            const blob=await response.blob();
-            dataUrl=await new Promise<string>((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result));reader.onerror=()=>reject(new Error("Could not read animated image"));reader.readAsDataURL(blob);});
-            if(!dataUrl.startsWith("data:image/gif;base64,"))throw new Error("Animated character did not return a GIF");
-          }else{
-            const svg=await response.text();
-            if(!/<svg\b/i.test(svg))throw new Error("Illustration source did not return a valid SVG");
-            dataUrl=`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+          const response=await fetch(assetCommand.imageUrl,{cache:"no-store"});
+          if(!response.ok){
+            const detail=await response.text().catch(()=>"");
+            throw new Error(\`Illustration request failed (\${response.status})\${detail?": "+detail.slice(0,180):""}\`);
           }
-          const image = await FabricImage.fromURL(dataUrl);
+          const blob=await response.blob();
+          let imageBlob=blob;
+          if(assetCommand.animated){
+            const signature=await blob.slice(0,6).text();
+            if(signature!=="GIF87a"&&signature!=="GIF89a")throw new Error("The animated asset did not return a valid GIF file");
+          }else{
+            const svg=await blob.text();
+            const parsed=new DOMParser().parseFromString(svg,"image/svg+xml");
+            if(parsed.querySelector("parsererror")||parsed.documentElement?.localName?.toLowerCase()!=="svg"){
+              throw new Error("The character source is not a readable SVG. Check the asset URL or proxy response.");
+            }
+            imageBlob=new Blob([svg],{type:"image/svg+xml"});
+          }
+          const objectUrl=URL.createObjectURL(imageBlob);
+          let imageElement:HTMLImageElement;
+          try{
+            imageElement=new Image();
+            imageElement.decoding="async";
+            imageElement.src=objectUrl;
+            await imageElement.decode();
+          }finally{
+            URL.revokeObjectURL(objectUrl);
+          }
+          if (cancelled || canvasRef.current !== canvas) return;
+          const image = new FabricImage(imageElement);
           if (cancelled || canvasRef.current !== canvas) return;
           const scale = Math.min(360/(image.width||1), 500/(image.height||1), 1);
           image.set({ left:790, top:120, scaleX:scale, scaleY:scale, name:assetCommand.label, isAnimated:assetCommand.animated===true });
