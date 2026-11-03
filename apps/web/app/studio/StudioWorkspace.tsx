@@ -54,7 +54,6 @@ export default function StudioWorkspace() {
   const [slideBackgrounds, setSlideBackgrounds] = useState<Record<number,string>>({});
   const [slideAnimations, setSlideAnimations] = useState<Record<number,string>>({});
   const [isPlaying, setIsPlaying] = useState(false);
-  const [playbackToken, setPlaybackToken] = useState(0);
   const [shadowEnabled, setShadowEnabled] = useState(false);
   const [opacity, setOpacity] = useState(1);
   const [canvasDataBySlide, setCanvasDataBySlide] = useState<Record<number, string>>({});
@@ -405,7 +404,7 @@ export default function StudioWorkspace() {
               <button className="tool-button" onClick={() => issueCanvasCommand("undo")} disabled={!canUndo} title="Undo"><Undo2 size={15}/></button>
               <button className="tool-button" onClick={() => issueCanvasCommand("redo")} disabled={!canRedo} title="Redo"><Redo2 size={15}/></button>
               <button className="tool-button asset-launch-button" onClick={() => {setAssetLibraryCategory("All assets");setAssetLibraryOpen(true);}} title="Open asset library"><ImagePlus size={15}/><span>Assets</span></button>
-                            <button className="tool-button" onClick={() => {setIsPlaying(true);setPlaybackToken((token) => token + 1);setActiveId(slides[0].id);}} title="Play all slides"><Play size={15}/><span>Play all</span></button>
+                            <button className="tool-button" onClick={() => {setIsPlaying(true);setActiveId(slides[0].id);}} title="Play all slides"><Play size={15}/><span>Play all</span></button>
               {isPlaying && <button className="tool-button active-tool" onClick={() => setIsPlaying(false)} title="Stop presentation preview"><Square size={14}/><span>Stop</span></button>}
               <button className="tool-button" onClick={() => imageInputRef.current?.click()} title="Add image from computer"><ImagePlus size={15}/><span>Image</span></button>
               <input ref={imageInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" hidden onChange={(event) => { const file=event.target.files?.[0]; if(!file)return; if(file.size>12*1024*1024){window.alert("Please choose an image smaller than 12 MB.");event.target.value="";return;} const reader=new FileReader(); reader.onload=()=>{if(typeof reader.result==="string")setImageCommand(current=>({dataUrl:reader.result as string,name:file.name,token:current.token+1}));}; reader.readAsDataURL(file); event.target.value=""; }} />
@@ -434,7 +433,7 @@ export default function StudioWorkspace() {
 
           <div className="canvas-stage advanced-canvas-stage">
             <div className="canvas-zoom-frame" style={{ transform: `scale(${zoom / 100})` }}>
-              <motion.div key={activeId + activeSlideAnimation + playbackToken} className="canvas-motion-frame" style={{transformPerspective:1200}} initial={slideMotion.initial} animate={slideMotion.animate} transition={slideMotion.transition}>
+              <motion.div key={activeId + activeSlideAnimation} className="canvas-motion-frame" style={{transformPerspective:1200}} initial={slideMotion.initial} animate={slideMotion.animate} transition={slideMotion.transition}>
               <DesignCanvas
                 key={`${activeId}`}
                 slideId={activeId}
