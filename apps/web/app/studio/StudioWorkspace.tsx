@@ -151,7 +151,7 @@ export default function StudioWorkspace() {
   useEffect(() => {
     slideAnimationControls.set(slideMotion.initial);
     void slideAnimationControls.start({ ...slideMotion.animate, transition: slideMotion.transition });
-  }, [activeId, activeSlideAnimation, isPlaying, slideAnimationControls]);
+  }, [activeId, activeSlideAnimation, isPlaying, slideAnimationControls, slideMotion]);
 
   useEffect(() => {
     if (isPlaying) setCanvasCommand((current) => ({ action: "play-slide-animations", token: current.token + 1 }));
