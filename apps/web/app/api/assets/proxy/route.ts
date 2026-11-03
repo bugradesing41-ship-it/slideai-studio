@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
-export const revalidate = 86400;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const ALLOWED_HOST = "opendoodles.s3-us-west-1.amazonaws.com";
 const MAX_BYTES = 4 * 1024 * 1024;
@@ -24,7 +25,7 @@ export async function GET(request: Request) {
 
   try {
     const upstream = await fetch(remote.toString(), {
-      cache: "force-cache",
+      cache: "no-store",
       signal: AbortSignal.timeout(10000),
       headers: { Accept: "image/svg+xml, image/gif" },
       redirect: "error",
@@ -57,12 +58,19 @@ export async function GET(request: Request) {
       });
     }
 
-    const source = await upstream.text();
-    if (source.length > MAX_BYTES || !/<svg[\s>]/i.test(source)) {
-      return NextResponse.json({ error: "Invalid SVG illustration" }, { status: 415 });
+    const source = (await upstream.text()).replace(/^\uFEFF/, "");
+    if (source.length > MAX_BYTES) {
+      return NextResponse.json({ error: "Illustration is too large" }, { status: 413 });
     }
-
-    const safeSvg = source
+    // SVG files may include an XML declaration, comments or a doctype before the root.
+    // Extract the actual document instead of assuming a specific byte at the start.
+    const svgStart = source.search(/<svg(?:\s|>)/i);
+    const svgEnd = source.toLowerCase().lastIndexOf("</svg>");
+    if (svgStart < 0 || svgEnd < svgStart) {
+      return NextResponse.json({ error: "The asset source did not contain an SVG document", contentType: upstream.headers.get("content-type") }, { status: 415 });
+    }
+    const svgSource = source.slice(svgStart, svgEnd + 6);
+    const safeSvg = svgSource
       .replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, "")
       .replace(/\s+on[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "")
       .replace(/(?:href|xlink:href)\s*=\s*("|')\s*(?:https?:|javascript:|data:text\/html)[\s\S]*?\1/gi, "");
