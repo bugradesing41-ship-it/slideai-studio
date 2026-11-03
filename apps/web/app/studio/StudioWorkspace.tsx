@@ -90,7 +90,7 @@ export default function StudioWorkspace() {
     "Rotate":{initial:{rotate:-24,scale:.78,opacity:0},animate:{rotate:[-24,5,0],scale:[.78,1.03,1],opacity:[0,1,1]},transition:{duration:.86,times:[0,.72,1],ease:"easeOut"}},
     "Bounce":{initial:{y:-300,opacity:0},animate:{y:[-300,0,-28,0],opacity:[0,1,1,1]},transition:{duration:1.05,times:[0,.62,.82,1],ease:"easeOut"}}
   };
-  const slideMotion = SLIDE_MOTION[activeSlideAnimation] ?? SLIDE_MOTION.Fade;
+  const slideMotion = useMemo(() => SLIDE_MOTION[activeSlideAnimation] ?? SLIDE_MOTION.Fade, [activeSlideAnimation]);
   const activeSlide = useMemo(() => slides.find((slide) => slide.id === activeId) ?? slides[0], [slides, activeId]);
   useEffect(() => {
     try {
