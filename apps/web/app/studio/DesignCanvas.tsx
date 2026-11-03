@@ -703,7 +703,7 @@ export default function DesignCanvas({
           const response=await fetch(assetCommand.imageUrl,{cache:"no-store"});
           if(!response.ok){
             const detail=await response.text().catch(()=>"");
-            throw new Error(\`Illustration request failed (\${response.status})\${detail?": "+detail.slice(0,180):""}\`);
+            throw new Error(`Illustration request failed (${response.status})${detail?": "+detail.slice(0,180):""}`);
           }
           const blob=await response.blob();
           let imageBlob=blob;
