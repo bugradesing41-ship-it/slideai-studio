@@ -71,13 +71,11 @@ function restoreLegacyAssetSources(value:unknown) {
   if(!value||typeof value!=="object")return;
   const record=value as Record<string,unknown>;
   if(typeof record.src==="string"&&record.src.startsWith("blob:")&&typeof record.name==="string"){
-    const persistentUrl=getPersistentCharacterAssetUrl(record.name);
+    const persistentUrl=getPersistentCharacterAssetUrl(record.name,record.isAnimated===true);
     if(persistentUrl)record.src=persistentUrl;
   }
   Object.values(record).forEach(restoreLegacyAssetSources);
 }
-
-function blobToDataUrl(blob:Blob):Promise<string>{return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>typeof reader.result==="string"?resolve(reader.result):reject(new Error("Could not persist image data"));reader.onerror=()=>reject(reader.error??new Error("Could not read image data"));reader.readAsDataURL(blob);});}
 
 function normalizeSerializedFonts(value:unknown, families:Set<string>) {
   if (Array.isArray(value)) { value.forEach((item)=>normalizeSerializedFonts(item,families)); return; }
@@ -734,12 +732,11 @@ export default function DesignCanvas({
             }
             imageBlob=new Blob([svg],{type:"image/svg+xml"});
           }
-          // Persist the image source inside Fabric JSON. A revoked blob: URL makes
-          // the slide disappear as soon as playback remounts the canvas.
-          const persistentImageUrl=await blobToDataUrl(imageBlob);
+          // Keep the same-origin proxy URL in Fabric JSON. Temporary blob: URLs
+          // are revoked after loading and make the slide blank when playback remounts it.
           const imageElement=new Image();
           imageElement.decoding="async";
-          imageElement.src=persistentImageUrl;
+          imageElement.src=assetCommand.imageUrl;
           await imageElement.decode();
           if (cancelled || canvasRef.current !== canvas) return;
           const image = new FabricImage(imageElement);
