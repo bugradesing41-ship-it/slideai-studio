@@ -162,7 +162,7 @@ export default function DesignCanvas({
       canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
 
       const save = () => {
-        const json = JSON.stringify(canvas.toObject(["name", "animationPreset", "animationKind"]));
+        const json = JSON.stringify(canvas.toObject(["name", "animationPreset", "animationKind", "isAnimated"]));
         if (restoringRef.current) return;
         latestRef.current.onChange(json);
         latestRef.current.onLayersChange(canvas.getObjects().map((object:any,index:number)=>({index,id:String(index),name:String(object.name||object.type||"Object"),type:String(object.type||"object"),visible:object.visible!==false,locked:object.locked===true,active:canvas.getActiveObject()===object})).reverse());
@@ -205,9 +205,30 @@ export default function DesignCanvas({
           const savedFamilies=new Set<string>();
           normalizeSerializedFonts(savedDocument,savedFamilies);
           await Promise.all([...savedFamilies].map((family)=>loadGoogleFont(family,[400],400,32)));
-          await canvas.loadFromJSON(savedDocument);
+          try {
+            await canvas.loadFromJSON(savedDocument);
+          } catch (restoreError) {
+            // A single unavailable image must not erase every other object on the slide.
+            console.error("Slide asset restore failed; recovering the remaining objects",restoreError);
+            const objects=Array.isArray(savedDocument.objects)?savedDocument.objects:[];
+            const nonImages=objects.filter((object:any)=>String(object.type??"").toLowerCase()!=="image");
+            canvas.clear();
+            if(nonImages.length)await canvas.loadFromJSON({...savedDocument,objects:nonImages});
+            for(const serialized of objects.filter((object:any)=>String(object.type??"").toLowerCase()==="image")){
+              try{
+                let src=typeof serialized.src==="string"?serialized.src:"";
+                if(src.startsWith("blob:")&&typeof serialized.name==="string")src=getPersistentCharacterAssetUrl(serialized.name,serialized.isAnimated===true)??"";
+                if(!src)continue;
+                const element=new Image();element.decoding="async";element.src=src;await element.decode();
+                const {src:_src,type:_type,version:_version,...options}=serialized;
+                const restoredImage=new fabric.FabricImage(element,options);
+                canvas.add(restoredImage);
+              }catch(imageRestoreError){console.warn("Skipping one unavailable slide image",imageRestoreError);}
+            }
+          }
           if(canvas.getObjects().some((object:any)=>object.isAnimated===true))ensureAnimatedRender(canvas);
-        } catch {
+        } catch (restoreError) {
+          console.error("Could not restore slide canvas",restoreError);
           canvas.clear();
         }
       } else if (latestRef.current.designElements.length) {
@@ -416,7 +437,7 @@ export default function DesignCanvas({
     const active = canvas.getActiveObject();
     if (!active && !action.startsWith("select-layer:") && !action.startsWith("toggle-visible:") && !action.startsWith("toggle-lock:") && !action.startsWith("layer-up:") && !action.startsWith("layer-down:") && !action.startsWith("reorder-layer:")) return;
     const recordCommand = () => {
-      const json = JSON.stringify(canvas.toObject(["name", "animationPreset", "animationKind"]));
+      const json = JSON.stringify(canvas.toObject(["name", "animationPreset", "animationKind", "isAnimated"]));
       latestRef.current.onChange(json);
       latestRef.current.onLayersChange(canvas.getObjects().map((object:any,index:number)=>({index,id:String(index),name:String(object.name||object.type||"Object"),type:String(object.type||"object"),visible:object.visible!==false,locked:object.locked===true,active:canvas.getActiveObject()===object})).reverse());
       const current = historyRef.current;
@@ -702,7 +723,7 @@ export default function DesignCanvas({
 
   useEffect(() => {
     const canvas=canvasRef.current;if(!canvas||imageCommand.token===0)return;let cancelled=false;
-    void import("fabric").then(async({FabricImage})=>{if(cancelled||!canvasRef.current)return;try{const image=await FabricImage.fromURL(imageCommand.dataUrl,{crossOrigin:"anonymous"});if(cancelled||!canvasRef.current)return;const scale=Math.min(760/(image.width||1),560/(image.height||1),1);image.set({left:260,top:80,scaleX:scale,scaleY:scale,name:imageCommand.name||"Imported image"});canvas.add(image);canvas.setActiveObject(image);canvas.requestRenderAll();const json=JSON.stringify(canvas.toObject(["name","animationPreset"]));latestRef.current.onChange(json);const h=historyRef.current,items=[...h.items.slice(0,h.index+1),json].slice(-60);historyRef.current={items,index:items.length-1};latestRef.current.onHistoryChange(items.length>1,false);latestRef.current.onSelectionChange(true, "image");}catch(error){console.error("Could not add image",error);}});
+    void import("fabric").then(async({FabricImage})=>{if(cancelled||!canvasRef.current)return;try{const image=await FabricImage.fromURL(imageCommand.dataUrl,{crossOrigin:"anonymous"});if(cancelled||!canvasRef.current)return;const scale=Math.min(760/(image.width||1),560/(image.height||1),1);image.set({left:260,top:80,scaleX:scale,scaleY:scale,name:imageCommand.name||"Imported image"});canvas.add(image);canvas.setActiveObject(image);canvas.requestRenderAll();const json=JSON.stringify(canvas.toObject(["name","animationPreset","animationKind","isAnimated"]));latestRef.current.onChange(json);const h=historyRef.current,items=[...h.items.slice(0,h.index+1),json].slice(-60);historyRef.current={items,index:items.length-1};latestRef.current.onHistoryChange(items.length>1,false);latestRef.current.onSelectionChange(true, "image");}catch(error){console.error("Could not add image",error);}});
     return()=>{cancelled=true;};
   },[imageCommand.token]);
 
@@ -744,7 +765,7 @@ export default function DesignCanvas({
           const scale = Math.min(360/(image.width||1), 500/(image.height||1), 1);
           image.set({ left:790, top:120, scaleX:scale, scaleY:scale, name:assetCommand.label, isAnimated:assetCommand.animated===true });
           canvas.add(image); canvas.setActiveObject(image); canvas.requestRenderAll();if(assetCommand.animated)ensureAnimatedRender(canvas);
-          const json=JSON.stringify(canvas.toObject(["name","animationPreset","isAnimated"])); latestRef.current.onChange(json);
+          const json=JSON.stringify(canvas.toObject(["name","animationPreset","animationKind","isAnimated"])); latestRef.current.onChange(json);
           const history=historyRef.current,items=[...history.items.slice(0,history.index+1),json].slice(-60); historyRef.current={items,index:items.length-1};
           latestRef.current.onHistoryChange(items.length>1,false); latestRef.current.onSelectionChange(true,"image");
         } catch(error) { if(!cancelled){console.error("Could not load character illustration",error);window.alert(error instanceof Error?error.message:"Could not add this character. Please try again.");} }
@@ -766,7 +787,7 @@ export default function DesignCanvas({
         const icon=new FabricImage(iconElement);
         icon.set({left:500,top:250,scaleX:.45,scaleY:.45,name:`asset-${assetCommand.label.toLowerCase().replace(/[^a-z0-9]+/g,"-")}`});
         canvas.add(icon);canvas.setActiveObject(icon);canvas.requestRenderAll();
-        const json=JSON.stringify(canvas.toObject(["name","animationPreset"]));latestRef.current.onChange(json);
+        const json=JSON.stringify(canvas.toObject(["name","animationPreset","animationKind","isAnimated"]));latestRef.current.onChange(json);
         const history=historyRef.current,items=[...history.items.slice(0,history.index+1),json].slice(-60);historyRef.current={items,index:items.length-1};
         latestRef.current.onHistoryChange(items.length>1,false);latestRef.current.onSelectionChange(true,"image");return;
       }
@@ -777,7 +798,7 @@ export default function DesignCanvas({
       });
       if (cancelled || canvasRef.current !== canvas) return;
       canvas.add(sticker); canvas.setActiveObject(sticker); canvas.requestRenderAll();
-      const json = JSON.stringify(canvas.toObject(["name","animationPreset"]));
+      const json = JSON.stringify(canvas.toObject(["name","animationPreset","animationKind","isAnimated"]));
       latestRef.current.onChange(json);
       const history = historyRef.current;
       const items = [...history.items.slice(0,history.index+1),json].slice(-60);
@@ -802,7 +823,7 @@ export default function DesignCanvas({
 
   useEffect(() => {
     const canvas=canvasRef.current;if(!canvas)return;let cancelled=false;const object=canvas.getActiveObject();
-    void(async()=>{const loaded=await loadGoogleFont(fontFamily,fontWeights,fontWeight,fontSize);if(cancelled||!canvasRef.current)return;if(!loaded)console.warn(`Google Font "${fontFamily}" bulunamadı; tarayıcı yedek font kullanacak.`);if(object && "fontFamily" in object){object.set({fontFamily,fontSize,fontWeight});object.setCoords();canvas.requestRenderAll();latestRef.current.onChange(JSON.stringify(canvas.toObject(["name","animationPreset"])));}})();
+    void(async()=>{const loaded=await loadGoogleFont(fontFamily,fontWeights,fontWeight,fontSize);if(cancelled||!canvasRef.current)return;if(!loaded)console.warn(`Google Font "${fontFamily}" bulunamadı; tarayıcı yedek font kullanacak.`);if(object && "fontFamily" in object){object.set({fontFamily,fontSize,fontWeight});object.setCoords();canvas.requestRenderAll();latestRef.current.onChange(JSON.stringify(canvas.toObject(["name","animationPreset","animationKind","isAnimated"])));}})();
     return()=>{cancelled=true;};
   },[fontFamily,fontWeights,fontSize,fontWeight]);
 
@@ -823,7 +844,7 @@ export default function DesignCanvas({
           shadow: current.shadowEnabled ? new Shadow({ color: "rgba(0,0,0,0.32)", blur: 24, offsetX: 8, offsetY: 12 }) : null,
         });
         canvas.requestRenderAll();
-        current.onChange(JSON.stringify(canvas.toObject(["name", "animationPreset", "animationKind"])));
+        current.onChange(JSON.stringify(canvas.toObject(["name", "animationPreset", "animationKind", "isAnimated"])));
       });
     }
   }, [fill, stroke, strokeWidth, shadowEnabled, opacity, textBorderEnabled, textBorderWidth]);
@@ -840,7 +861,7 @@ export default function DesignCanvas({
       object.set({ clipPath: cornerRadius > 0 ? new Rect({ width, height, rx: Math.min(cornerRadius,width/2), ry: Math.min(cornerRadius,height/2), originX:"center", originY:"center" }) : undefined, rx:cornerRadius, ry:cornerRadius });
       object.setCoords();
       canvas.requestRenderAll();
-      latestRef.current.onChange(JSON.stringify(canvas.toObject(["name","animationPreset"])));
+      latestRef.current.onChange(JSON.stringify(canvas.toObject(["name","animationPreset","animationKind","isAnimated"])));
     });
   }, [cornerRadius]);
 
@@ -858,7 +879,7 @@ export default function DesignCanvas({
     if (bodyObject) bodyObject.set("text", current.body);
     canvas.backgroundColor = current.backgroundColor;
     canvas.requestRenderAll();
-    current.onChange(JSON.stringify(canvas.toObject(["name", "animationPreset", "animationKind"])));
+    current.onChange(JSON.stringify(canvas.toObject(["name", "animationPreset", "animationKind", "isAnimated"])));
   }, [title, eyebrow, body, theme, backgroundColor, slideNumber]);
 
   const addVerticalGuide=(event:MouseEvent<HTMLDivElement>)=>{const rect=event.currentTarget.getBoundingClientRect();const x=Math.round(Math.max(0,Math.min(1280,(event.clientX-rect.left)/rect.width*1280)));setVerticalGuides(items=>[...items,x]);};
