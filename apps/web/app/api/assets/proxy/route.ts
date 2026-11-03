@@ -4,7 +4,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const ALLOWED_HOST = "opendoodles.s3-us-west-1.amazonaws.com";
+const ALLOWED_HOSTS = new Set(["opendoodles.s3-us-west-1.amazonaws.com", "fonts.gstatic.com"]);
 const MAX_BYTES = 4 * 1024 * 1024;
 
 export async function GET(request: Request) {
@@ -19,7 +19,9 @@ export async function GET(request: Request) {
   }
 
   const extension = remote.pathname.toLowerCase().split(".").pop();
-  if (remote.protocol !== "https:" || remote.hostname !== ALLOWED_HOST || !["svg", "gif"].includes(extension ?? "")) {
+  const isDoodle = remote.hostname === "opendoodles.s3-us-west-1.amazonaws.com";
+  const isMaterialIcon = remote.hostname === "fonts.gstatic.com" && /^\\/s\\/i\\/short-term\\/release\\/materialsymbolsoutlined\\/[a-z0-9_]+\\/default\\/24px\\.svg$/i.test(remote.pathname);
+  if (remote.protocol !== "https:" || !ALLOWED_HOSTS.has(remote.hostname) || !["svg", "gif"].includes(extension ?? "") || (!isDoodle && !isMaterialIcon)) {
     return NextResponse.json({ error: "Asset source is not allowed" }, { status: 403 });
   }
 
