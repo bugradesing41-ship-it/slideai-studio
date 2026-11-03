@@ -5,6 +5,7 @@
 
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 import type { DesignElement } from "@slideai/shared";
+import { getPersistentCharacterAssetUrl } from "./AssetLibrary";
 
 declare module "fabric" {
   interface FabricObject {
@@ -64,6 +65,19 @@ type Props = {
 };
 
 export type { Tool };
+
+function restoreLegacyAssetSources(value:unknown) {
+  if(Array.isArray(value)){value.forEach(restoreLegacyAssetSources);return;}
+  if(!value||typeof value!=="object")return;
+  const record=value as Record<string,unknown>;
+  if(typeof record.src==="string"&&record.src.startsWith("blob:")&&typeof record.name==="string"){
+    const persistentUrl=getPersistentCharacterAssetUrl(record.name);
+    if(persistentUrl)record.src=persistentUrl;
+  }
+  Object.values(record).forEach(restoreLegacyAssetSources);
+}
+
+function blobToDataUrl(blob:Blob):Promise<string>{return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>typeof reader.result==="string"?resolve(reader.result):reject(new Error("Could not persist image data"));reader.onerror=()=>reject(reader.error??new Error("Could not read image data"));reader.readAsDataURL(blob);});}
 
 function normalizeSerializedFonts(value:unknown, families:Set<string>) {
   if (Array.isArray(value)) { value.forEach((item)=>normalizeSerializedFonts(item,families)); return; }
@@ -189,10 +203,12 @@ export default function DesignCanvas({
       if (latestRef.current.initialData) {
         try {
           const savedDocument=JSON.parse(latestRef.current.initialData);
+          restoreLegacyAssetSources(savedDocument);
           const savedFamilies=new Set<string>();
           normalizeSerializedFonts(savedDocument,savedFamilies);
           await Promise.all([...savedFamilies].map((family)=>loadGoogleFont(family,[400],400,32)));
           await canvas.loadFromJSON(savedDocument);
+          if(canvas.getObjects().some((object:any)=>object.isAnimated===true))ensureAnimatedRender(canvas);
         } catch {
           canvas.clear();
         }
@@ -718,16 +734,13 @@ export default function DesignCanvas({
             }
             imageBlob=new Blob([svg],{type:"image/svg+xml"});
           }
-          const objectUrl=URL.createObjectURL(imageBlob);
-          let imageElement:HTMLImageElement;
-          try{
-            imageElement=new Image();
-            imageElement.decoding="async";
-            imageElement.src=objectUrl;
-            await imageElement.decode();
-          }finally{
-            URL.revokeObjectURL(objectUrl);
-          }
+          // Persist the image source inside Fabric JSON. A revoked blob: URL makes
+          // the slide disappear as soon as playback remounts the canvas.
+          const persistentImageUrl=await blobToDataUrl(imageBlob);
+          const imageElement=new Image();
+          imageElement.decoding="async";
+          imageElement.src=persistentImageUrl;
+          await imageElement.decode();
           if (cancelled || canvasRef.current !== canvas) return;
           const image = new FabricImage(imageElement);
           if (cancelled || canvasRef.current !== canvas) return;
@@ -742,8 +755,23 @@ export default function DesignCanvas({
       }
       if (assetCommand.fontFamily === "Material Symbols Outlined") {
         const link = document.getElementById("slideai-material-symbols") as HTMLLinkElement | null;
-        if (!link) { const stylesheet=document.createElement("link"); stylesheet.id="slideai-material-symbols"; stylesheet.rel="stylesheet"; stylesheet.href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"; const ready=new Promise<void>((resolve)=>{stylesheet.onload=()=>resolve();stylesheet.onerror=()=>resolve();}); document.head.appendChild(stylesheet); await ready; }
+        if (!link) { const stylesheet=document.createElement("link"); stylesheet.id="slideai-material-symbols"; stylesheet.rel="stylesheet"; stylesheet.href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"; const ready=new Promise<void>((resolve)=>{stylesheet.addEventListener("load",()=>resolve(),{once:true});stylesheet.addEventListener("error",()=>resolve(),{once:true});}); document.head.appendChild(stylesheet); await ready; }
         await document.fonts.load(`112px "Material Symbols Outlined"`,assetCommand.symbol);
+        await document.fonts.ready;
+        const iconCanvas=document.createElement("canvas");iconCanvas.width=256;iconCanvas.height=256;
+        const context=iconCanvas.getContext("2d");
+        if(!context)throw new Error("Could not create the icon preview");
+        context.clearRect(0,0,256,256);context.fillStyle="#f4f1ff";context.textAlign="center";context.textBaseline="middle";
+        context.font='normal 160px "Material Symbols Outlined"';context.fontKerning="normal";
+        context.fillText(assetCommand.symbol,128,128);
+        const iconElement=new Image();iconElement.src=iconCanvas.toDataURL("image/png");await iconElement.decode();
+        if(cancelled||canvasRef.current!==canvas)return;
+        const icon=new FabricImage(iconElement);
+        icon.set({left:500,top:250,scaleX:.45,scaleY:.45,name:`asset-${assetCommand.label.toLowerCase().replace(/[^a-z0-9]+/g,"-")}`});
+        canvas.add(icon);canvas.setActiveObject(icon);canvas.requestRenderAll();
+        const json=JSON.stringify(canvas.toObject(["name","animationPreset"]));latestRef.current.onChange(json);
+        const history=historyRef.current,items=[...history.items.slice(0,history.index+1),json].slice(-60);historyRef.current={items,index:items.length-1};
+        latestRef.current.onHistoryChange(items.length>1,false);latestRef.current.onSelectionChange(true,"image");return;
       }
       const sticker = new Textbox(assetCommand.symbol, {
         left: 500, top: 250, width: 190, fontFamily: assetCommand.fontFamily ?? "Noto Color Emoji, Segoe UI Emoji, Apple Color Emoji, sans-serif",
