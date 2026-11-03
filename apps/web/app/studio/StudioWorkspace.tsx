@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { motion, type TargetAndTransition, type Transition } from "motion/react";
+import { motion, useAnimationControls, type TargetAndTransition, type Transition } from "motion/react";
 import Link from "next/link";
 import DesignCanvas, { type Tool } from "./DesignCanvas";
 import AssetLibrary, { type StudioAsset } from "./AssetLibrary";
@@ -54,6 +54,7 @@ export default function StudioWorkspace() {
   const [slideBackgrounds, setSlideBackgrounds] = useState<Record<number,string>>({});
   const [slideAnimations, setSlideAnimations] = useState<Record<number,string>>({});
   const [isPlaying, setIsPlaying] = useState(false);
+  const slideAnimationControls = useAnimationControls();
   const [shadowEnabled, setShadowEnabled] = useState(false);
   const [opacity, setOpacity] = useState(1);
   const [canvasDataBySlide, setCanvasDataBySlide] = useState<Record<number, string>>({});
@@ -148,6 +149,11 @@ export default function StudioWorkspace() {
   }, []);
 
   useEffect(() => {
+    slideAnimationControls.set(slideMotion.initial);
+    void slideAnimationControls.start({ ...slideMotion.animate, transition: slideMotion.transition });
+  }, [activeId, activeSlideAnimation, isPlaying, slideAnimationControls]);
+
+  useEffect(() => {
     if (isPlaying) setCanvasCommand((current) => ({ action: "play-slide-animations", token: current.token + 1 }));
   }, [isPlaying]);
 
@@ -238,7 +244,7 @@ export default function StudioWorkspace() {
   }
 
   function saveCanvas(json: string) {
-    setCanvasDataBySlide((current) => ({ ...current, [activeId]: json }));
+    setCanvasDataBySlide((current) => current[activeId] === json ? current : ({ ...current, [activeId]: json }));
   }
 
   function issueCanvasCommand(action: string) {
@@ -433,7 +439,7 @@ export default function StudioWorkspace() {
 
           <div className="canvas-stage advanced-canvas-stage">
             <div className="canvas-zoom-frame" style={{ transform: `scale(${zoom / 100})` }}>
-              <motion.div key={activeId + activeSlideAnimation} className="canvas-motion-frame" style={{transformPerspective:1200}} initial={slideMotion.initial} animate={slideMotion.animate} transition={slideMotion.transition}>
+              <motion.div className="canvas-motion-frame" style={{transformPerspective:1200}} initial={false} animate={slideAnimationControls}>
               <DesignCanvas
                 key={`${activeId}`}
                 slideId={activeId}
