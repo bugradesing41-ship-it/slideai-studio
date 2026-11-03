@@ -20,7 +20,7 @@ export async function GET(request: Request) {
 
   const extension = remote.pathname.toLowerCase().split(".").pop();
   const isDoodle = remote.hostname === "opendoodles.s3-us-west-1.amazonaws.com";
-  const isMaterialIcon = remote.hostname === "fonts.gstatic.com" && /^\\/s\\/i\\/short-term\\/release\\/materialsymbolsoutlined\\/[a-z0-9_]+\\/default\\/24px\\.svg$/i.test(remote.pathname);
+  const isMaterialIcon = remote.hostname === "fonts.gstatic.com" && /^\/s\/i\/short-term\/release\/materialsymbolsoutlined\/[a-z0-9_]+\/default\/24px\.svg$/i.test(remote.pathname);
   if (remote.protocol !== "https:" || !ALLOWED_HOSTS.has(remote.hostname) || !["svg", "gif"].includes(extension ?? "") || (!isDoodle && !isMaterialIcon)) {
     return NextResponse.json({ error: "Asset source is not allowed" }, { status: 403 });
   }
