@@ -499,7 +499,7 @@ export default function DesignCanvas({
     if(action.startsWith("rotate:") && active){
       const requested=Number(action.slice(7));
       if(!Number.isFinite(requested))return;
-      active.set("angle",((requested%360)+360)%360);
+      active.set("angle",Math.max(0,Math.min(360,requested)));
       active.setCoords();canvas.requestRenderAll();recordCommand();
       latestRef.current.onSelectionChange(true,active.type??"",undefined,typeof active.animationPreset==="string"?active.animationPreset:"",Number(active.angle)||0);
       return;
