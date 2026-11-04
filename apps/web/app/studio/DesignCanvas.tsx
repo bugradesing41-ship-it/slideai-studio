@@ -891,7 +891,7 @@ export default function DesignCanvas({
     const current = latestRef.current;
     const object = canvas.getActiveObject();
     if (object) {
-      void import("fabric").then(({ Shadow }) => {
+      void import("fabric").then(async ({ Shadow }) => {
         if (!canvasRef.current) return;
         const isTextObject = ["textbox", "i-text", "text"].includes(String(object.type ?? "").toLowerCase());
         const isImageObject = String(object.type ?? "").toLowerCase() === "image";
@@ -902,7 +902,8 @@ export default function DesignCanvas({
           opacity: current.opacity,
           shadow: current.shadowEnabled ? new Shadow({ color: "rgba(0,0,0,0.32)", blur: 24, offsetX: 8, offsetY: 12 }) : null,
         });
-        const svgSource = typeof object.assetSvgSource === "string" ? object.assetSvgSource : "";
+        const imageObject = object as any;
+        const svgSource = typeof imageObject.assetSvgSource === "string" ? imageObject.assetSvgSource : "";
         if (isImageObject && svgSource) {
           const recoloredSvg = recolorAssetSvg(svgSource, current.fill);
           const svgImage = new Image();
@@ -910,7 +911,7 @@ export default function DesignCanvas({
           svgImage.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(recoloredSvg);
           await svgImage.decode();
           if (!canvasRef.current || canvas.getActiveObject() !== object) return;
-          object.setElement(svgImage);
+          imageObject.setElement(svgImage);
         }
         object.setCoords();
         canvas.requestRenderAll();
