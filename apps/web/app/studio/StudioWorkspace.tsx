@@ -167,7 +167,7 @@ export default function StudioWorkspace() {
       const currentRegistry = JSON.parse(localStorage.getItem(registryKey) || "[]") as Array<{id:string;updatedAt?:string;[key:string]:unknown}>;
       const safeRegistry = Array.isArray(currentRegistry) ? currentRegistry : [];
       const record = { ...project, id: projectId, updatedAt: new Date().toISOString() };
-      const nextRegistry = [record, ...safeRegistry.filter((item) => item.id !== projectId)].slice(0, 250);
+      const nextRegistry = [record, ...safeRegistry.filter((item) => item.id !== projectId)];
       localStorage.setItem(registryKey, JSON.stringify(nextRegistry));
       localStorage.setItem("slideai-studio-local-project-v1", JSON.stringify(project));
       window.dispatchEvent(new Event("slideai-projects-updated"));
