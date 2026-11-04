@@ -56,8 +56,6 @@ type ExportRequest = {
 };
 
 const SLIDE_W = 13.333333;
-let PX_TO_IN_X = SLIDE_W / 1280;
-let PX_TO_IN_Y = 7.5 / 720;
 
 function colorValue(value: unknown, fallback = "FFFFFF"): { color: string; transparency: number } {
   if (value && typeof value === "object") {
@@ -129,6 +127,8 @@ function renderFabricObject(
   parentY = 0,
   parentScaleX = 1,
   parentScaleY = 1,
+  inchScaleX = SLIDE_W / 1280,
+  inchScaleY = 7.5 / 720,
 ) {
   const type = String(object.type ?? "").toLowerCase();
   const left = parentX + (Number(object.left) || 0) * parentScaleX;
@@ -137,10 +137,10 @@ function renderFabricObject(
   const scaleY = parentScaleY * (Number(object.scaleY) || 1);
   const widthPx = Math.max(0, (Number(object.width) || 0) * scaleX);
   const heightPx = Math.max(0, (Number(object.height) || 0) * scaleY);
-  const x = left * PX_TO_IN_X;
-  const y = top * PX_TO_IN_Y;
-  const w = widthPx * PX_TO_IN_X;
-  const h = heightPx * PX_TO_IN_Y;
+  const x = left * inchScaleX;
+  const y = top * inchScaleY;
+  const w = widthPx * inchScaleX;
+  const h = heightPx * inchScaleY;
   const opacity = Math.max(0, Math.min(1, Number(object.opacity ?? 1)));
   const fill = colorValue(object.fill, "FFFFFF");
   const stroke = colorValue(object.stroke, fill.color);
@@ -148,7 +148,7 @@ function renderFabricObject(
   const rotation = Number(object.angle) || 0;
 
   if (type === "group" || type === "activeselection") {
-    object.objects?.forEach((child) => renderFabricObject(slide, child, left, top, scaleX, scaleY));
+    object.objects?.forEach((child) => renderFabricObject(slide, child, left, top, scaleX, scaleY, inchScaleX, inchScaleY));
     return;
   }
 
@@ -244,8 +244,8 @@ export async function POST(request: Request) {
     const exportWidth = Math.max(320, Math.min(4096, Math.round(payload.width || 1280)));
     const exportHeight = Math.max(320, Math.min(4096, Math.round(payload.height || 720)));
     const slideHeightIn = SLIDE_W * exportHeight / exportWidth;
-    PX_TO_IN_X = SLIDE_W / 1280;
-    PX_TO_IN_Y = slideHeightIn / 720;
+    const inchScaleX = SLIDE_W / 1280;
+    const inchScaleY = slideHeightIn / 720;
     const pptx = new PptxGenJS();
     pptx.defineLayout({ name: "SLIDEAI_CUSTOM", width: SLIDE_W, height: slideHeightIn });
     pptx.layout = "SLIDEAI_CUSTOM";
@@ -260,7 +260,7 @@ export async function POST(request: Request) {
       addGradientBackground(slide, backgrounds[item.id], slideHeightIn);
       const objects = await readCanvasObjects(canvasData[item.id]);
       if (objects.length > 0) {
-        objects.forEach((object) => renderFabricObject(slide, object));
+        objects.forEach((object) => renderFabricObject(slide, object, 0, 0, 1, 1, inchScaleX, inchScaleY));
       } else {
         const light = theme === "light";
         const main = light ? "252333" : "F4F1FF";
