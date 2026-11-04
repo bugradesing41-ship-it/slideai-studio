@@ -245,7 +245,7 @@ export async function POST(request: Request) {
     const exportHeight = Math.max(320, Math.min(4096, Math.round(payload.height || 720)));
     const slideHeightIn = SLIDE_W * exportHeight / exportWidth;
     const inchScaleX = SLIDE_W / 1280;
-    const inchScaleY = slideHeightIn / 720;
+    const inchScaleY = SLIDE_W / 1280;
     const pptx = new PptxGenJS();
     pptx.defineLayout({ name: "SLIDEAI_CUSTOM", width: SLIDE_W, height: slideHeightIn });
     pptx.layout = "SLIDEAI_CUSTOM";
