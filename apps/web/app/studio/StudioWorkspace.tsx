@@ -341,6 +341,7 @@ export default function StudioWorkspace() {
     canvas.setViewportTransform([viewportScale, 0, 0, viewportScale, 0, 0]);
     const serialized = canvasDataBySlide[slideId];
     if (serialized) await canvas.loadFromJSON(JSON.parse(serialized));
+    canvas.setViewportTransform([viewportScale, 0, 0, viewportScale, 0, 0]);
     canvas.backgroundColor = backgroundFill as any;
     canvas.renderAll();
     const safeMultiplier = Math.min(multiplier, 6000 / Math.max(canvasWidth, canvasHeight));
