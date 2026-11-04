@@ -533,7 +533,7 @@ export default function StudioWorkspace() {
                 onHistoryChange={(undo, redo) => { setCanUndo(undo); setCanRedo(redo); }}
                 onReady={() => { if (isPlaying) issueCanvasCommand("play-slide-animations"); }}
                 onTextChange={(name, value) => {
-                  if (name === "slide-title") { updateActive({ title: value }); setTitle(value); }
+                  if (name === "slide-title") updateActive({ title: value });
                   if (name === "slide-eyebrow") updateActive({ eyebrow: value });
                   if (name === "slide-body") updateActive({ body: value });
                 }}
