@@ -370,14 +370,14 @@ export default function StudioWorkspace() {
     const background = slideBackgrounds[slideId] || (theme === "light" ? "#ffffff" : theme === "blue" ? "#102333" : "#171525");
     const colors = background.startsWith("gradient:") ? background.slice(9).split(",").filter((color) => /^#[0-9a-f]{6}$/i.test(color)).slice(0, 3) : [];
     const solidBackground = colors[0] || background;
-    const backgroundFill = colors.length > 1 ? new Gradient({ type: "linear", coords: { x1: 0, y1: 0, x2: 1280, y2: 0 }, colorStops: colors.map((color, index) => ({ offset: index / (colors.length - 1), color })) }) : solidBackground;
-    const canvas = new StaticCanvas(element, { width: canvasWidth, height: canvasHeight, backgroundColor: backgroundFill as any, renderOnAddRemove: false });
+    const backgroundFill = (colors.length > 1 ? new Gradient({ type: "linear", coords: { x1: 0, y1: 0, x2: 1280, y2: 0 }, colorStops: colors.map((color, index) => ({ offset: index / (colors.length - 1), color })) }) : solidBackground) as InstanceType<typeof StaticCanvas>["backgroundColor"];
+    const canvas = new StaticCanvas(element, { width: canvasWidth, height: canvasHeight, backgroundColor: backgroundFill, renderOnAddRemove: false });
     const viewportScale = canvasWidth / 1280;
     canvas.setViewportTransform([viewportScale, 0, 0, viewportScale, 0, 0]);
     const serialized = canvasDataBySlide[slideId];
     if (serialized) await canvas.loadFromJSON(JSON.parse(serialized));
     canvas.setViewportTransform([viewportScale, 0, 0, viewportScale, 0, 0]);
-    canvas.backgroundColor = backgroundFill as any;
+    canvas.backgroundColor = backgroundFill;
     canvas.renderAll();
     const safeMultiplier = Math.min(multiplier, 6000 / Math.max(canvasWidth, canvasHeight));
     const dataUrl = canvas.toDataURL({ format, quality: 0.96, multiplier: safeMultiplier });
