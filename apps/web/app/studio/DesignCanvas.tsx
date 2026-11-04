@@ -180,7 +180,7 @@ export default function DesignCanvas({
         const rawWeight = active?.get("fontWeight");
         const parsedWeight = typeof rawWeight === "number" ? rawWeight : rawWeight === "bold" ? 700 : rawWeight === "normal" ? 400 : Number(rawWeight ?? 400);
         const typography = active && "fontFamily" in active ? { fontFamily:String(active.get("fontFamily") ?? "").replace(/\s+Variable$/i,""), fontSize:Number(active.get("fontSize") ?? 0), fontWeight:Number.isFinite(parsedWeight) ? parsedWeight : 400, charSpacing:Number(active.get("charSpacing")??0), lineHeight:Number(active.get("lineHeight")??1.2) } : undefined;
-        latestRef.current.onSelectionChange(Boolean(active), active?.type ?? "", typography, typeof active?.animationPreset === "string" ? active.animationPreset : "");
+        latestRef.current.onSelectionChange(Boolean(active), active?.type ?? "", typography, typeof active?.animationPreset === "string" ? active.animationPreset : "", Number(active?.angle) || 0);
         latestRef.current.onLayersChange(canvas.getObjects().map((object:any,index:number)=>({index,id:String(index),name:String(object.name||object.type||"Object"),type:String(object.type||"object"),visible:object.visible!==false,locked:object.locked===true,active:active===object})).reverse());
         // Selection is read-only: do not mutate Fabric objects or save from a selection event.
         // This prevents selection -> save -> parent render -> selection update loops.
@@ -402,6 +402,14 @@ export default function DesignCanvas({
     return () => { disposed = true; cleanup?.(); };
   }, [slideId]);
 
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.setDimensions({ width: canvasWidth, height: canvasHeight });
+    canvas.setViewportTransform([canvasWidth / 1280, 0, 0, canvasHeight / 720, 0, 0]);
+    canvas.requestRenderAll();
+  }, [canvasWidth, canvasHeight]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
