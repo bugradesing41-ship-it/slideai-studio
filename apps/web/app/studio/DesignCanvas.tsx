@@ -890,9 +890,10 @@ export default function DesignCanvas({
     if (!canvas) return;
     const current = latestRef.current;
     const object = canvas.getActiveObject();
+    let cancelled = false;
     if (object) {
       void import("fabric").then(async ({ Shadow }) => {
-        if (!canvasRef.current) return;
+        if (cancelled || canvasRef.current !== canvas || canvas.getActiveObject() !== object) return;
         const isTextObject = ["textbox", "i-text", "text"].includes(String(object.type ?? "").toLowerCase());
         const isImageObject = String(object.type ?? "").toLowerCase() === "image";
         object.set({
@@ -910,14 +911,23 @@ export default function DesignCanvas({
           svgImage.decoding = "async";
           svgImage.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(recoloredSvg);
           await svgImage.decode();
-          if (!canvasRef.current || canvas.getActiveObject() !== object) return;
+          if (cancelled || canvasRef.current !== canvas || canvas.getActiveObject() !== object) return;
           imageObject.setElement(svgImage);
         }
+        if (cancelled || canvasRef.current !== canvas || canvas.getActiveObject() !== object) return;
         object.setCoords();
         canvas.requestRenderAll();
-        current.onChange(JSON.stringify(canvas.toObject(["name", "animationPreset", "animationKind", "isAnimated", "assetSvgSource"])));
+        const json = JSON.stringify(canvas.toObject(["name", "animationPreset", "animationKind", "isAnimated", "assetSvgSource"]));
+        current.onChange(json);
+        const history = historyRef.current;
+        if (history.items[history.index] !== json) {
+          const items = [...history.items.slice(0, history.index + 1), json].slice(-60);
+          historyRef.current = { items, index: items.length - 1 };
+          current.onHistoryChange(items.length > 1, false);
+        }
       });
     }
+    return () => { cancelled = true; };
   }, [fill, stroke, strokeWidth, shadowEnabled, opacity, textBorderEnabled, textBorderWidth]);
 
   useEffect(() => {
