@@ -156,7 +156,7 @@ export default function StudioWorkspace() {
   }, []);
 
   useEffect(() => {
-    setZoom(canvasHeight > canvasWidth ? 68 : 82);
+    setZoom(canvasHeight > canvasWidth ? 58 : 82);
   }, [canvasWidth, canvasHeight]);
 
   useEffect(() => {
@@ -516,7 +516,7 @@ export default function StudioWorkspace() {
 
           <div className={`canvas-stage advanced-canvas-stage ${canvasHeight > canvasWidth ? "portrait-canvas-stage" : ""}`}>
             <div className="canvas-zoom-frame" style={{ transform: `scale(${zoom / 100})` }}>
-              <motion.div className="canvas-motion-frame" style={{transformPerspective:1200,width:canvasWidth/canvasHeight<0.8?"min(100%, 360px)":canvasWidth/canvasHeight<1.2?"min(100%, 520px)":"min(100%, 920px)"}} initial={false} animate={slideAnimationControls}>
+              <motion.div className="canvas-motion-frame" style={{transformPerspective:1200,width:canvasWidth/canvasHeight<0.8?"min(100%, 420px)":canvasWidth/canvasHeight<1.2?"min(100%, 520px)":"min(100%, 920px)"}} initial={false} animate={slideAnimationControls}>
               <DesignCanvas
                 key={`${activeId}`}
                 slideId={activeId}
