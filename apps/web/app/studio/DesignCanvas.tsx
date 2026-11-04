@@ -24,7 +24,7 @@ declare module "fabric" {
 
 type Tool = "select" | "draw" | "rect" | "circle" | "triangle" | "line" | "arrow" | "star" | "diamond" | "hexagon" | "pentagon" | "heart" | "speech" | "text";
 type CanvasCommand = { action: string; token: number };
-type AssetCommand = { symbol: string; label: string; imageUrl?: string; fontFamily?: string; animated?: boolean; token: number };
+type AssetCommand = { symbol: string; label: string; imageUrl?: string; fontFamily?: string; animated?: boolean; fill?: string; token: number };
 type ImageCommand = { dataUrl: string; name: string; token: number };
 type CanvasLayer = { index:number; id:string; name:string; type:string; visible:boolean; locked:boolean; active:boolean };
 type Props = {
@@ -85,6 +85,32 @@ function normalizeSerializedFonts(value:unknown, families:Set<string>) {
   const record=value as Record<string,unknown>;
   if (typeof record.fontFamily === "string") { const normalizedFamily=record.fontFamily.replace(/\s+Variable$/i,""); record.fontFamily=normalizedFamily; families.add(normalizedFamily); }
   Object.values(record).forEach((item)=>normalizeSerializedFonts(item,families));
+}
+
+function recolorAssetSvg(source:string,fill:string) {
+  const parsed=new DOMParser().parseFromString(source,"image/svg+xml");
+  const root=parsed.documentElement;
+  if(parsed.querySelector("parsererror")||root.localName.toLowerCase()!=="svg")throw new Error("The character source is not a readable SVG.");
+  const colors=fill.startsWith("gradient:")?fill.slice(9).split(",").filter(color=>/^#[0-9a-f]{6}$/i.test(color)).slice(0,3):[];
+  const paint=colors.length>=2?"url(#slideai-asset-gradient)":(/^#[0-9a-f]{6}$/i.test(fill)?fill:"#8b5cf6");
+  if(colors.length>=2){
+    let defs=root.querySelector("defs");
+    if(!defs){defs=parsed.createElementNS("http://www.w3.org/2000/svg","defs");root.insertBefore(defs,root.firstChild);}
+    const gradient=parsed.createElementNS("http://www.w3.org/2000/svg","linearGradient");
+    gradient.setAttribute("id","slideai-asset-gradient");gradient.setAttribute("x1","0%");gradient.setAttribute("y1","0%");gradient.setAttribute("x2","100%");gradient.setAttribute("y2","100%");
+    colors.forEach((color,index)=>{const stop=parsed.createElementNS("http://www.w3.org/2000/svg","stop");stop.setAttribute("offset",`${index/(colors.length-1)*100}%`);stop.setAttribute("stop-color",color);gradient.appendChild(stop);});
+    defs.appendChild(gradient);
+  }
+  root.querySelectorAll("path,circle,rect,ellipse,polygon,polyline,line").forEach((node)=>{
+    const element=node as SVGElement;
+    const existingFill=element.getAttribute("fill")||"";
+    if(existingFill.toLowerCase()!=="none")element.setAttribute("fill",paint);
+    if(element.hasAttribute("stroke")&&element.getAttribute("stroke")?.toLowerCase()!=="none")element.setAttribute("stroke",paint);
+    const style=element.getAttribute("style");
+    if(style?.includes("fill:"))element.style.fill=paint;
+    if(style?.includes("stroke:"))element.style.stroke=paint;
+  });
+  return new XMLSerializer().serializeToString(root);
 }
 
 function resolveCanvasBackground(fabric: any, value: string) {
@@ -772,7 +798,7 @@ export default function DesignCanvas({
             throw new Error(`Illustration request failed (${response.status})${detail?": "+detail.slice(0,180):""}`);
           }
           const blob=await response.blob();
-          let imageBlob=blob;
+          let imageSource=assetCommand.imageUrl;
           if(assetCommand.animated){
             const signature=await blob.slice(0,6).text();
             if(signature!=="GIF87a"&&signature!=="GIF89a")throw new Error("The animated asset did not return a valid GIF file");
@@ -782,20 +808,21 @@ export default function DesignCanvas({
             if(parsed.querySelector("parsererror")||parsed.documentElement?.localName?.toLowerCase()!=="svg"){
               throw new Error("The character source is not a readable SVG. Check the asset URL or proxy response.");
             }
-            imageBlob=new Blob([svg],{type:"image/svg+xml"});
+            const recoloredSvg=recolorAssetSvg(svg,assetCommand.fill||"#8b5cf6");
+            imageSource=`data:image/svg+xml;charset=utf-8,${encodeURIComponent(recoloredSvg)}`;
           }
-          // Keep the same-origin proxy URL in Fabric JSON. Temporary blob: URLs
-          // are revoked after loading and make the slide blank when playback remounts it.
+          // Embedded SVG data preserves the selected solid/gradient color on reload.
           const imageElement=new Image();
-          imageElement.crossOrigin="anonymous";
           imageElement.decoding="async";
-          imageElement.src=assetCommand.imageUrl;
+          imageElement.src=imageSource;
           await imageElement.decode();
           if (cancelled || canvasRef.current !== canvas) return;
           const image = new FabricImage(imageElement);
           if (cancelled || canvasRef.current !== canvas) return;
-          const scale = Math.min(360/(image.width||1), 500/(image.height||1), 1);
-          image.set({ left:790, top:120, scaleX:scale, scaleY:scale, name:assetCommand.label, isAnimated:assetCommand.animated===true });
+          const maxSize=assetCommand.fontFamily==="Material Symbols Outlined"?170:360;
+          const scale = Math.min(maxSize/(image.width||1), 500/(image.height||1));
+          const logicalHeight=latestRef.current.canvasHeight/(latestRef.current.canvasWidth/1280);
+          image.set({ left:640-(image.width||1)*scale/2, top:logicalHeight/2-(image.height||1)*scale/2, scaleX:scale, scaleY:scale, name:assetCommand.label, isAnimated:assetCommand.animated===true });
           canvas.add(image); canvas.setActiveObject(image); canvas.requestRenderAll();if(assetCommand.animated)ensureAnimatedRender(canvas);
           const json=JSON.stringify(canvas.toObject(["name","animationPreset","animationKind","isAnimated"])); latestRef.current.onChange(json);
           const history=historyRef.current,items=[...history.items.slice(0,history.index+1),json].slice(-60); historyRef.current={items,index:items.length-1};
@@ -817,14 +844,14 @@ export default function DesignCanvas({
         const iconElement=new Image();iconElement.src=iconCanvas.toDataURL("image/png");await iconElement.decode();
         if(cancelled||canvasRef.current!==canvas)return;
         const icon=new FabricImage(iconElement);
-        icon.set({left:500,top:250,scaleX:.45,scaleY:.45,name:`asset-${assetCommand.label.toLowerCase().replace(/[^a-z0-9]+/g,"-")}`});
+        const logicalHeight=latestRef.current.canvasHeight/(latestRef.current.canvasWidth/1280);icon.set({left:640-58,top:logicalHeight/2-58,scaleX:.45,scaleY:.45,name:`asset-${assetCommand.label.toLowerCase().replace(/[^a-z0-9]+/g,"-")}`});
         canvas.add(icon);canvas.setActiveObject(icon);canvas.requestRenderAll();
         const json=JSON.stringify(canvas.toObject(["name","animationPreset","animationKind","isAnimated"]));latestRef.current.onChange(json);
         const history=historyRef.current,items=[...history.items.slice(0,history.index+1),json].slice(-60);historyRef.current={items,index:items.length-1};
         latestRef.current.onHistoryChange(items.length>1,false);latestRef.current.onSelectionChange(true,"image");return;
       }
       const sticker = new Textbox(assetCommand.symbol, {
-        left: 500, top: 250, width: 190, fontFamily: assetCommand.fontFamily ?? "Noto Color Emoji, Segoe UI Emoji, Apple Color Emoji, sans-serif",
+        left: 545, top: latestRef.current.canvasHeight/(latestRef.current.canvasWidth/1280)/2-95, width: 190, fontFamily: assetCommand.fontFamily ?? "Noto Color Emoji, Segoe UI Emoji, Apple Color Emoji, sans-serif",
         fontSize: 112, textAlign: "center", lineHeight: 1, editable: false,
         name: `asset-${assetCommand.label.toLowerCase().replace(/[^a-z0-9]+/g,"-")}`,
       });
