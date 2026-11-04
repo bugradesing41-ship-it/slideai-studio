@@ -343,7 +343,8 @@ export default function StudioWorkspace() {
     if (serialized) await canvas.loadFromJSON(JSON.parse(serialized));
     canvas.backgroundColor = backgroundFill as any;
     canvas.renderAll();
-    const dataUrl = canvas.toDataURL({ format, quality: 0.96, multiplier });
+    const safeMultiplier = Math.min(multiplier, 6000 / Math.max(canvasWidth, canvasHeight));
+    const dataUrl = canvas.toDataURL({ format, quality: 0.96, multiplier: safeMultiplier });
     await canvas.dispose();
     return dataUrl;
   }
