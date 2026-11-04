@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { ArrowUpRight, FolderOpen, Layers3, Plus, Sparkles, Info, Presentation } from "lucide-react";
 
 type Format = "landscape" | "portrait" | "tiktok" | "square" | "a4" | "custom";
-type SavedProject = { title?: string; description?: string; slides?: unknown[]; canvasWidth?: number; canvasHeight?: number };
+type SavedProject = { id: string; updatedAt?: string; title?: string; description?: string; slides?: unknown[]; canvasWidth?: number; canvasHeight?: number };
 
 const formatSizes: Record<Exclude<Format, "custom">, { width: number; height: number; label: string }> = {
   landscape: { width: 1280, height: 720, label: "Landscape · 16:9" },
@@ -24,14 +24,31 @@ export default function Home() {
   const [background, setBackground] = useState("#ffffff");
   const [presentationTitle, setPresentationTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [savedProject, setSavedProject] = useState<SavedProject | null>(null);
-  const [showDescription, setShowDescription] = useState(false);
+  const [savedProjects, setSavedProjects] = useState<SavedProject[]>([]);
+  const [expandedDescription, setExpandedDescription] = useState<string | null>(null);
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem("slideai-studio-local-project-v1");
-      if (raw) setSavedProject(JSON.parse(raw) as SavedProject);
-    } catch { /* Ignore an invalid local project and keep the dashboard usable. */ }
+      const registryKey = "slideai-studio-projects-v1";
+      const rawRegistry = localStorage.getItem(registryKey);
+      let projects = rawRegistry ? JSON.parse(rawRegistry) as SavedProject[] : [];
+      if (!Array.isArray(projects)) projects = [];
+      const legacyRaw = localStorage.getItem("slideai-studio-local-project-v1");
+      if (legacyRaw) {
+        const legacy = JSON.parse(legacyRaw) as Omit<SavedProject, "id">;
+        if (!projects.some((project) => project.id === "legacy-imported")) {
+          projects = [...projects, { ...legacy, id: "legacy-imported", updatedAt: new Date().toISOString() }];
+          localStorage.setItem(registryKey, JSON.stringify(projects));
+        }
+      }
+      setSavedProjects(projects.sort((a,b) => Date.parse(b.updatedAt || "") - Date.parse(a.updatedAt || "")));
+    } catch { /* Ignore invalid local data and keep the dashboard usable. */ }
+    const refresh = () => {
+      try { const value = JSON.parse(localStorage.getItem("slideai-studio-projects-v1") || "[]") as SavedProject[]; if (Array.isArray(value)) setSavedProjects(value.sort((a,b) => Date.parse(b.updatedAt || "") - Date.parse(a.updatedAt || ""))); } catch { /* Keep the last valid list. */ }
+    };
+    window.addEventListener("storage", refresh);
+    window.addEventListener("slideai-projects-updated", refresh);
+    return () => { window.removeEventListener("storage", refresh); window.removeEventListener("slideai-projects-updated", refresh); };
   }, []);
 
   function chooseFormat(next: Format) {
@@ -45,6 +62,7 @@ export default function Home() {
   function createPresentation() {
     const params = new URLSearchParams({
       blank: "1",
+      projectId: typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `project-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
       width: String(width),
       height: String(height),
       background,
@@ -53,9 +71,6 @@ export default function Home() {
     });
     router.push("/studio?" + params.toString());
   }
-
-  const savedTitle = savedProject?.title || "Untitled presentation";
-  const savedDescription = savedProject?.description || "";
 
   return (
     <main className="app-shell">
@@ -135,16 +150,22 @@ export default function Home() {
           </section>
 
           <section className="recent" id="recent">
-            <div className="recent-heading"><div><h2>Recent presentations</h2><p>Your latest presentation saved in this browser.</p></div><Link className="view-all" href="/studio">Open editor <ArrowUpRight size={14} /></Link></div>
-            {savedProject ? <div className="project-grid saved-project-grid">
-              <article className="project-card saved-project-card">
-                <Link href="/studio" className="project-preview violet saved-project-preview"><div className="preview-lines"><i /><i /><i /></div><span><Layers3 size={42} /></span><div className="preview-caption">{savedProject.canvasWidth || 1280} × {savedProject.canvasHeight || 720} PX</div></Link>
-                <div className="project-info"><div><strong>{savedTitle}</strong><span>{savedProject.slides?.length || 1} slides · Saved locally</span></div>
-                  {savedDescription && <button className="description-info-button" aria-label="Read presentation description" aria-expanded={showDescription} onClick={() => setShowDescription((open) => !open)}><Info size={15} /></button>}
-                </div>
-                {savedDescription && <div className={"saved-description-popover" + (showDescription ? " is-open" : "")} aria-hidden={!showDescription}><p>{savedDescription}</p></div>}
-                <div className="saved-project-actions"><Link href="/studio">Continue editing <ArrowUpRight size={13} /></Link></div>
-              </article>
+            <div className="recent-heading"><div><h2>My presentations</h2><p>{savedProjects.length} presentation{savedProjects.length === 1 ? "" : "s"} saved in this browser.</p></div><Link className="view-all" href="#create">Create new <Plus size={14} /></Link></div>
+            {savedProjects.length ? <div className="project-grid saved-project-grid">
+              {savedProjects.map((project) => {
+                const projectTitle = project.title || "Untitled presentation";
+                const projectDescription = project.description || "";
+                const editorUrl = `/studio?projectId=${encodeURIComponent(project.id)}`;
+                const expanded = expandedDescription === project.id;
+                return <article className="project-card saved-project-card" key={project.id}>
+                  <Link href={editorUrl} className="project-preview violet saved-project-preview"><div className="preview-lines"><i /><i /><i /></div><span><Layers3 size={42} /></span><div className="preview-caption">{project.canvasWidth || 1280} × {project.canvasHeight || 720} PX</div></Link>
+                  <div className="project-info"><div><strong>{projectTitle}</strong><span>{project.slides?.length || 1} slides · Saved locally</span></div>
+                    {projectDescription && <button className="description-info-button" aria-label={`Read ${projectTitle} description`} aria-expanded={expanded} onClick={() => setExpandedDescription(expanded ? null : project.id)}><Info size={15} /></button>}
+                  </div>
+                  {projectDescription && <div className={"saved-description-popover" + (expanded ? " is-open" : "")} aria-hidden={!expanded}><p>{projectDescription}</p></div>}
+                  <div className="saved-project-actions"><Link href={editorUrl}>Continue editing <ArrowUpRight size={13} /></Link></div>
+                </article>;
+              })}
             </div> : <div className="empty-project-state"><Layers3 size={23} /><strong>No presentations yet</strong><span>Create your first blank presentation above. It will appear here when saved.</span></div>}
           </section>
           <footer className="page-footer">Made for ideas that move people. <span>SLIDEAI STUDIO · 2026</span></footer>
