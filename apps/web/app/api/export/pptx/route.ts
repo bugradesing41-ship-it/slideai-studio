@@ -81,13 +81,13 @@ function slideBackground(value: string | undefined, theme: string) {
   return colorValue(firstGradientColor, fallback).color;
 }
 
-function addGradientBackground(slide: PptxSlideLike, value: string | undefined, slideHeightIn = SLIDE_W * 720 / 1280) {
+function addGradientBackground(slide: PptxSlideLike, value: string | undefined, slideWidthIn = SLIDE_W, slideHeightIn = SLIDE_W * 720 / 1280) {
   if (!value?.startsWith("gradient:")) return;
   const colors = value.slice(9).split(",").filter((color) => /^#[0-9a-f]{6}$/i.test(color)).slice(0, 3);
   if (colors.length < 2) return;
   const stops = colors.map((color, index) => `<stop offset="${Math.round((index / (colors.length - 1)) * 100)}%" stop-color="${color}"/>`).join("");
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="0">${stops}</linearGradient></defs><rect width="1600" height="900" fill="url(#bg)"/></svg>`;
-  slide.addImage({ data: `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`, x: 0, y: 0, w: SLIDE_W, h: slideHeightIn });
+  slide.addImage({ data: `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`, x: 0, y: 0, w: slideWidthIn, h: slideHeightIn });
 }
 
 async function readCanvasObjects(serialized: string | undefined): Promise<FabricObject[]> {
@@ -243,11 +243,12 @@ export async function POST(request: Request) {
     const canvasData = payload.canvasDataBySlide || {};
     const exportWidth = Math.max(320, Math.min(4096, Math.round(payload.width || 1280)));
     const exportHeight = Math.max(320, Math.min(4096, Math.round(payload.height || 720)));
-    const slideHeightIn = SLIDE_W * exportHeight / exportWidth;
-    const inchScaleX = SLIDE_W / 1280;
-    const inchScaleY = SLIDE_W / 1280;
+    const slideWidthIn = Math.min(SLIDE_W, 56 * exportWidth / exportHeight);
+    const slideHeightIn = slideWidthIn * exportHeight / exportWidth;
+    const inchScaleX = slideWidthIn / 1280;
+    const inchScaleY = slideWidthIn / 1280;
     const pptx = new PptxGenJS();
-    pptx.defineLayout({ name: "SLIDEAI_CUSTOM", width: SLIDE_W, height: slideHeightIn });
+    pptx.defineLayout({ name: "SLIDEAI_CUSTOM", width: slideWidthIn, height: slideHeightIn });
     pptx.layout = "SLIDEAI_CUSTOM";
     pptx.author = "SlideAI Studio";
     pptx.subject = "Editable presentation";
@@ -257,7 +258,7 @@ export async function POST(request: Request) {
     for (const [index, item] of slides.entries()) {
       const slide = pptx.addSlide() as unknown as PptxSlideLike;
       slide.background = { color: slideBackground(backgrounds[item.id], theme) };
-      addGradientBackground(slide, backgrounds[item.id], slideHeightIn);
+      addGradientBackground(slide, backgrounds[item.id], slideWidthIn, slideHeightIn);
       const objects = await readCanvasObjects(canvasData[item.id]);
       if (objects.length > 0) {
         objects.forEach((object) => renderFabricObject(slide, object, 0, 0, 1, 1, inchScaleX, inchScaleY));
