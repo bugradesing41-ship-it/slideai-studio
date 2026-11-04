@@ -37,7 +37,8 @@ export default function StudioWorkspace() {
   const [canvasWidth, setCanvasWidth] = useState(1280);
   const [canvasHeight, setCanvasHeight] = useState(720);
   const [selectedRotation, setSelectedRotation] = useState(0);
-  const [zoom, setZoom] = useState(82);
+  const [zoom, setZoom] = useState(100);
+  const canvasStageRef = useRef<HTMLDivElement>(null);
   const [theme, setTheme] = useState<"violet" | "blue" | "light">("light");
   const [tool, setTool] = useState<Tool>("select");
   const [fill, setFill] = useState("#a78bfa");
@@ -155,9 +156,24 @@ export default function StudioWorkspace() {
     }
   }, []);
 
+  const canvasFrameMaxWidth = canvasWidth / canvasHeight < 0.8 ? 420 : canvasWidth / canvasHeight < 1.2 ? 520 : 920;
+
   useEffect(() => {
-    setZoom(canvasHeight > canvasWidth ? 58 : 82);
-  }, [canvasWidth, canvasHeight]);
+    const stage = canvasStageRef.current;
+    if (!stage) return;
+    const fitCanvas = () => {
+      const availableWidth = Math.max(240, stage.clientWidth - 64);
+      const availableHeight = Math.max(240, stage.clientHeight - 64);
+      const frameWidth = Math.min(canvasFrameMaxWidth, availableWidth);
+      const frameHeight = frameWidth * canvasHeight / canvasWidth;
+      const fit = Math.min(1, availableWidth / frameWidth, availableHeight / frameHeight);
+      setZoom(Math.max(30, Math.min(100, Math.floor(fit * 100))));
+    };
+    fitCanvas();
+    const observer = new ResizeObserver(fitCanvas);
+    observer.observe(stage);
+    return () => observer.disconnect();
+  }, [canvasWidth, canvasHeight, canvasFrameMaxWidth]);
 
   useEffect(() => {
     if (!isRestored) return;
@@ -514,9 +530,9 @@ export default function StudioWorkspace() {
             </div>
           </div>
 
-          <div className={`canvas-stage advanced-canvas-stage ${canvasHeight > canvasWidth ? "portrait-canvas-stage" : ""}`}>
-            <div className="canvas-zoom-frame" style={{ transform: `scale(${zoom / 100})` }}>
-              <motion.div className="canvas-motion-frame" style={{transformPerspective:1200,width:canvasWidth/canvasHeight<0.8?"min(100%, 420px)":canvasWidth/canvasHeight<1.2?"min(100%, 520px)":"min(100%, 920px)"}} initial={false} animate={slideAnimationControls}>
+          <div ref={canvasStageRef} className={`canvas-stage advanced-canvas-stage ${canvasHeight > canvasWidth ? "portrait-canvas-stage" : ""}`}>
+            <div className="canvas-zoom-frame" style={{ width: `min(100%, ${canvasFrameMaxWidth}px)`, transform: `scale(${zoom / 100})` }}>
+              <motion.div className="canvas-motion-frame" style={{transformPerspective:1200,width:"100%"}} initial={false} animate={slideAnimationControls}>
               <DesignCanvas
                 key={`${activeId}`}
                 slideId={activeId}
