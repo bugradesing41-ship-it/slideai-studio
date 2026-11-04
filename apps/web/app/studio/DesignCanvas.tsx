@@ -779,6 +779,7 @@ export default function DesignCanvas({
           // Keep the same-origin proxy URL in Fabric JSON. Temporary blob: URLs
           // are revoked after loading and make the slide blank when playback remounts it.
           const imageElement=new Image();
+          imageElement.crossOrigin="anonymous";
           imageElement.decoding="async";
           imageElement.src=assetCommand.imageUrl;
           await imageElement.decode();
