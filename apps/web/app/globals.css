@@ -342,3 +342,37 @@ h1{font:700 clamp(34px,4vw,49px)/1.12 Manrope,sans-serif;letter-spacing:-2.4px;m
 @media(max-width:700px){.design-canvas-with-rulers{grid-template-columns:22px minmax(0,1fr);grid-template-rows:20px auto}.canvas-ruler-corner{font-size:7px}.canvas-ruler-top{height:20px}.canvas-ruler-left{width:22px}.canvas-ruler-top span small,.canvas-ruler-left span small{font-size:7px}}
 
 .asset-character-preview{position:relative}.asset-animation-badge{position:absolute;right:5px;bottom:5px;padding:3px 5px;border:1px solid #8f7bc0;border-radius:4px;background:#2b2340;color:#e4d9ff;font:700 7px/1 "DM Sans",sans-serif;font-style:normal;letter-spacing:.06em}
+
+
+/* Presentation setup: format presets, custom canvas dimensions and project metadata */
+.presentation-setup{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px 15px;margin-top:17px}
+.setup-field{display:grid;gap:7px;color:#c9c5d5;font-size:10px;font-weight:650;min-width:0}
+.setup-field input:not([type=color]),.setup-field select,.setup-field textarea{width:100%;min-width:0;border:1px solid #34313e;border-radius:7px;background:#101116;color:#eee;padding:10px 11px;font-size:11px;outline:none}
+.setup-field input:focus,.setup-field select:focus,.setup-field textarea:focus{border-color:#9274e4}
+.setup-field textarea{resize:vertical;line-height:1.55}
+.setup-field input::placeholder,.setup-field textarea::placeholder{color:#696c79}
+.setup-format-field{grid-column:1/-1}
+.setup-description-field{grid-column:1/-1}
+.custom-size-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.setup-color-control{display:flex;align-items:center;gap:10px;height:37px;padding:5px 9px;border:1px solid #34313e;border-radius:7px;background:#101116;color:#aeb0bd;font-size:10px}
+.setup-color-control input{width:28px;height:25px;border:0;padding:0;background:transparent}
+.optional-label{font-size:9px;color:#777b89;font-weight:400}
+.format-chips{display:flex;gap:8px;flex-wrap:wrap}
+.format-chips button{border:1px solid #34313e;background:#15171e;color:#c5c1d0;border-radius:7px;padding:9px 12px;font-size:10px}
+.format-chips button:hover{border-color:#8b72c4;color:#eee6ff;background:#242033}
+.empty-project-state{min-height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:1px dashed #34313e;border-radius:9px;background:#111319;color:#a78bfa}
+.empty-project-state strong{font-size:11px;color:#e5e1ed}.empty-project-state span{font-size:9px;color:#858998;text-align:center;max-width:280px;line-height:1.5}
+.saved-project-grid{grid-template-columns:minmax(220px,320px)}
+.saved-project-preview{height:140px;display:flex;align-items:center;justify-content:center}
+.saved-project-preview>span{color:#ffffff40;display:grid;place-items:center}
+.description-info-button{width:27px;height:27px;flex:0 0 27px;border:1px solid #403650;border-radius:50%;background:#211b2c;color:#c4afff;display:grid;place-items:center}
+.description-info-button:hover{background:#332747;color:#fff}
+.saved-description-popover{display:grid;grid-template-rows:0fr;opacity:0;transform:translateY(-5px);transition:grid-template-rows .24s ease,opacity .24s ease,transform .24s ease;padding:0 12px}
+.saved-description-popover p{min-height:0;overflow:hidden;margin:0;color:#c3bfd0;font-size:10px;line-height:1.6}
+.saved-description-popover.is-open{grid-template-rows:1fr;opacity:1;transform:translateY(0);padding:0 12px 11px}
+.saved-project-actions{padding:0 12px 12px}
+.saved-project-actions a{display:flex;align-items:center;gap:5px;color:#c2adff;font-size:9px}
+.rotation-control-label{margin-top:15px}
+.rotation-control-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.rotation-control-actions .quick-action{justify-content:center}
+@media(max-width:700px){.presentation-setup{grid-template-columns:1fr}.setup-format-field,.setup-description-field{grid-column:auto}.custom-size-fields{grid-template-columns:1fr 1fr}.create-footer{align-items:flex-start;gap:12px;flex-direction:column}.create-button{width:100%;justify-content:center}.saved-project-grid{grid-template-columns:1fr}}
