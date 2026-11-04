@@ -329,25 +329,61 @@ export default function StudioWorkspace() {
     }
   }
 
-  function exportSlidePng() {
-    const source = document.querySelector<HTMLCanvasElement>(".design-canvas-shell .lower-canvas");
-    if (!source || source.width === 0 || source.height === 0) { window.alert("Tuval henüz hazır değil."); return; }
+  async function renderSlideImage(slideId: number, format: "png" | "jpeg", multiplier = 2) {
+    const { StaticCanvas } = await import("fabric");
+    const element = document.createElement("canvas");
+    const background = slideBackgrounds[slideId] || (theme === "light" ? "#ffffff" : theme === "blue" ? "#102333" : "#171525");
+    const solidBackground = background.startsWith("gradient:") ? background.slice(9).split(",")[0] : background;
+    const canvas = new StaticCanvas(element, { width: 1280, height: 720, backgroundColor: solidBackground, renderOnAddRemove: false });
+    const serialized = canvasDataBySlide[slideId];
+    if (serialized) await canvas.loadFromJSON(JSON.parse(serialized));
+    canvas.backgroundColor = solidBackground;
+    canvas.renderAll();
+    const dataUrl = canvas.toDataURL({ format, quality: 0.96, multiplier });
+    await canvas.dispose();
+    return dataUrl;
+  }
+
+  function downloadDataUrl(dataUrl: string, filename: string) {
+    const anchor = document.createElement("a");
+    anchor.href = dataUrl;
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+  }
+
+  async function exportSlideImage(format: "png" | "jpeg") {
     try {
-      const output = document.createElement("canvas");
-      output.width = source.width * 2;
-      output.height = source.height * 2;
-      const context = output.getContext("2d");
-      if (!context) throw new Error("PNG canvas context unavailable");
-      context.drawImage(source, 0, 0, output.width, output.height);
-      const anchor = document.createElement("a");
-      anchor.href = output.toDataURL("image/png");
-      anchor.download = `${title.trim().replace(/[^a-z0-9-_]+/gi, "-") || "slide"}-${activeId}.png`;
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
+      const dataUrl = await renderSlideImage(activeId, format, 3);
+      const extension = format === "jpeg" ? "jpg" : "png";
+      downloadDataUrl(dataUrl, (title.trim().replace(/[^a-z0-9-_]+/gi, "-") || "slide") + "-" + activeId + "." + extension);
     } catch (error) {
-      console.error("PNG export failed", error);
-      window.alert("PNG oluşturulamadı. Harici görselin güvenlik kısıtlamasını veya tuvalin hazır olmasını kontrol edin.");
+      console.error("Image export failed", error);
+      window.alert("Görsel dışa aktarılamadı. Harici görsellerin yüklenmesini bekleyip tekrar deneyin.");
+    }
+  }
+
+  async function exportPdf() {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) { window.alert("PDF çıktısı için açılır pencereye izin vermelisiniz."); return; }
+    try {
+      const images: string[] = [];
+      for (const slide of slides) images.push(await renderSlideImage(slide.id, "png", 2));
+      const pages = images.map((src) => "<section class='page'><img src='" + src + "' /></section>").join("");
+      const safeTitle = title.replace(/[<>]/g, "");
+      const html = "<!doctype html><html><head><meta charset='utf-8'><title>" + safeTitle + "</title><style>" +
+        "@page{size:" + canvasWidth + "px " + canvasHeight + "px;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}" +
+        ".page{width:" + canvasWidth + "px;height:" + canvasHeight + "px;page-break-after:always;break-after:page;overflow:hidden}" +
+        ".page:last-child{page-break-after:auto;break-after:auto}.page img{display:block;width:100%;height:100%;object-fit:fill}" +
+        "</style></head><body>" + pages + "<script>window.onload=()=>setTimeout(()=>window.print(),350)<\/script></body></html>";
+      printWindow.document.open();
+      printWindow.document.write(html);
+      printWindow.document.close();
+    } catch (error) {
+      printWindow.close();
+      console.error("PDF print preparation failed", error);
+      window.alert("PDF sayfaları hazırlanamadı. Lütfen tekrar deneyin.");
     }
   }
 
@@ -356,7 +392,7 @@ export default function StudioWorkspace() {
       <header className="studio-topbar">
         <Link className="studio-back" href="/"><ArrowLeft size={16} /><span>Back to workspace</span></Link>
         <div className="studio-doc-title"><span className="doc-icon"><LayoutTemplate size={15} /></span><span>{title}</span><span className="saved-pill"><Check size={12} /> {localSaveState}</span></div>
-        <div className="studio-top-actions"><button className="share-button" onClick={() => void shareProject()}>Share <ArrowUpRight size={14}/></button><div className="export-menu-wrap"><button className="export-button" onClick={() => setExportMenuOpen((open) => !open)}><Download size={14}/> Export <ChevronDown size={13}/></button>{exportMenuOpen && <div className="export-menu"><button onClick={() => { exportProject(); setExportMenuOpen(false); }}><Download size={14}/> Editable project (.json)</button><button onClick={() => { exportSlidePng(); setExportMenuOpen(false); }}><ImagePlus size={14}/> Current slide (.png)</button><button onClick={() => { void exportPowerPoint(); setExportMenuOpen(false); }}><Download size={14}/> PowerPoint (.pptx)</button></div>}</div></div>
+        <div className="studio-top-actions"><button className="share-button" onClick={() => void shareProject()}>Share <ArrowUpRight size={14}/></button><div className="export-menu-wrap"><button className="export-button" onClick={() => setExportMenuOpen((open) => !open)}><Download size={14}/> Export <ChevronDown size={13}/></button>{exportMenuOpen && <div className="export-menu"><button onClick={() => { exportProject(); setExportMenuOpen(false); }}><Download size={14}/> Editable project (.json)</button><button onClick={() => { void exportSlideImage("png"); setExportMenuOpen(false); }}><ImagePlus size={14}/> Current slide · PNG 3×</button><button onClick={() => { void exportSlideImage("jpeg"); setExportMenuOpen(false); }}><ImagePlus size={14}/> Current slide · JPG 3×</button><button onClick={() => { void exportPdf(); setExportMenuOpen(false); }}><Download size={14}/> All slides · PDF / Print</button><button onClick={() => { void exportPowerPoint(); setExportMenuOpen(false); }}><Download size={14}/> Editable PowerPoint (.pptx)</button></div>}</div></div>
       </header>
 
       <div className="studio-body">
