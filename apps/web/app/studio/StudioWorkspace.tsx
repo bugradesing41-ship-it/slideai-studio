@@ -156,7 +156,7 @@ export default function StudioWorkspace() {
   }, []);
 
   useEffect(() => {
-    setZoom(canvasHeight > canvasWidth ? 58 : 82);
+    setZoom(canvasHeight > canvasWidth ? 68 : 82);
   }, [canvasWidth, canvasHeight]);
 
   useEffect(() => {
