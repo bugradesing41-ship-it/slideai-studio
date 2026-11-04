@@ -150,6 +150,8 @@ export default function Home() {
               <button onClick={() => { chooseFormat("portrait"); document.getElementById("create")?.scrollIntoView({ behavior: "smooth" }); }}>9:16 Portrait</button>
               <button onClick={() => { chooseFormat("tiktok"); document.getElementById("create")?.scrollIntoView({ behavior: "smooth" }); }}>TikTok / Reels</button>
               <button onClick={() => { chooseFormat("square"); document.getElementById("create")?.scrollIntoView({ behavior: "smooth" }); }}>Square post</button>
+              <button onClick={() => { chooseFormat("a4"); document.getElementById("create")?.scrollIntoView({ behavior: "smooth" }); }}>A4 document</button>
+              <button onClick={() => { chooseFormat("custom"); document.getElementById("create")?.scrollIntoView({ behavior: "smooth" }); }}>Custom size</button>
             </div>
           </section>
 
