@@ -1,40 +1,62 @@
+"use client";
+
 import Link from "next/link";
-import {
-  ArrowUpRight,
-  FolderOpen,
-  Layers3,
-  Plus,
-  Sparkles,
-} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { ArrowUpRight, FolderOpen, Layers3, Plus, Sparkles, Info, Presentation } from "lucide-react";
 
-const recentProjects = [
-  {
-    title: "The Future of Artificial Intelligence",
-    detail: "12 slides · Edited just now",
-    tone: "violet",
-    initials: "AI",
-  },
-  {
-    title: "Q4 Product Strategy",
-    detail: "18 slides · Edited yesterday",
-    tone: "blue",
-    initials: "Q4",
-  },
-  {
-    title: "Brand Identity Guidelines",
-    detail: "9 slides · Edited 3 days ago",
-    tone: "orange",
-    initials: "BI",
-  },
-];
+type Format = "landscape" | "portrait" | "tiktok" | "square" | "a4" | "custom";
+type SavedProject = { title?: string; description?: string; slides?: unknown[]; canvasWidth?: number; canvasHeight?: number };
 
-const prompts = [
-  "Start with a title slide",
-  "Build a product showcase",
-  "Create a clean data story",
-];
+const formatSizes: Record<Exclude<Format, "custom">, { width: number; height: number; label: string }> = {
+  landscape: { width: 1280, height: 720, label: "Landscape · 16:9" },
+  portrait: { width: 720, height: 1280, label: "Portrait · 9:16" },
+  tiktok: { width: 1080, height: 1920, label: "TikTok / Reels · 9:16" },
+  square: { width: 1080, height: 1080, label: "Square · 1:1" },
+  a4: { width: 794, height: 1123, label: "A4 · Portrait" },
+};
 
 export default function Home() {
+  const router = useRouter();
+  const [format, setFormat] = useState<Format>("landscape");
+  const [width, setWidth] = useState(1280);
+  const [height, setHeight] = useState(720);
+  const [background, setBackground] = useState("#ffffff");
+  const [presentationTitle, setPresentationTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [savedProject, setSavedProject] = useState<SavedProject | null>(null);
+  const [showDescription, setShowDescription] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("slideai-studio-local-project-v1");
+      if (raw) setSavedProject(JSON.parse(raw) as SavedProject);
+    } catch { /* Ignore an invalid local project and keep the dashboard usable. */ }
+  }, []);
+
+  function chooseFormat(next: Format) {
+    setFormat(next);
+    if (next !== "custom") {
+      setWidth(formatSizes[next].width);
+      setHeight(formatSizes[next].height);
+    }
+  }
+
+  function createPresentation() {
+    const params = new URLSearchParams({
+      blank: "1",
+      width: String(width),
+      height: String(height),
+      background,
+      title: presentationTitle.trim() || "Untitled presentation",
+      description: description.trim(),
+    });
+    router.push("/studio?" + params.toString());
+  }
+
+  const savedTitle = savedProject?.title || "Untitled presentation";
+  const savedDescription = savedProject?.description || "";
+
   return (
     <main className="app-shell">
       <aside className="sidebar">
@@ -42,68 +64,88 @@ export default function Home() {
           <span className="brand-mark"><Layers3 size={19} strokeWidth={2.3} /></span>
           <span>slideai<span className="brand-light">studio</span></span>
         </Link>
-
-        <Link className="new-button" href="/studio?blank=1">
-          <Plus size={17} /> New presentation
-          <span className="shortcut">⌘ K</span>
-        </Link>
-
+        <a className="new-button" href="#create"><Plus size={17} /> New presentation <span className="shortcut">⌘ K</span></a>
         <div className="nav-label">WORKSPACE</div>
         <nav className="side-nav">
-          <a className="nav-item active" href="#"><Layers3 size={17} /> My presentations</a>
-          <a className="nav-item" href="#"><FolderOpen size={17} /> Templates</a>
+          <a className="nav-item active" href="#recent"><Layers3 size={17} /> My presentations</a>
+          <a className="nav-item" href="#create"><FolderOpen size={17} /> Create new</a>
         </nav>
-
         <div className="sidebar-bottom">
           <div className="upgrade-card">
             <div className="upgrade-icon"><Sparkles size={16} /></div>
             <strong>Your ideas, elevated.</strong>
             <p>Make room for better storytelling.</p>
-            <a href="#">Explore Studio <ArrowUpRight size={13} /></a>
+            <a href="#create">Explore Studio <ArrowUpRight size={13} /></a>
           </div>
-          <div className="profile">
-            <div className="avatar">B</div>
-            <div className="profile-copy"><strong>My workspace</strong><span>Free plan</span></div>
-            <span className="more">···</span>
-          </div>
+          <div className="profile"><div className="avatar">B</div><div className="profile-copy"><strong>My workspace</strong><span>Free plan</span></div><span className="more">···</span></div>
         </div>
       </aside>
 
       <section className="main-content">
         <header className="topbar">
           <div className="breadcrumb">Workspace <span>/</span> Overview</div>
-          <div className="top-actions"><span className="status-dot" /> All changes saved <button className="help-button">?</button></div>
+          <div className="top-actions"><span className="status-dot" /> Local workspace <button className="help-button" title="Your projects are saved in this browser">?</button></div>
         </header>
 
         <div className="content-wrap">
           <section className="welcome">
             <div className="eyebrow"><span /> YOUR CREATIVE WORKSPACE</div>
             <h1>Good ideas deserve<br /><em>great presentations.</em></h1>
-            <p>From a first thought to a polished story. Create something worth sharing.</p>
+            <p>Create a presentation in the format you need, then design every detail in the editor.</p>
           </section>
 
-          <section className="create-panel">
-            <div className="create-heading"><div className="ai-orb"><Layers3 size={19} /></div><div><strong>Boş slayt oluştur</strong><span>Tertemiz beyaz bir slaytla başla; tasarımını editörde kendin oluştur.</span></div></div>
-            <div className="create-footer"><span><Layers3 size={14} /> Professional slide editor</span><Link className="create-button" href="/studio?blank=1">Boş slayt oluştur <ArrowUpRight size={16} /></Link></div>
+          <section className="create-panel" id="create">
+            <div className="create-heading"><div className="ai-orb"><Presentation size={19} /></div><div><strong>Create a blank presentation</strong><span>Choose your canvas format, background and project details. These details will not appear on your slides.</span></div></div>
+            <div className="presentation-setup">
+              <label className="setup-field setup-format-field">Canvas format
+                <select value={format} onChange={(event) => chooseFormat(event.target.value as Format)}>
+                  <option value="landscape">Landscape · 16:9 (1280 × 720)</option>
+                  <option value="portrait">Portrait · 9:16 (720 × 1280)</option>
+                  <option value="tiktok">TikTok / Reels · 9:16 (1080 × 1920)</option>
+                  <option value="square">Square · 1:1 (1080 × 1080)</option>
+                  <option value="a4">A4 · Portrait (794 × 1123)</option>
+                  <option value="custom">Custom size</option>
+                </select>
+              </label>
+              {format === "custom" && <div className="custom-size-fields">
+                <label className="setup-field">Width (px)<input type="number" min="320" max="4096" value={width} onChange={(event) => setWidth(Math.max(320, Math.min(4096, Number(event.target.value) || 320)))} /></label>
+                <label className="setup-field">Height (px)<input type="number" min="320" max="4096" value={height} onChange={(event) => setHeight(Math.max(320, Math.min(4096, Number(event.target.value) || 320)))} /></label>
+              </div>}
+              <label className="setup-field">Background color
+                <span className="setup-color-control"><input type="color" value={background} onChange={(event) => setBackground(event.target.value)} /><span>{background.toUpperCase()}</span></span>
+              </label>
+              <label className="setup-field">Presentation title
+                <input type="text" maxLength={120} value={presentationTitle} onChange={(event) => setPresentationTitle(event.target.value)} placeholder="e.g. Product launch presentation" />
+              </label>
+              <label className="setup-field setup-description-field">Description <span className="optional-label">Optional · only shown in your workspace</span>
+                <textarea maxLength={500} value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Add a private note about this presentation..." rows={3} />
+              </label>
+            </div>
+            <div className="create-footer"><span><Layers3 size={14} /> {width} × {height} px · Blank canvas</span><button className="create-button" onClick={createPresentation}>Create blank presentation <ArrowUpRight size={16} /></button></div>
           </section>
 
           <section className="quick-start">
-            <div className="section-title">A little inspiration <span>START WITH AN IDEA</span></div>
-            <div className="prompt-list">
-              {prompts.map((prompt) => <button className="prompt-chip" key={prompt}>{prompt}<ArrowUpRight size={13} /></button>)}
+            <div className="section-title">Designed for every format <span>START WITH A CANVAS THAT FITS</span></div>
+            <div className="format-chips">
+              <button onClick={() => { chooseFormat("landscape"); document.getElementById("create")?.scrollIntoView({ behavior: "smooth" }); }}>16:9 Presentation</button>
+              <button onClick={() => { chooseFormat("portrait"); document.getElementById("create")?.scrollIntoView({ behavior: "smooth" }); }}>9:16 Portrait</button>
+              <button onClick={() => { chooseFormat("tiktok"); document.getElementById("create")?.scrollIntoView({ behavior: "smooth" }); }}>TikTok / Reels</button>
+              <button onClick={() => { chooseFormat("square"); document.getElementById("create")?.scrollIntoView({ behavior: "smooth" }); }}>Square post</button>
             </div>
           </section>
 
-          <section className="recent">
-            <div className="recent-heading"><div><h2>Recent presentations</h2><p>Pick up where you left off.</p></div><button className="view-all">View all <ArrowUpRight size={14} /></button></div>
-            <div className="project-grid">
-              {recentProjects.map((project) => (
-                <article className="project-card" key={project.title}>
-                  <div className={`project-preview ${project.tone}`}><div className="preview-lines"><i /><i /><i /></div><span>{project.initials}</span><div className="preview-caption">A STORY IN EVERY SLIDE</div></div>
-                  <div className="project-info"><div><strong>{project.title}</strong><span>{project.detail}</span></div><button aria-label={`Open ${project.title}`}>···</button></div>
-                </article>
-              ))}
-            </div>
+          <section className="recent" id="recent">
+            <div className="recent-heading"><div><h2>Recent presentations</h2><p>Your latest presentation saved in this browser.</p></div><Link className="view-all" href="/studio">Open editor <ArrowUpRight size={14} /></Link></div>
+            {savedProject ? <div className="project-grid saved-project-grid">
+              <article className="project-card saved-project-card">
+                <Link href="/studio" className="project-preview violet saved-project-preview"><div className="preview-lines"><i /><i /><i /></div><span><Layers3 size={42} /></span><div className="preview-caption">{savedProject.canvasWidth || 1280} × {savedProject.canvasHeight || 720} PX</div></Link>
+                <div className="project-info"><div><strong>{savedTitle}</strong><span>{savedProject.slides?.length || 1} slides · Saved locally</span></div>
+                  {savedDescription && <button className="description-info-button" aria-label="Read presentation description" aria-expanded={showDescription} onClick={() => setShowDescription((open) => !open)}><Info size={15} /></button>}
+                </div>
+                {savedDescription && <div className={"saved-description-popover" + (showDescription ? " is-open" : "")} aria-hidden={!showDescription}><p>{savedDescription}</p></div>}
+                <div className="saved-project-actions"><Link href="/studio">Continue editing <ArrowUpRight size={13} /></Link></div>
+              </article>
+            </div> : <div className="empty-project-state"><Layers3 size={23} /><strong>No presentations yet</strong><span>Create your first blank presentation above. It will appear here when saved.</span></div>}
           </section>
           <footer className="page-footer">Made for ideas that move people. <span>SLIDEAI STUDIO · 2026</span></footer>
         </div>
