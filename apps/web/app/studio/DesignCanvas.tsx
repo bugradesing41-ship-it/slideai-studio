@@ -101,14 +101,12 @@ function recolorAssetSvg(source:string,fill:string) {
     colors.forEach((color,index)=>{const stop=parsed.createElementNS("http://www.w3.org/2000/svg","stop");stop.setAttribute("offset",`${index/(colors.length-1)*100}%`);stop.setAttribute("stop-color",color);gradient.appendChild(stop);});
     defs.appendChild(gradient);
   }
-  root.querySelectorAll("path,circle,rect,ellipse,polygon,polyline,line").forEach((node)=>{
+  root.querySelectorAll("path,circle,rect,ellipse,polygon,polyline").forEach((node)=>{
     const element=node as SVGElement;
     const existingFill=element.getAttribute("fill")||"";
     if(existingFill.toLowerCase()!=="none")element.setAttribute("fill",paint);
-    if(element.hasAttribute("stroke")&&element.getAttribute("stroke")?.toLowerCase()!=="none")element.setAttribute("stroke",paint);
     const style=element.getAttribute("style");
     if(style?.includes("fill:"))element.style.fill=paint;
-    if(style?.includes("stroke:"))element.style.stroke=paint;
   });
   return new XMLSerializer().serializeToString(root);
 }
@@ -172,7 +170,7 @@ export default function DesignCanvas({
 
     async function mount() {
       const fabric = await import("fabric");
-      fabric.FabricObject.customProperties = ["name", "animationPreset", "animationKind", "locked", "isAnimated"];
+      fabric.FabricObject.customProperties = ["name", "animationPreset", "animationKind", "locked", "isAnimated", "assetSvgSource"];
       if (disposed || !elementRef.current) return;
       await loadGoogleFont(latestRef.current.fontFamily, latestRef.current.fontWeights, latestRef.current.fontWeight, latestRef.current.fontSize);
       const generatedFamilies = [...new Set(latestRef.current.designElements.filter((element) => element.type === "text").map((element) => element.fontFamily).filter(Boolean))];
@@ -819,6 +817,7 @@ export default function DesignCanvas({
           if (cancelled || canvasRef.current !== canvas) return;
           const image = new FabricImage(imageElement);
           if (cancelled || canvasRef.current !== canvas) return;
+          if (!assetCommand.animated) image.set("assetSvgSource", await blob.text());
           const maxSize=assetCommand.fontFamily==="Material Symbols Outlined"?170:360;
           const scale = Math.min(maxSize/(image.width||1), 500/(image.height||1));
           const logicalHeight=latestRef.current.canvasHeight/(latestRef.current.canvasWidth/1280);
@@ -895,15 +894,27 @@ export default function DesignCanvas({
       void import("fabric").then(({ Shadow }) => {
         if (!canvasRef.current) return;
         const isTextObject = ["textbox", "i-text", "text"].includes(String(object.type ?? "").toLowerCase());
+        const isImageObject = String(object.type ?? "").toLowerCase() === "image";
         object.set({
-          fill: current.fill,
-          stroke: isTextObject ? (current.textBorderEnabled ? current.stroke : null) : current.stroke,
-          strokeWidth: isTextObject ? (current.textBorderEnabled ? current.textBorderWidth : 0) : current.strokeWidth,
+          fill: isImageObject ? undefined : current.fill,
+          stroke: isImageObject ? null : isTextObject ? (current.textBorderEnabled ? current.stroke : null) : current.stroke,
+          strokeWidth: isImageObject ? 0 : isTextObject ? (current.textBorderEnabled ? current.textBorderWidth : 0) : current.strokeWidth,
           opacity: current.opacity,
           shadow: current.shadowEnabled ? new Shadow({ color: "rgba(0,0,0,0.32)", blur: 24, offsetX: 8, offsetY: 12 }) : null,
         });
+        const svgSource = typeof object.assetSvgSource === "string" ? object.assetSvgSource : "";
+        if (isImageObject && svgSource) {
+          const recoloredSvg = recolorAssetSvg(svgSource, current.fill);
+          const svgImage = new Image();
+          svgImage.decoding = "async";
+          svgImage.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(recoloredSvg);
+          await svgImage.decode();
+          if (!canvasRef.current || canvas.getActiveObject() !== object) return;
+          object.setElement(svgImage);
+        }
+        object.setCoords();
         canvas.requestRenderAll();
-        current.onChange(JSON.stringify(canvas.toObject(["name", "animationPreset", "animationKind", "isAnimated"])));
+        current.onChange(JSON.stringify(canvas.toObject(["name", "animationPreset", "animationKind", "isAnimated", "assetSvgSource"])));
       });
     }
   }, [fill, stroke, strokeWidth, shadowEnabled, opacity, textBorderEnabled, textBorderWidth]);
