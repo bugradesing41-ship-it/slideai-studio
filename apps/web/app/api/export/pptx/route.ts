@@ -99,7 +99,7 @@ async function readCanvasObjects(serialized: string | undefined): Promise<Fabric
       if (String(object.type ?? "").toLowerCase() === "image" && typeof object.src === "string" && object.src.startsWith("https://")) {
         try {
           const url = new URL(object.src);
-          if (url.hostname === "opendoodles.s3-us-west-1.amazonaws.com") {
+          if (["opendoodles.s3-us-west-1.amazonaws.com", "fonts.gstatic.com"].includes(url.hostname)) {
             const response = await fetch(url, { signal: AbortSignal.timeout(8000) });
             const mime = (response.headers.get("content-type") || "").split(";")[0].toLowerCase();
             if (response.ok && ["image/svg+xml", "image/png", "image/jpeg", "image/webp"].includes(mime)) {
