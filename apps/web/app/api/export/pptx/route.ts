@@ -51,10 +51,13 @@ type ExportRequest = {
   slides?: ExportSlide[];
   slideBackgrounds?: Record<number, string>;
   canvasDataBySlide?: Record<number, string>;
+  width?: number;
+  height?: number;
 };
 
 const SLIDE_W = 13.333333;
-const PX_TO_IN = SLIDE_W / 1280;
+let PX_TO_IN_X = SLIDE_W / 1280;
+let PX_TO_IN_Y = 7.5 / 720;
 
 function colorValue(value: unknown, fallback = "FFFFFF"): { color: string; transparency: number } {
   if (value && typeof value === "object") {
@@ -86,7 +89,7 @@ function addGradientBackground(slide: PptxSlideLike, value: string | undefined) 
   if (colors.length < 2) return;
   const stops = colors.map((color, index) => `<stop offset="${Math.round((index / (colors.length - 1)) * 100)}%" stop-color="${color}"/>`).join("");
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="0">${stops}</linearGradient></defs><rect width="1600" height="900" fill="url(#bg)"/></svg>`;
-  slide.addImage({ data: `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`, x: 0, y: 0, w: SLIDE_W, h: 7.5 });
+  slide.addImage({ data: `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`, x: 0, y: 0, w: SLIDE_W, h: SLIDE_W * 720 / 1280 });
 }
 
 async function readCanvasObjects(serialized: string | undefined): Promise<FabricObject[]> {
@@ -134,10 +137,10 @@ function renderFabricObject(
   const scaleY = parentScaleY * (Number(object.scaleY) || 1);
   const widthPx = Math.max(0, (Number(object.width) || 0) * scaleX);
   const heightPx = Math.max(0, (Number(object.height) || 0) * scaleY);
-  const x = left * PX_TO_IN;
-  const y = top * PX_TO_IN;
-  const w = widthPx * PX_TO_IN;
-  const h = heightPx * PX_TO_IN;
+  const x = left * PX_TO_IN_X;
+  const y = top * PX_TO_IN_Y;
+  const w = widthPx * PX_TO_IN_X;
+  const h = heightPx * PX_TO_IN_Y;
   const opacity = Math.max(0, Math.min(1, Number(object.opacity ?? 1)));
   const fill = colorValue(object.fill, "FFFFFF");
   const stroke = colorValue(object.stroke, fill.color);
@@ -238,8 +241,14 @@ export async function POST(request: Request) {
     const theme = payload.theme || "light";
     const backgrounds = payload.slideBackgrounds || {};
     const canvasData = payload.canvasDataBySlide || {};
+    const exportWidth = Math.max(320, Math.min(4096, Math.round(payload.width || 1280)));
+    const exportHeight = Math.max(320, Math.min(4096, Math.round(payload.height || 720)));
+    const slideHeightIn = SLIDE_W * exportHeight / exportWidth;
+    PX_TO_IN_X = SLIDE_W / 1280;
+    PX_TO_IN_Y = slideHeightIn / 720;
     const pptx = new PptxGenJS();
-    pptx.layout = "LAYOUT_WIDE";
+    pptx.defineLayout({ name: "SLIDEAI_CUSTOM", width: SLIDE_W, height: slideHeightIn });
+    pptx.layout = "SLIDEAI_CUSTOM";
     pptx.author = "SlideAI Studio";
     pptx.subject = "Editable presentation";
     pptx.title = title;
