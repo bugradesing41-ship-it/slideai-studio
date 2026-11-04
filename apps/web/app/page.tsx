@@ -81,7 +81,7 @@ export default function Home() {
       <aside className="sidebar">
         <Link className="brand" href="/" aria-label="SlideAI Studio home">
           <span className="brand-mark"><Layers3 size={19} strokeWidth={2.3} /></span>
-          <span>slideai<span className="brand-light">studio</span></span>
+          <span className="brand-word" suppressHydrationWarning>slideai</span><span className="brand-light" suppressHydrationWarning>studio</span>
         </Link>
         <a className="new-button" href="#create"><Plus size={17} /> New presentation <span className="shortcut">⌘ K</span></a>
         <div className="nav-label">WORKSPACE</div>
