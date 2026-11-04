@@ -28,6 +28,7 @@ const ELEMENT_ANIMATIONS=["Fade in","Rise up","Slide from left","Slide from righ
 
 export default function StudioWorkspace() {
   const [slides, setSlides] = useState<Slide[]>([BLANK_SLIDE]);
+  const [projectId, setProjectId] = useState("");
   const [localSaveState, setLocalSaveState] = useState("Restoring…");
   const [isRestored, setIsRestored] = useState(false);
   const [activeId, setActiveId] = useState(1);
@@ -68,7 +69,7 @@ export default function StudioWorkspace() {
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [assetLibraryOpen, setAssetLibraryOpen] = useState(false);
-  const [assetCommand, setAssetCommand] = useState<{symbol:string;label:string;imageUrl?:string;fontFamily?:string;animated?:boolean;token:number}>({ symbol: "", label: "", token: 0 });
+  const [assetCommand, setAssetCommand] = useState<{symbol:string;label:string;imageUrl?:string;fontFamily?:string;animated?:boolean;fill?:string;token:number}>({ symbol: "", label: "", token: 0 });
   const [imageCommand, setImageCommand] = useState({ dataUrl: "", name: "", token: 0 });
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [selectedObjectType, setSelectedObjectType] = useState("");
@@ -98,9 +99,12 @@ export default function StudioWorkspace() {
   const activeSlide = useMemo(() => slides.find((slide) => slide.id === activeId) ?? slides[0], [slides, activeId]);
   useEffect(() => {
     try {
-      const startBlank = new URLSearchParams(window.location.search).get("blank") === "1";
+      const params = new URLSearchParams(window.location.search);
+      const requestedProjectId = params.get("projectId") || "";
+      const startBlank = params.get("blank") === "1";
       if (startBlank) {
-        const params = new URLSearchParams(window.location.search);
+        const nextProjectId = requestedProjectId || (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `project-${Date.now()}`);
+        setProjectId(nextProjectId);
         const requestedWidth = Number(params.get("width"));
         const requestedHeight = Number(params.get("height"));
         const initialWidth = Number.isFinite(requestedWidth) && requestedWidth >= 320 && requestedWidth <= 4096 ? Math.round(requestedWidth) : 1280;
@@ -118,7 +122,10 @@ export default function StudioWorkspace() {
         setActiveId(1);
         setLocalSaveState("New blank slide");
       } else {
-        const saved = localStorage.getItem("slideai-studio-local-project-v1");
+        const registry = JSON.parse(localStorage.getItem("slideai-studio-projects-v1") || "[]") as Array<{id:string;updatedAt?:string;[key:string]:unknown}>;
+        const savedProject = requestedProjectId && Array.isArray(registry) ? registry.find((item) => item.id === requestedProjectId) : undefined;
+        const saved = savedProject ? JSON.stringify(savedProject) : localStorage.getItem("slideai-studio-local-project-v1");
+        setProjectId(requestedProjectId || savedProject?.id || "legacy-imported");
         if (saved) {
           const parsed = JSON.parse(saved) as { title?: string; description?: string; canvasWidth?: number; canvasHeight?: number; theme?: "violet" | "blue" | "light"; slides?: Slide[]; canvasDataBySlide?: Record<number,string>; slideBackgrounds?: Record<number,string>; slideAnimations?: Record<number,string>; textBorderEnabled?: boolean; textBorderWidth?: number };
           if (Array.isArray(parsed.slides) && parsed.slides.length) {
@@ -151,12 +158,20 @@ export default function StudioWorkspace() {
   useEffect(() => {
     if (!isRestored) return;
     try {
-      localStorage.setItem("slideai-studio-local-project-v1", JSON.stringify({ title, description, canvasWidth, canvasHeight, theme, slides, canvasDataBySlide, slideBackgrounds, slideAnimations, textBorderEnabled, textBorderWidth }));
+      const project = { title, description, canvasWidth, canvasHeight, theme, slides, canvasDataBySlide, slideBackgrounds, slideAnimations, textBorderEnabled, textBorderWidth };
+      const registryKey = "slideai-studio-projects-v1";
+      const currentRegistry = JSON.parse(localStorage.getItem(registryKey) || "[]") as Array<{id:string;updatedAt?:string;[key:string]:unknown}>;
+      const safeRegistry = Array.isArray(currentRegistry) ? currentRegistry : [];
+      const record = { ...project, id: projectId, updatedAt: new Date().toISOString() };
+      const nextRegistry = [record, ...safeRegistry.filter((item) => item.id !== projectId)].slice(0, 250);
+      localStorage.setItem(registryKey, JSON.stringify(nextRegistry));
+      localStorage.setItem("slideai-studio-local-project-v1", JSON.stringify(project));
+      window.dispatchEvent(new Event("slideai-projects-updated"));
       setLocalSaveState("Saved locally");
     } catch {
       setLocalSaveState("Export project to keep a backup");
     }
-  }, [isRestored, title, description, canvasWidth, canvasHeight, theme, slides, canvasDataBySlide, slideBackgrounds, slideAnimations, textBorderEnabled, textBorderWidth]);
+  }, [isRestored, projectId, title, description, canvasWidth, canvasHeight, theme, slides, canvasDataBySlide, slideBackgrounds, slideAnimations, textBorderEnabled, textBorderWidth]);
 
   useEffect(() => {
     let cancelled = false;
@@ -638,7 +653,7 @@ export default function StudioWorkspace() {
           <div className="inspector-tip"><Sparkles size={15}/><div><strong>Pro tip</strong><p>Select any shape or text on the canvas to resize, rotate, recolor and layer it.</p></div></div>
         </aside>
       </div>
-      {assetLibraryOpen && <AssetLibrary initialCategory={assetLibraryCategory} onClose={() => setAssetLibraryOpen(false)} onChoose={(asset: StudioAsset) => { setAssetCommand((current) => ({ symbol: asset.symbol, label: asset.label, imageUrl: asset.imageUrl, fontFamily: asset.fontFamily, animated: asset.animated, token: current.token + 1 })); setAssetLibraryOpen(false); setTool("select"); }} />}
+      {assetLibraryOpen && <AssetLibrary initialCategory={assetLibraryCategory} onClose={() => setAssetLibraryOpen(false)} onChoose={(asset: StudioAsset) => { setAssetCommand((current) => ({ symbol: asset.symbol, label: asset.label, imageUrl: asset.imageUrl, fontFamily: asset.fontFamily, animated: asset.animated, fill: asset.fill, token: current.token + 1 })); setAssetLibraryOpen(false); setTool("select"); }} />}
     </main>
   );
 }
