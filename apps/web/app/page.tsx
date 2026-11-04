@@ -36,7 +36,11 @@ export default function Home() {
       const legacyRaw = localStorage.getItem("slideai-studio-local-project-v1");
       if (legacyRaw) {
         const legacy = JSON.parse(legacyRaw) as Omit<SavedProject, "id">;
-        if (!projects.some((project) => project.id === "legacy-imported")) {
+        const legacyAlreadyListed = projects.some((project) => {
+          const { id: _id, updatedAt: _updatedAt, ...savedData } = project;
+          return JSON.stringify(savedData) === JSON.stringify(legacy);
+        });
+        if (!legacyAlreadyListed && !projects.some((project) => project.id === "legacy-imported")) {
           projects = [...projects, { ...legacy, id: "legacy-imported", updatedAt: new Date().toISOString() }];
           localStorage.setItem(registryKey, JSON.stringify(projects));
         }
