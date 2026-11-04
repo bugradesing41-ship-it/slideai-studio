@@ -32,6 +32,10 @@ export default function StudioWorkspace() {
   const [isRestored, setIsRestored] = useState(false);
   const [activeId, setActiveId] = useState(1);
   const [title, setTitle] = useState("Untitled presentation");
+  const [description, setDescription] = useState("");
+  const [canvasWidth, setCanvasWidth] = useState(1280);
+  const [canvasHeight, setCanvasHeight] = useState(720);
+  const [selectedRotation, setSelectedRotation] = useState(0);
   const [zoom, setZoom] = useState(82);
   const [theme, setTheme] = useState<"violet" | "blue" | "light">("light");
   const [tool, setTool] = useState<Tool>("select");
@@ -96,23 +100,35 @@ export default function StudioWorkspace() {
     try {
       const startBlank = new URLSearchParams(window.location.search).get("blank") === "1";
       if (startBlank) {
+        const params = new URLSearchParams(window.location.search);
+        const requestedWidth = Number(params.get("width"));
+        const requestedHeight = Number(params.get("height"));
+        const initialWidth = Number.isFinite(requestedWidth) && requestedWidth >= 320 && requestedWidth <= 4096 ? Math.round(requestedWidth) : 1280;
+        const initialHeight = Number.isFinite(requestedHeight) && requestedHeight >= 320 && requestedHeight <= 4096 ? Math.round(requestedHeight) : 720;
+        const initialBackground = params.get("background") || "#ffffff";
         setSlides([BLANK_SLIDE]);
-        setTitle("Untitled presentation");
+        setTitle(params.get("title")?.trim().slice(0, 120) || "Untitled presentation");
+        setDescription(params.get("description")?.trim().slice(0, 500) || "");
+        setCanvasWidth(initialWidth);
+        setCanvasHeight(initialHeight);
         setTheme("light");
         setCanvasDataBySlide({});
-        setSlideBackgrounds({ 1: "#ffffff" });
+        setSlideBackgrounds({ 1: initialBackground });
         setSlideAnimations({});
         setActiveId(1);
         setLocalSaveState("New blank slide");
       } else {
         const saved = localStorage.getItem("slideai-studio-local-project-v1");
         if (saved) {
-          const parsed = JSON.parse(saved) as { title?: string; theme?: "violet" | "blue" | "light"; slides?: Slide[]; canvasDataBySlide?: Record<number,string>; slideBackgrounds?: Record<number,string>; slideAnimations?: Record<number,string>; textBorderEnabled?: boolean; textBorderWidth?: number };
+          const parsed = JSON.parse(saved) as { title?: string; description?: string; canvasWidth?: number; canvasHeight?: number; theme?: "violet" | "blue" | "light"; slides?: Slide[]; canvasDataBySlide?: Record<number,string>; slideBackgrounds?: Record<number,string>; slideAnimations?: Record<number,string>; textBorderEnabled?: boolean; textBorderWidth?: number };
           if (Array.isArray(parsed.slides) && parsed.slides.length) {
             const validation = validateDeck({ ...sampleDeck, title: parsed.title || sampleDeck.title, theme: parsed.theme || "violet", slides: parsed.slides });
             if (validation.success) {
               setSlides(validation.data.slides);
               setTitle(parsed.title || sampleDeck.title);
+              setDescription(parsed.description || "");
+              setCanvasWidth(parsed.canvasWidth || 1280);
+              setCanvasHeight(parsed.canvasHeight || 720);
               setTheme(parsed.theme || "violet");
               setCanvasDataBySlide(parsed.canvasDataBySlide || {});
               setSlideBackgrounds(parsed.slideBackgrounds || {});
@@ -135,12 +151,12 @@ export default function StudioWorkspace() {
   useEffect(() => {
     if (!isRestored) return;
     try {
-      localStorage.setItem("slideai-studio-local-project-v1", JSON.stringify({ title, theme, slides, canvasDataBySlide, slideBackgrounds, slideAnimations, textBorderEnabled, textBorderWidth }));
+      localStorage.setItem("slideai-studio-local-project-v1", JSON.stringify({ title, description, canvasWidth, canvasHeight, theme, slides, canvasDataBySlide, slideBackgrounds, slideAnimations, textBorderEnabled, textBorderWidth }));
       setLocalSaveState("Saved locally");
     } catch {
       setLocalSaveState("Export project to keep a backup");
     }
-  }, [isRestored, title, theme, slides, canvasDataBySlide, slideBackgrounds, slideAnimations, textBorderEnabled, textBorderWidth]);
+  }, [isRestored, title, description, canvasWidth, canvasHeight, theme, slides, canvasDataBySlide, slideBackgrounds, slideAnimations, textBorderEnabled, textBorderWidth]);
 
   useEffect(() => {
     let cancelled = false;
@@ -267,7 +283,7 @@ export default function StudioWorkspace() {
   }
 
   function buildProjectBlob() {
-    const project = { format: "slideai-studio-project", version: 1, schemaVersion: "1.0", exportedAt: new Date().toISOString(), title, theme, slides, canvasDataBySlide, slideBackgrounds, slideAnimations, textBorderEnabled, textBorderWidth,
+    const project = { format: "slideai-studio-project", version: 1, schemaVersion: "1.0", exportedAt: new Date().toISOString(), title, description, canvasWidth, canvasHeight, theme, slides, canvasDataBySlide, slideBackgrounds, slideAnimations, textBorderEnabled, textBorderWidth,
     };
     return new Blob([JSON.stringify(project, null, 2)], { type: "application/json" });
   }
@@ -298,7 +314,7 @@ export default function StudioWorkspace() {
       const response = await fetch("/api/export/pptx", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, theme, slides, slideBackgrounds, canvasDataBySlide }),
+        body: JSON.stringify({ title, theme, slides, slideBackgrounds, canvasDataBySlide, width: canvasWidth, height: canvasHeight }),
       });
       if (!response.ok) {
         const message = await response.text();
@@ -443,6 +459,8 @@ export default function StudioWorkspace() {
               <DesignCanvas
                 key={`${activeId}`}
                 slideId={activeId}
+                canvasWidth={canvasWidth}
+                canvasHeight={canvasHeight}
                 slideNumber={`${String(slides.findIndex((slide) => slide.id === activeId) + 1).padStart(2,"0")} / ${String(slides.length).padStart(2,"0")}`}
                 title={activeSlide.title}
                 eyebrow={activeSlide.eyebrow}
@@ -469,7 +487,7 @@ export default function StudioWorkspace() {
                 initialData={canvasDataBySlide[activeId]}
                 designElements={activeSlide.elements ?? []}
                 onChange={saveCanvas}
-                onSelectionChange={(selected, type, typography, animationPreset) => {setHasSelection(selected);setSelectedObjectType(type??"");setSelectedAnimationPreset(animationPreset??"");if(typography){if(typography.fontFamily)setFontFamily(typography.fontFamily);if(typography.fontSize)setFontSize(typography.fontSize);if(typography.fontWeight)setFontWeight(String(typography.fontWeight));if(typography.charSpacing!==undefined)setLetterSpacing(typography.charSpacing);if(typography.lineHeight!==undefined)setLineHeight(Math.round(typography.lineHeight*100));}}}
+                onSelectionChange={(selected, type, typography, animationPreset, angle) => {setHasSelection(selected);setSelectedObjectType(type??"");setSelectedAnimationPreset(animationPreset??"");if(angle!==undefined)setSelectedRotation(Math.round(angle));if(typography){if(typography.fontFamily)setFontFamily(typography.fontFamily);if(typography.fontSize)setFontSize(typography.fontSize);if(typography.fontWeight)setFontWeight(String(typography.fontWeight));if(typography.charSpacing!==undefined)setLetterSpacing(typography.charSpacing);if(typography.lineHeight!==undefined)setLineHeight(Math.round(typography.lineHeight*100));}}}
                 command={canvasCommand}
                 assetCommand={assetCommand}
                 imageCommand={imageCommand}
@@ -562,6 +580,9 @@ export default function StudioWorkspace() {
           </div>
           <div className="inspector-section">
             <div className="inspector-label">SELECTED OBJECT</div>
+            <label className="range-label rotation-control-label">Rotation <span>{selectedRotation}°</span></label>
+            <input className="range-control" type="range" min="0" max="360" step="1" value={selectedRotation} disabled={!hasSelection} onChange={(event)=>{const angle=Number(event.target.value);setSelectedRotation(angle);issueCanvasCommand("rotate:"+angle);}}/>
+            <div className="rotation-control-actions"><button className="quick-action" onClick={()=>{setSelectedRotation(0);issueCanvasCommand("rotate:0");}} disabled={!hasSelection}>Reset 0°</button><button className="quick-action" onClick={()=>{setSelectedRotation(360);issueCanvasCommand("rotate:360");}} disabled={!hasSelection}>Full turn 360°</button></div>
             <button className="quick-action" onClick={() => issueCanvasCommand("duplicate")} disabled={!hasSelection}><Copy size={14}/> Duplicate object</button>
             <button className="quick-action" onClick={() => issueCanvasCommand("front")} disabled={!hasSelection}><MoveUp size={14}/> Bring to front</button>
             <button className="quick-action" onClick={() => issueCanvasCommand("back")} disabled={!hasSelection}><MoveDown size={14}/> Send to back</button>
