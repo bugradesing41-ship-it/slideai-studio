@@ -120,7 +120,7 @@ export default function DesignCanvas({
   const [verticalGuides,setVerticalGuides]=useState<number[]>([]);
   const [horizontalGuides,setHorizontalGuides]=useState<number[]>([]);
   const [pointerPosition,setPointerPosition]=useState<{x:number;y:number;visible:boolean}>({x:0,y:0,visible:false});
-  const elementRef = useRef<HTMLCanvasElement>(null);
+  const elementRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<any>(null);
   const gifRenderFrameRef = useRef<number|null>(null);
   const ensureAnimatedRender=(canvas:any)=>{
@@ -152,7 +152,11 @@ export default function DesignCanvas({
       const generatedFamilies = [...new Set(latestRef.current.designElements.filter((element) => element.type === "text").map((element) => element.fontFamily).filter(Boolean))];
       await Promise.all(generatedFamilies.map((family) => loadGoogleFont(family, [400], 400, 32)));
       if (disposed || !elementRef.current) return;
-      const canvas = new fabric.Canvas(elementRef.current, {
+      // React owns this stable host. Fabric owns only the canvas element and
+      // wrapper it creates inside it, so React never tries to remove Fabric's node.
+      const fabricElement = document.createElement("canvas");
+      elementRef.current.appendChild(fabricElement);
+      const canvas = new fabric.Canvas(fabricElement, {
         width: latestRef.current.canvasWidth,
         height: latestRef.current.canvasHeight,
         backgroundColor: resolveCanvasBackground(fabric, latestRef.current.backgroundColor),
@@ -395,8 +399,12 @@ export default function DesignCanvas({
       latestRef.current.onReady?.();
       cleanup = () => {
         if(gifRenderFrameRef.current!==null){cancelAnimationFrame(gifRenderFrameRef.current);gifRenderFrameRef.current=null;}
-        canvas.dispose();
-        canvasRef.current = null;
+        if (canvasRef.current === canvas) canvasRef.current = null;
+        // Fabric 6 disposes asynchronously and removes its own wrapper. The
+        // wrapper is nested in the React-owned host, avoiding removeChild races.
+        void Promise.resolve(canvas.dispose()).catch((error) => {
+          console.warn("Fabric canvas cleanup failed", error);
+        });
       };
     }
 
@@ -914,7 +922,7 @@ export default function DesignCanvas({
     {showRulers&&<div className="canvas-ruler canvas-ruler-top" title="Click to add a vertical guide · Double-click to clear guides" onClick={addVerticalGuide} onDoubleClick={clearGuides}>{Array.from({length:65},(_,i)=>{const value=i*20;return <span key={value} className={value%100===0?"major":value%50===0?"medium":"minor"} style={{left:(value/1280*100)+"%"}}>{value%100===0&&<small>{value}</small>}</span>})}{pointerPosition.visible&&<i className="canvas-ruler-cursor horizontal-axis" style={{left:(pointerPosition.x/1280*100)+"%"}}><b/><small>{pointerPosition.x.toFixed(0)}</small></i>}</div>}
     {showRulers&&<div className="canvas-ruler canvas-ruler-left" title="Click to add a horizontal guide · Double-click to clear guides" onClick={addHorizontalGuide} onDoubleClick={clearGuides}>{Array.from({length:Math.ceil(logicalHeight/20)+1},(_,i)=>{const value=i*20;return <span key={value} className={value%100===0?"major":value%50===0?"medium":"minor"} style={{top:(value/logicalHeight*100)+"%"}}>{value%100===0&&<small>{value}</small>}</span>})}{pointerPosition.visible&&<i className="canvas-ruler-cursor vertical-axis" style={{top:(pointerPosition.y/logicalHeight*100)+"%"}}><b/><small>{pointerPosition.y.toFixed(0)}</small></i>}</div>}
     <div className="design-canvas-shell" style={{aspectRatio:`${canvasWidth} / ${canvasHeight}`}} onPointerMove={event=>{const rect=event.currentTarget.getBoundingClientRect();const canvas=canvasRef.current;const point=canvas?.getPointer(event.nativeEvent);const x=Math.round(Math.max(0,Math.min(1280,point?.x??((event.clientX-rect.left)/rect.width*1280)))*10)/10;const y=Math.round(Math.max(0,Math.min(logicalHeight,point?.y??((event.clientY-rect.top)/rect.height*logicalHeight)))*10)/10;setPointerPosition(previous=>previous.x===x&&previous.y===y&&previous.visible?previous:{x,y,visible:true});}} onPointerLeave={()=>setPointerPosition(previous=>previous.visible?{...previous,visible:false}:previous)}>
-      <canvas ref={elementRef}/>
+      <div ref={elementRef} className="fabric-canvas-host" />
       {showGuides&&<div className="canvas-guide-overlay"><i/><b/></div>}
       {showGuides&&verticalGuides.map((x,index)=><i key={"vx"+index} className="canvas-user-guide vertical" style={{left:(x/1280*100)+"%"}} onDoubleClick={()=>setVerticalGuides(items=>items.filter((_,i)=>i!==index))}/>)}
       {showGuides&&horizontalGuides.map((y,index)=><i key={"hy"+index} className="canvas-user-guide horizontal" style={{top:(y/logicalHeight*100)+"%"}} onDoubleClick={()=>setHorizontalGuides(items=>items.filter((_,i)=>i!==index))}/>)}
