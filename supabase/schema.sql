@@ -103,7 +103,16 @@ drop policy if exists "Users manage their own presentations" on public.presentat
 create policy "Users manage their own presentations" on public.presentations
 for all to authenticated
 using ((select auth.uid()) = user_id)
-with check ((select auth.uid()) = user_id);
+with check (
+  (select auth.uid()) = user_id
+  and (
+    folder_id is null
+    or exists (
+      select 1 from public.presentation_folders f
+      where f.id = folder_id and f.user_id = (select auth.uid())
+    )
+  )
+);
 
 drop policy if exists "Users read their own presentation versions" on public.presentation_versions;
 create policy "Users read their own presentation versions" on public.presentation_versions
