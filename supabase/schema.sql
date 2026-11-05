@@ -110,6 +110,17 @@ create policy "Users read their own presentation versions" on public.presentatio
 for select to authenticated
 using ((select auth.uid()) = user_id);
 
+drop policy if exists "Users insert their own presentation versions" on public.presentation_versions;
+create policy "Users insert their own presentation versions" on public.presentation_versions
+for insert to authenticated
+with check (
+  (select auth.uid()) = user_id
+  and exists (
+    select 1 from public.presentations p
+    where p.id = presentation_id and p.user_id = (select auth.uid())
+  )
+);
+
 drop policy if exists "Users delete their own presentation versions" on public.presentation_versions;
 create policy "Users delete their own presentation versions" on public.presentation_versions
 for delete to authenticated
