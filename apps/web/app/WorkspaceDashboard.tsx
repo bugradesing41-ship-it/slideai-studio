@@ -191,7 +191,7 @@ export default function WorkspaceDashboard() {
         <button className={activeFolder === "all" ? "workspace-nav folder-nav active" : "workspace-nav folder-nav"} onClick={() => setActiveFolder("all")}><Folder size={15}/> All presentations</button>
         {folders.map((folder) => <button key={folder.id} className={activeFolder === folder.id ? "workspace-nav folder-nav active" : "workspace-nav folder-nav"} onClick={() => setActiveFolder(folder.id)}><Folder size={15}/> <span>{folder.name}</span></button>)}
       </>}
-      <div className="workspace-sidebar-bottom"><div className="workspace-user"><div className="workspace-avatar">{(user.email?.[0] || "U").toUpperCase()}</div><div><strong>{user.email}</strong><span>Cloud workspace</span></div></div><button className="workspace-signout" onClick={() => void supabase.auth.signOut()}><LogOut size={15}/> Sign out</button></div>
+      <div className="workspace-sidebar-bottom"><div className="workspace-user"><div className="workspace-avatar">{(user.email?.[0] || "U").toUpperCase()}</div><div><strong>{user.email}</strong><span>Cloud workspace</span></div></div><button className="workspace-signout" onClick={() => { if (supabase) void supabase.auth.signOut(); }}><LogOut size={15}/> Sign out</button></div>
     </aside>
     <section className="workspace-main">
       <header className="workspace-topbar"><span>Workspace <i>/</i> {showTrash ? "Trash" : "My presentations"}</span><span className="workspace-cloud-status"><span/> Cloud synced</span></header>
