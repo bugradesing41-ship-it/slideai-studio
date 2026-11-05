@@ -5,15 +5,22 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ArrowUpRight, FolderOpen, Layers3, Plus, Sparkles, Info, Presentation } from "lucide-react";
 
-type Format = "landscape" | "portrait" | "tiktok" | "square" | "a4" | "custom";
+type Format = "landscape" | "presentation-4-3" | "portrait" | "portrait-3-4" | "instagram-4-5" | "tiktok" | "square" | "photo-3-2" | "poster-2-3" | "a4" | "a4-landscape" | "letter" | "custom";
 type SavedProject = { id: string; updatedAt?: string; title?: string; description?: string; slides?: unknown[]; canvasWidth?: number; canvasHeight?: number };
 
 const formatSizes: Record<Exclude<Format, "custom">, { width: number; height: number; label: string }> = {
-  landscape: { width: 1280, height: 720, label: "Landscape · 16:9" },
+  landscape: { width: 1280, height: 720, label: "Presentation · 16:9" },
+  "presentation-4-3": { width: 1200, height: 900, label: "Presentation · 4:3" },
   portrait: { width: 720, height: 1280, label: "Portrait · 9:16" },
+  "portrait-3-4": { width: 900, height: 1200, label: "Portrait · 3:4" },
+  "instagram-4-5": { width: 1080, height: 1350, label: "Social post · 4:5" },
   tiktok: { width: 1080, height: 1920, label: "TikTok / Reels · 9:16" },
   square: { width: 1080, height: 1080, label: "Square · 1:1" },
-  a4: { width: 794, height: 1123, label: "A4 · Portrait" },
+  "photo-3-2": { width: 1200, height: 800, label: "Photo · 3:2" },
+  "poster-2-3": { width: 1000, height: 1500, label: "Poster · 2:3" },
+  a4: { width: 794, height: 1123, label: "A4 document · Portrait" },
+  "a4-landscape": { width: 1123, height: 794, label: "A4 document · Landscape" },
+  letter: { width: 816, height: 1056, label: "US Letter · Portrait" },
 };
 
 export default function Home() {
@@ -118,12 +125,27 @@ export default function Home() {
             <div className="presentation-setup">
               <label className="setup-field setup-format-field">Canvas format
                 <select value={format} onChange={(event) => chooseFormat(event.target.value as Format)}>
-                  <option value="landscape">Landscape · 16:9 (1280 × 720)</option>
-                  <option value="portrait">Portrait · 9:16 (720 × 1280)</option>
-                  <option value="tiktok">TikTok / Reels · 9:16 (1080 × 1920)</option>
-                  <option value="square">Square · 1:1 (1080 × 1080)</option>
-                  <option value="a4">A4 · Portrait (794 × 1123)</option>
-                  <option value="custom">Custom size</option>
+                  <optgroup label="Presentations">
+                    <option value="landscape">Widescreen · 16:9 (1280 × 720)</option>
+                    <option value="presentation-4-3">Classic · 4:3 (1200 × 900)</option>
+                  </optgroup>
+                  <optgroup label="Portrait & social">
+                    <option value="portrait">Portrait · 9:16 (720 × 1280)</option>
+                    <option value="portrait-3-4">Portrait · 3:4 (900 × 1200)</option>
+                    <option value="instagram-4-5">Social post · 4:5 (1080 × 1350)</option>
+                    <option value="tiktok">TikTok / Reels · 9:16 (1080 × 1920)</option>
+                    <option value="square">Square · 1:1 (1080 × 1080)</option>
+                  </optgroup>
+                  <optgroup label="Documents & print">
+                    <option value="a4">A4 · Portrait (794 × 1123)</option>
+                    <option value="a4-landscape">A4 · Landscape (1123 × 794)</option>
+                    <option value="letter">US Letter · Portrait (816 × 1056)</option>
+                    <option value="poster-2-3">Poster · 2:3 (1000 × 1500)</option>
+                  </optgroup>
+                  <optgroup label="Photo & custom">
+                    <option value="photo-3-2">Photo · 3:2 (1200 × 800)</option>
+                    <option value="custom">Custom size</option>
+                  </optgroup>
                 </select>
               </label>
               {format === "custom" && <div className="custom-size-fields">
