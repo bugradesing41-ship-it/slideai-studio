@@ -20,6 +20,22 @@ type PresentationRow = {
 };
 type FolderRow = { id: string; name: string; created_at: string };
 
+type CanvasFormat = "landscape" | "presentation-4-3" | "portrait" | "portrait-3-4" | "instagram-4-5" | "tiktok" | "square" | "photo-3-2" | "poster-2-3" | "a4" | "a4-landscape" | "letter" | "custom";
+const CANVAS_FORMATS: Record<Exclude<CanvasFormat, "custom">, { width: number; height: number; label: string }> = {
+  landscape: { width: 1280, height: 720, label: "Widescreen · 16:9" },
+  "presentation-4-3": { width: 1200, height: 900, label: "Classic · 4:3" },
+  portrait: { width: 720, height: 1280, label: "Portrait · 9:16" },
+  "portrait-3-4": { width: 900, height: 1200, label: "Portrait · 3:4" },
+  "instagram-4-5": { width: 1080, height: 1350, label: "Social post · 4:5" },
+  tiktok: { width: 1080, height: 1920, label: "TikTok / Reels · 9:16" },
+  square: { width: 1080, height: 1080, label: "Square · 1:1" },
+  "photo-3-2": { width: 1200, height: 800, label: "Photo · 3:2" },
+  "poster-2-3": { width: 1000, height: 1500, label: "Poster · 2:3" },
+  a4: { width: 794, height: 1123, label: "A4 · Portrait" },
+  "a4-landscape": { width: 1123, height: 794, label: "A4 · Landscape" },
+  letter: { width: 816, height: 1056, label: "US Letter · Portrait" },
+};
+
 const uuid = () => crypto.randomUUID();
 
 export default function WorkspaceDashboard() {
@@ -42,6 +58,10 @@ export default function WorkspaceDashboard() {
   const [cloudStatus, setCloudStatus] = useState("Connecting…");
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
+  const [format, setFormat] = useState<CanvasFormat>("landscape");
+  const [canvasWidth, setCanvasWidth] = useState(1280);
+  const [canvasHeight, setCanvasHeight] = useState(720);
+  const [background, setBackground] = useState("#ffffff");
 
   useEffect(() => {
     if (!supabase) { setAuthReady(true); return; }
@@ -150,11 +170,16 @@ export default function WorkspaceDashboard() {
     } finally { setAuthBusy(false); }
   }
 
+  function chooseFormat(next: CanvasFormat) {
+    setFormat(next);
+    if (next !== "custom") { setCanvasWidth(CANVAS_FORMATS[next].width); setCanvasHeight(CANVAS_FORMATS[next].height); }
+  }
+
   async function createPresentation() {
     const id = uuid();
     const params = new URLSearchParams({
-      blank: "1", projectId: id, width: "1280", height: "720",
-      background: "#ffffff", title: newTitle.trim() || "Untitled presentation",
+      blank: "1", projectId: id, width: String(canvasWidth), height: String(canvasHeight),
+      background, title: newTitle.trim() || "Untitled presentation",
       description: newDescription.trim(),
     });
     window.location.href = "/studio?" + params.toString();
@@ -252,7 +277,7 @@ export default function WorkspaceDashboard() {
       <header className="workspace-topbar"><span>Workspace <i>/</i> {showTrash ? "Trash" : "My presentations"}</span><span className="workspace-cloud-status"><span/> {cloudStatus}</span></header>
       <div className="workspace-content">
         <div className="workspace-welcome"><div><div className="workspace-eyebrow">YOUR CREATIVE WORKSPACE</div><h1>{showTrash ? "Recently deleted" : "Your ideas, organized."}</h1><p>{showTrash ? "Deleted presentations stay here until you restore or permanently remove them." : "Your presentations are saved to your account and available across devices."}</p></div><button className="workspace-secondary" onClick={() => void createFolder()}><FolderPlus size={15}/> New folder</button></div>
-        {!showTrash && <section className="workspace-create"><div className="workspace-create-icon"><Plus size={20}/></div><div className="workspace-create-fields"><input value={newTitle} onChange={(event) => setNewTitle(event.target.value)} placeholder="Presentation name (optional)" maxLength={120}/><input value={newDescription} onChange={(event) => setNewDescription(event.target.value)} placeholder="Description (optional)" maxLength={500}/></div><button className="workspace-primary workspace-create-button" onClick={() => void createPresentation()}>Create presentation <ArrowUpRight size={15}/></button></section>}
+        {!showTrash && <section className="workspace-create"><div className="workspace-create-icon"><Plus size={20}/></div><div className="workspace-create-fields"><input value={newTitle} onChange={(event) => setNewTitle(event.target.value)} placeholder="Presentation name (optional)" maxLength={120}/><input value={newDescription} onChange={(event) => setNewDescription(event.target.value)} placeholder="Description (optional)" maxLength={500}/><select aria-label="Canvas format" value={format} onChange={(event) => chooseFormat(event.target.value as CanvasFormat)}><optgroup label="Presentations"><option value="landscape">Widescreen · 16:9</option><option value="presentation-4-3">Classic · 4:3</option></optgroup><optgroup label="Portrait & social"><option value="portrait">Portrait · 9:16</option><option value="portrait-3-4">Portrait · 3:4</option><option value="instagram-4-5">Social post · 4:5</option><option value="tiktok">TikTok / Reels · 9:16</option><option value="square">Square · 1:1</option></optgroup><optgroup label="Documents & print"><option value="a4">A4 · Portrait</option><option value="a4-landscape">A4 · Landscape</option><option value="letter">US Letter</option><option value="poster-2-3">Poster · 2:3</option></optgroup><optgroup label="Photo & custom"><option value="photo-3-2">Photo · 3:2</option><option value="custom">Custom size</option></optgroup></select><label className="workspace-color-field">Background <input type="color" value={background} onChange={(event) => setBackground(event.target.value)}/></label>{format === "custom" && <><input aria-label="Canvas width" type="number" min="320" max="4096" value={canvasWidth} onChange={(event) => setCanvasWidth(Math.max(320,Math.min(4096,Number(event.target.value)||320)))}/><input aria-label="Canvas height" type="number" min="320" max="4096" value={canvasHeight} onChange={(event) => setCanvasHeight(Math.max(320,Math.min(4096,Number(event.target.value)||320)))}/></>}</div><button className="workspace-primary workspace-create-button" onClick={() => void createPresentation()}>Create presentation <ArrowUpRight size={15}/></button></section>}
         {notice && <div className="workspace-alert">{notice}</div>}
         <div className="workspace-list-heading"><div><h2>{showTrash ? "Trash" : activeFolder === "all" ? "Recent presentations" : folders.find((f) => f.id === activeFolder)?.name || "Folder"}</h2><p>{loading ? "Loading…" : `${visible.length} ${visible.length === 1 ? "presentation" : "presentations"}`}</p></div><div className="workspace-list-meta"><Clock3 size={14}/> Sorted by last edited</div></div>
         {loading ? <div className="workspace-loading">Loading presentations…</div> : visible.length ? <div className="workspace-grid">{visible.map((project) => <article className="workspace-card" key={project.id}>
