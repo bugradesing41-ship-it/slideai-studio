@@ -75,6 +75,60 @@ export default function WorkspaceDashboard() {
   }, [supabase, user, showTrash]);
 
   useEffect(() => { void loadWorkspace(); }, [loadWorkspace]);
+  useEffect(() => {
+    if (!supabase || !user) return;
+    let cancelled = false;
+    const importLocalProjects = async () => {
+      const migrationKey = `slideai-cloud-import-v1:${user.id}`;
+      if (localStorage.getItem(migrationKey)) return;
+      try {
+        const raw = localStorage.getItem("slideai-studio-projects-v1");
+        const registry = raw ? JSON.parse(raw) as Array<Record<string, unknown>> : [];
+        const candidates = Array.isArray(registry) ? registry : [];
+        const legacyRaw = localStorage.getItem("slideai-studio-local-project-v1");
+        if (legacyRaw) {
+          const legacy = JSON.parse(legacyRaw) as Record<string, unknown>;
+          if (!candidates.some((item) => JSON.stringify({ ...item, id: undefined, updatedAt: undefined }) === JSON.stringify(legacy))) {
+            candidates.push({ ...legacy, id: uuid(), updatedAt: new Date().toISOString() });
+          }
+        }
+        const normalized = candidates.filter((item) => item && typeof item === "object" && item.slides && typeof item.slides === "object").map((item) => {
+          const id = typeof item.id === "string" && /^[0-9a-f-]{36}$/i.test(item.id) ? item.id : uuid();
+          return {
+            id, user_id: user.id,
+            title: typeof item.title === "string" ? item.title.slice(0, 120) : "Untitled presentation",
+            description: typeof item.description === "string" ? item.description.slice(0, 500) : "",
+            canvas_width: typeof item.canvasWidth === "number" ? item.canvasWidth : 1280,
+            canvas_height: typeof item.canvasHeight === "number" ? item.canvasHeight : 720,
+            project_data: item,
+            updated_at: typeof item.updatedAt === "string" ? item.updatedAt : new Date().toISOString(),
+          };
+        });
+        if (!normalized.length) {
+          localStorage.setItem(migrationKey, "done");
+          return;
+        }
+        const ids = normalized.map((item) => item.id);
+        const { data: existing, error: lookupError } = await supabase.from("presentations").select("id").in("id", ids);
+        if (lookupError) throw lookupError;
+        const existingIds = new Set((existing ?? []).map((item) => item.id));
+        const missing = normalized.filter((item) => !existingIds.has(item.id));
+        if (missing.length) {
+          const { error } = await supabase.from("presentations").insert(missing);
+          if (error) throw error;
+        }
+        if (!cancelled) {
+          localStorage.setItem(migrationKey, "done");
+          if (missing.length) setNotice(`${missing.length} locally saved presentation(s) imported to your cloud workspace.`);
+          await loadWorkspace();
+        }
+      } catch (error) {
+        if (!cancelled) setNotice(error instanceof Error ? `Local project import failed: ${error.message}` : "Local project import failed.");
+      }
+    };
+    void importLocalProjects();
+    return () => { cancelled = true; };
+  }, [supabase, user, loadWorkspace]);
 
   async function handleAuth(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -185,8 +239,8 @@ export default function WorkspaceDashboard() {
       <Link href="/" className="workspace-brand"><span className="workspace-brand-mark"><Layers3 size={18}/></span> slideai<span>studio</span></Link>
       <button className="workspace-new" onClick={() => void createPresentation()}><Plus size={17}/> New presentation</button>
       <div className="workspace-nav-label">WORKSPACE</div>
-      <button className={!showTrash ? "workspace-nav active" : "workspace-nav"} onClick={() => setShowTrash(false)}><Layers3 size={16}/> My presentations</button>
-      <button className={showTrash ? "workspace-nav active" : "workspace-nav"} onClick={() => setShowTrash(true)}><Trash2 size={16}/> Trash</button>
+      <button className={!showTrash ? "workspace-nav active" : "workspace-nav"} onClick={() => { setShowTrash(false); setActiveFolder("all"); }}><Layers3 size={16}/> My presentations</button>
+      <button className={showTrash ? "workspace-nav active" : "workspace-nav"} onClick={() => { setShowTrash(true); setActiveFolder("all"); }}><Trash2 size={16}/> Trash</button>
       {!showTrash && <><div className="workspace-nav-label workspace-folders-label">FOLDERS <button onClick={() => void createFolder()} title="Create folder"><FolderPlus size={14}/></button></div>
         <button className={activeFolder === "all" ? "workspace-nav folder-nav active" : "workspace-nav folder-nav"} onClick={() => setActiveFolder("all")}><Folder size={15}/> All presentations</button>
         {folders.map((folder) => <button key={folder.id} className={activeFolder === folder.id ? "workspace-nav folder-nav active" : "workspace-nav folder-nav"} onClick={() => setActiveFolder(folder.id)}><Folder size={15}/> <span>{folder.name}</span></button>)}
