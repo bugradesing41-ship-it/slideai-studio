@@ -58,11 +58,13 @@ export default function WorkspaceDashboard() {
     if (!supabase || !user) return;
     setLoading(true);
     setNotice("");
+    const presentationsQuery = supabase.from("presentations")
+      .select("id,title,description,canvas_width,canvas_height,updated_at,created_at,folder_id,deleted_at");
+    const filteredPresentationsQuery = showTrash
+      ? presentationsQuery.not("deleted_at", "is", null)
+      : presentationsQuery.is("deleted_at", null);
     const [presentationResult, folderResult] = await Promise.all([
-      supabase.from("presentations")
-        .select("id,title,description,canvas_width,canvas_height,updated_at,created_at,folder_id,deleted_at")
-        showTrash ? .not("deleted_at", "is", null) : .is("deleted_at", null)
-        .order("updated_at", { ascending: false }),
+      filteredPresentationsQuery.order("updated_at", { ascending: false }),
       supabase.from("presentation_folders").select("id,name,created_at").order("name"),
     ]);
     if (presentationResult.error) setNotice(presentationResult.error.message);
