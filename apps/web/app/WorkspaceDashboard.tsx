@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowUpRight, Copy, FolderPlus, Layers3, LogOut, Plus, RotateCcw, Trash2, Presentation, Clock3, Folder, Settings2 } from "lucide-react";
+import { ArrowUpRight, Copy, FolderPlus, Layers3, LogOut, Plus, RotateCcw, Trash2, Presentation, Clock3, Folder } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
@@ -215,7 +215,7 @@ export default function WorkspaceDashboard() {
   const visible = presentations.filter((item) => activeFolder === "all" || item.folder_id === activeFolder);
   const formatDate = (value: string) => new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
 
-  if (!configured) return <main className="workspace-page"><section className="workspace-setup"><div className="workspace-brand"><Layers3/> slideai studio</div><h1>Connect your Supabase project</h1><p>The cloud workspace is ready in the code, but this deployment needs its public Supabase URL and publishable key.</p><pre>NEXT_PUBLIC_SUPABASE_URL=…{"\n"}NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=…</pre><p>Add these in your local <code>apps/web/.env.local</code> file and in your hosting provider's environment variables, then restart/redeploy.</p><a href="https://supabase.com/dashboard" target="_blank" rel="noreferrer">Open Supabase dashboard <ArrowUpRight size={14}/></a></section></main>;
+  if (!configured) return <main className="workspace-page"><section className="workspace-setup"><div className="workspace-brand"><Layers3/> slideai studio</div><h1>Connect your Supabase project</h1><p>The cloud workspace is ready in the code, but this deployment needs its public Supabase URL and publishable key.</p><pre>NEXT_PUBLIC_SUPABASE_URL=…{"\n"}NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=…</pre><p>Add these in your local <code>apps/web/.env.local</code> file and in your hosting provider&apos;s environment variables, then restart/redeploy.</p><a href="https://supabase.com/dashboard" target="_blank" rel="noreferrer">Open Supabase dashboard <ArrowUpRight size={14}/></a></section></main>;
 
   if (!authReady) return <main className="workspace-page"><div className="workspace-loading">Loading your workspace…</div></main>;
 
