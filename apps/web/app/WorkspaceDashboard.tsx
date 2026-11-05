@@ -61,7 +61,7 @@ export default function WorkspaceDashboard() {
     const [presentationResult, folderResult] = await Promise.all([
       supabase.from("presentations")
         .select("id,title,description,canvas_width,canvas_height,updated_at,created_at,folder_id,deleted_at")
-        .is("deleted_at", showTrash ? "not.null" : null)
+        showTrash ? .not("deleted_at", "is", null) : .is("deleted_at", null)
         .order("updated_at", { ascending: false }),
       supabase.from("presentation_folders").select("id,name,created_at").order("name"),
     ]);
