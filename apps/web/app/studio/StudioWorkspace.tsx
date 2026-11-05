@@ -5,6 +5,7 @@ import { motion, useAnimationControls, type TargetAndTransition, type Transition
 import Link from "next/link";
 import DesignCanvas, { type Tool } from "./DesignCanvas";
 import AssetLibrary, { type StudioAsset } from "./AssetLibrary";
+import { imageDataBytes, makePdf, makeZip } from "./exportUtils";
 import { sampleDeck, validateDeck, type SlideSpec } from "@slideai/shared";
 import {
   ArrowLeft, ArrowUpRight, Check, ChevronDown, ChevronDown as MoveDown, ChevronUp as MoveUp, Copy, Download, ImagePlus,
@@ -82,6 +83,8 @@ export default function StudioWorkspace() {
   const [showGuides,setShowGuides]=useState(true);
   const [snapToGuides,setSnapToGuides]=useState(true);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState("");
   const activeSlideAnimation = slideAnimations[activeId] ?? "Fade";
   const backgroundColor = slideBackgrounds[activeId] ?? (theme === "light" ? "#ffffff" : theme === "blue" ? "#102333" : "#171525");
   const SLIDE_MOTION:Record<string,{initial:TargetAndTransition;animate:TargetAndTransition;transition:Transition}> = {
@@ -322,6 +325,10 @@ export default function StudioWorkspace() {
     };
     return new Blob([JSON.stringify(project, null, 2)], { type: "application/json" });
   }
+  function safeExportName(value: string, fallback: string) {
+    return value.trim().replace(/[^a-z0-9-_]+/gi, "-").replace(/^-+|-+$/g, "").slice(0, 90) || fallback;
+  }
+
   function downloadBlob(blob: Blob, filename: string) {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
@@ -330,7 +337,7 @@ export default function StudioWorkspace() {
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+    window.setTimeout(() => URL.revokeObjectURL(url), 10000);
   }
 
   function exportProject() {
@@ -345,22 +352,26 @@ export default function StudioWorkspace() {
     window.alert("Proje bilgisi panoya kopyalandı. Paylaşılabilir bağlantı için çevrimiçi proje depolama hesabı gerekir.");
   }
   async function exportPowerPoint() {
+    if (isExporting) return;
+    setIsExporting(true);
+    setExportProgress("Preparing PowerPoint…");
     try {
       const response = await fetch("/api/export/pptx", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        cache: "no-store",
         body: JSON.stringify({ title, theme, slides, slideBackgrounds, canvasDataBySlide, width: canvasWidth, height: canvasHeight }),
       });
-      if (!response.ok) {
-        const message = await response.text();
-        window.alert(message || "PowerPoint dosyası oluşturulamadı.");
-        return;
-      }
+      if (!response.ok) throw new Error((await response.text()) || "PowerPoint file could not be created.");
       const blob = await response.blob();
-      downloadBlob(blob, `${title.trim().replace(/[^a-z0-9-_]+/gi, "-") || "slideai-presentation"}.pptx`);
+      if (blob.size < 100) throw new Error("The PowerPoint export was empty.");
+      downloadBlob(blob, `${safeExportName(title, "slideai-presentation")}.pptx`);
     } catch (error) {
       console.error("PowerPoint export failed", error);
-      window.alert("PowerPoint dışa aktarma işlemi tamamlanamadı. Bağlantıyı kontrol edip tekrar deneyin.");
+      window.alert(error instanceof Error ? error.message : "PowerPoint export failed. Please try again.");
+    } finally {
+      setIsExporting(false);
+      setExportProgress("");
     }
   }
 
@@ -382,7 +393,11 @@ export default function StudioWorkspace() {
     const safeMultiplier = Math.min(multiplier, 6000 / Math.max(canvasWidth, canvasHeight));
     const dataUrl = canvas.toDataURL({ format, quality: 0.96, multiplier: safeMultiplier });
     await canvas.dispose();
-    return dataUrl;
+    return {
+      dataUrl,
+      pixelWidth: Math.max(1, Math.round(canvasWidth * safeMultiplier)),
+      pixelHeight: Math.max(1, Math.round(canvasHeight * safeMultiplier)),
+    };
   }
 
   function downloadDataUrl(dataUrl: string, filename: string) {
@@ -395,36 +410,66 @@ export default function StudioWorkspace() {
   }
 
   async function exportSlideImage(format: "png" | "jpeg") {
+    if (isExporting) return;
+    setIsExporting(true);
+    setExportProgress(`Rendering slide ${activeId}…`);
     try {
-      const dataUrl = await renderSlideImage(activeId, format, 3);
+      const rendered = await renderSlideImage(activeId, format, 3);
       const extension = format === "jpeg" ? "jpg" : "png";
-      downloadDataUrl(dataUrl, (title.trim().replace(/[^a-z0-9-_]+/gi, "-") || "slide") + "-" + activeId + "." + extension);
+      downloadDataUrl(rendered.dataUrl, `${safeExportName(title, "slide")}-${activeId}.${extension}`);
     } catch (error) {
       console.error("Image export failed", error);
-      window.alert("Görsel dışa aktarılamadı. Harici görsellerin yüklenmesini bekleyip tekrar deneyin.");
+      window.alert("The slide image could not be exported. Check external images and try again.");
+    } finally {
+      setIsExporting(false);
+      setExportProgress("");
+    }
+  }
+
+  async function exportAllSlideImages(format: "png" | "jpeg") {
+    if (isExporting) return;
+    setIsExporting(true);
+    const extension = format === "jpeg" ? "jpg" : "png";
+    try {
+      const files: { name: string; bytes: Uint8Array }[] = [];
+      for (let index = 0; index < slides.length; index += 1) {
+        const slide = slides[index];
+        setExportProgress(`Rendering ${index + 1} / ${slides.length} · ${extension.toUpperCase()}`);
+        const rendered = await renderSlideImage(slide.id, format, 2);
+        files.push({ name: `${String(index + 1).padStart(2, "0")}-slide-${slide.id}.${extension}`, bytes: imageDataBytes(rendered.dataUrl) });
+      }
+      setExportProgress("Building ZIP archive…");
+      downloadBlob(makeZip(files), `${safeExportName(title, "slideai-slides")}-${extension}.zip`);
+    } catch (error) {
+      console.error("Bulk image export failed", error);
+      window.alert(error instanceof Error ? error.message : "The slide images could not be exported.");
+    } finally {
+      setIsExporting(false);
+      setExportProgress("");
     }
   }
 
   async function exportPdf() {
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) { window.alert("PDF çıktısı için açılır pencereye izin vermelisiniz."); return; }
+    if (isExporting) return;
+    setIsExporting(true);
     try {
-      const images: string[] = [];
-      for (const slide of slides) images.push(await renderSlideImage(slide.id, "png", 2));
-      const pages = images.map((src) => "<section class='page'><img src='" + src + "' /></section>").join("");
-      const safeTitle = title.replace(/[<>]/g, "");
-      const html = "<!doctype html><html><head><meta charset='utf-8'><title>" + safeTitle + "</title><style>" +
-        "@page{size:" + canvasWidth + "px " + canvasHeight + "px;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}" +
-        ".page{width:" + canvasWidth + "px;height:" + canvasHeight + "px;page-break-after:always;break-after:page;overflow:hidden}" +
-        ".page:last-child{page-break-after:auto;break-after:auto}.page img{display:block;width:100%;height:100%;object-fit:fill}" +
-        "</style></head><body>" + pages + "<script>window.onload=()=>setTimeout(()=>window.print(),350)<\/script></body></html>";
-      printWindow.document.open();
-      printWindow.document.write(html);
-      printWindow.document.close();
+      const pages: { bytes: Uint8Array; width: number; height: number }[] = [];
+      for (let index = 0; index < slides.length; index += 1) {
+        const slide = slides[index];
+        setExportProgress(`Preparing PDF · ${index + 1} / ${slides.length}`);
+        const rendered = await renderSlideImage(slide.id, "jpeg", 2);
+        pages.push({ bytes: imageDataBytes(rendered.dataUrl), width: rendered.pixelWidth, height: rendered.pixelHeight });
+      }
+      setExportProgress("Creating PDF file…");
+      const pageWidth = 960;
+      const pageHeight = pageWidth * canvasHeight / canvasWidth;
+      downloadBlob(makePdf(pages, pageWidth, pageHeight), `${safeExportName(title, "slideai-presentation")}.pdf`);
     } catch (error) {
-      printWindow.close();
-      console.error("PDF print preparation failed", error);
-      window.alert("PDF sayfaları hazırlanamadı. Lütfen tekrar deneyin.");
+      console.error("PDF export failed", error);
+      window.alert(error instanceof Error ? error.message : "PDF export failed. Please try again.");
+    } finally {
+      setIsExporting(false);
+      setExportProgress("");
     }
   }
 
@@ -433,7 +478,7 @@ export default function StudioWorkspace() {
       <header className="studio-topbar">
         <Link className="studio-back" href="/"><ArrowLeft size={16} /><span>Back to workspace</span></Link>
         <div className="studio-doc-title"><span className="doc-icon"><LayoutTemplate size={15} /></span><span>{title}</span><span className="saved-pill"><Check size={12} /> {localSaveState}</span></div>
-        <div className="studio-top-actions"><button className="share-button" onClick={() => void shareProject()}>Share <ArrowUpRight size={14}/></button><div className="export-menu-wrap"><button className="export-button" onClick={() => setExportMenuOpen((open) => !open)}><Download size={14}/> Export <ChevronDown size={13}/></button>{exportMenuOpen && <div className="export-menu"><button onClick={() => { exportProject(); setExportMenuOpen(false); }}><Download size={14}/> Editable project (.json)</button><button onClick={() => { void exportSlideImage("png"); setExportMenuOpen(false); }}><ImagePlus size={14}/> Current slide · PNG 3×</button><button onClick={() => { void exportSlideImage("jpeg"); setExportMenuOpen(false); }}><ImagePlus size={14}/> Current slide · JPG 3×</button><button onClick={() => { void exportPdf(); setExportMenuOpen(false); }}><Download size={14}/> All slides · PDF / Print</button><button onClick={() => { void exportPowerPoint(); setExportMenuOpen(false); }}><Download size={14}/> Editable PowerPoint (.pptx)</button></div>}</div></div>
+        <div className="studio-top-actions">{isExporting && <span className="export-progress" role="status">{exportProgress || "Exporting…"}</span>}<button className="share-button" onClick={() => void shareProject()}>Share <ArrowUpRight size={14}/></button><div className="export-menu-wrap"><button className="export-button" disabled={isExporting} onClick={() => setExportMenuOpen((open) => !open)}><Download size={14}/> {isExporting ? "Exporting…" : "Export"} <ChevronDown size={13}/></button>{exportMenuOpen && <div className="export-menu"><button disabled={isExporting} onClick={() => { exportProject(); setExportMenuOpen(false); }}><Download size={14}/> Editable project (.json)</button><button disabled={isExporting} onClick={() => { void exportSlideImage("png"); setExportMenuOpen(false); }}><ImagePlus size={14}/> Current slide · PNG 3×</button><button disabled={isExporting} onClick={() => { void exportSlideImage("jpeg"); setExportMenuOpen(false); }}><ImagePlus size={14}/> Current slide · JPG 3×</button><button disabled={isExporting} onClick={() => { void exportAllSlideImages("png"); setExportMenuOpen(false); }}><ImagePlus size={14}/> All slides · PNG ZIP</button><button disabled={isExporting} onClick={() => { void exportAllSlideImages("jpeg"); setExportMenuOpen(false); }}><ImagePlus size={14}/> All slides · JPG ZIP</button><button disabled={isExporting} onClick={() => { void exportPdf(); setExportMenuOpen(false); }}><Download size={14}/> All slides · PDF</button><button disabled={isExporting} onClick={() => { void exportPowerPoint(); setExportMenuOpen(false); }}><Download size={14}/> Editable PowerPoint (.pptx)</button></div>}</div></div>
       </header>
 
       <div className="studio-body">
