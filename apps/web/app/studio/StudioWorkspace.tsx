@@ -6,6 +6,7 @@ import Link from "next/link";
 import DesignCanvas, { type Tool } from "./DesignCanvas";
 import AssetLibrary, { type StudioAsset } from "./AssetLibrary";
 import { imageDataBytes, makePdf, makeZip } from "./exportUtils";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { sampleDeck, validateDeck, type SlideSpec } from "@slideai/shared";
 import {
   ArrowLeft, ArrowUpRight, Check, ChevronDown, ChevronDown as MoveDown, ChevronUp as MoveUp, Copy, Download, ImagePlus,
@@ -30,6 +31,7 @@ const ELEMENT_ANIMATIONS=["Fade in","Rise up","Slide from left","Slide from righ
 export default function StudioWorkspace() {
   const [slides, setSlides] = useState<Slide[]>([BLANK_SLIDE]);
   const [projectId, setProjectId] = useState("");
+  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [localSaveState, setLocalSaveState] = useState("Restoring…");
   const [isRestored, setIsRestored] = useState(false);
   const [activeId, setActiveId] = useState(1);
@@ -102,62 +104,86 @@ export default function StudioWorkspace() {
   const slideMotion = useMemo(() => SLIDE_MOTION[activeSlideAnimation] ?? SLIDE_MOTION.Fade, [activeSlideAnimation]);
   const activeSlide = useMemo(() => slides.find((slide) => slide.id === activeId) ?? slides[0], [slides, activeId]);
   useEffect(() => {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      const requestedProjectId = params.get("projectId") || "";
-      const startBlank = params.get("blank") === "1";
-      if (startBlank) {
-        const nextProjectId = requestedProjectId || (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `project-${Date.now()}`);
-        setProjectId(nextProjectId);
-        const requestedWidth = Number(params.get("width"));
-        const requestedHeight = Number(params.get("height"));
-        const initialWidth = Number.isFinite(requestedWidth) && requestedWidth >= 320 && requestedWidth <= 4096 ? Math.round(requestedWidth) : 1280;
-        const initialHeight = Number.isFinite(requestedHeight) && requestedHeight >= 320 && requestedHeight <= 4096 ? Math.round(requestedHeight) : 720;
-        const initialBackground = params.get("background") || "#ffffff";
-        setSlides([BLANK_SLIDE]);
-        setTitle(params.get("title")?.trim().slice(0, 120) || "Untitled presentation");
-        setDescription(params.get("description")?.trim().slice(0, 500) || "");
-        setCanvasWidth(initialWidth);
-        setCanvasHeight(initialHeight);
-        setTheme("light");
-        setCanvasDataBySlide({});
-        setSlideBackgrounds({ 1: initialBackground });
-        setSlideAnimations({});
-        setActiveId(1);
-        setLocalSaveState("New blank slide");
-      } else {
+    let cancelled = false;
+    const applyProject = (parsed: {
+      title?: string; description?: string; canvasWidth?: number; canvasHeight?: number;
+      theme?: "violet" | "blue" | "light"; slides?: Slide[];
+      canvasDataBySlide?: Record<number,string>; slideBackgrounds?: Record<number,string>;
+      slideAnimations?: Record<number,string>; textBorderEnabled?: boolean; textBorderWidth?: number;
+    }) => {
+      if (!Array.isArray(parsed.slides) || !parsed.slides.length) return false;
+      const validation = validateDeck({ ...sampleDeck, title: parsed.title || sampleDeck.title, theme: parsed.theme || "violet", slides: parsed.slides });
+      if (!validation.success) return false;
+      setSlides(validation.data.slides);
+      setTitle(parsed.title || sampleDeck.title);
+      setDescription(parsed.description || "");
+      setCanvasWidth(parsed.canvasWidth || 1280);
+      setCanvasHeight(parsed.canvasHeight || 720);
+      setTheme(parsed.theme || "violet");
+      setCanvasDataBySlide(parsed.canvasDataBySlide || {});
+      setSlideBackgrounds(parsed.slideBackgrounds || {});
+      setSlideAnimations(parsed.slideAnimations || {});
+      setTextBorderEnabled(parsed.textBorderEnabled ?? false);
+      setTextBorderWidth(parsed.textBorderWidth ?? 1);
+      setActiveId(validation.data.slides[0].id);
+      return true;
+    };
+
+    const restore = async () => {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const requestedProjectId = params.get("projectId") || "";
+        const startBlank = params.get("blank") === "1";
+        if (startBlank) {
+          const nextProjectId = requestedProjectId || (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `project-${Date.now()}`);
+          setProjectId(nextProjectId);
+          const requestedWidth = Number(params.get("width"));
+          const requestedHeight = Number(params.get("height"));
+          const initialWidth = Number.isFinite(requestedWidth) && requestedWidth >= 320 && requestedWidth <= 4096 ? Math.round(requestedWidth) : 1280;
+          const initialHeight = Number.isFinite(requestedHeight) && requestedHeight >= 320 && requestedHeight <= 4096 ? Math.round(requestedHeight) : 720;
+          setSlides([BLANK_SLIDE]);
+          setTitle(params.get("title")?.trim().slice(0, 120) || "Untitled presentation");
+          setDescription(params.get("description")?.trim().slice(0, 500) || "");
+          setCanvasWidth(initialWidth);
+          setCanvasHeight(initialHeight);
+          setTheme("light");
+          setCanvasDataBySlide({});
+          setSlideBackgrounds({ 1: params.get("background") || "#ffffff" });
+          setSlideAnimations({});
+          setActiveId(1);
+          setLocalSaveState("New presentation");
+          return;
+        }
+
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestedProjectId);
+        if (supabase && isUuid) {
+          const { data: authData } = await supabase.auth.getUser();
+          if (authData.user) {
+            const { data: remote } = await supabase.from("presentations")
+              .select("project_data").eq("id", requestedProjectId).maybeSingle();
+            if (!cancelled && remote?.project_data && applyProject(remote.project_data as Parameters<typeof applyProject>[0])) {
+              setProjectId(requestedProjectId);
+              setLocalSaveState("Restored from cloud");
+              return;
+            }
+          }
+        }
+
         const registry = JSON.parse(localStorage.getItem("slideai-studio-projects-v1") || "[]") as Array<{id:string;updatedAt?:string;[key:string]:unknown}>;
         const savedProject = requestedProjectId && Array.isArray(registry) ? registry.find((item) => item.id === requestedProjectId) : undefined;
         const saved = savedProject ? JSON.stringify(savedProject) : localStorage.getItem("slideai-studio-local-project-v1");
         setProjectId(requestedProjectId || savedProject?.id || "legacy-imported");
-        if (saved) {
-          const parsed = JSON.parse(saved) as { title?: string; description?: string; canvasWidth?: number; canvasHeight?: number; theme?: "violet" | "blue" | "light"; slides?: Slide[]; canvasDataBySlide?: Record<number,string>; slideBackgrounds?: Record<number,string>; slideAnimations?: Record<number,string>; textBorderEnabled?: boolean; textBorderWidth?: number };
-          if (Array.isArray(parsed.slides) && parsed.slides.length) {
-            const validation = validateDeck({ ...sampleDeck, title: parsed.title || sampleDeck.title, theme: parsed.theme || "violet", slides: parsed.slides });
-            if (validation.success) {
-              setSlides(validation.data.slides);
-              setTitle(parsed.title || sampleDeck.title);
-              setDescription(parsed.description || "");
-              setCanvasWidth(parsed.canvasWidth || 1280);
-              setCanvasHeight(parsed.canvasHeight || 720);
-              setTheme(parsed.theme || "violet");
-              setCanvasDataBySlide(parsed.canvasDataBySlide || {});
-              setSlideBackgrounds(parsed.slideBackgrounds || {});
-              setSlideAnimations(parsed.slideAnimations || {});
-              setTextBorderEnabled(parsed.textBorderEnabled ?? false);
-              setTextBorderWidth(parsed.textBorderWidth ?? 1);
-              setActiveId(validation.data.slides[0].id);
-            }
-          }
-        }
+        if (saved) applyProject(JSON.parse(saved) as Parameters<typeof applyProject>[0]);
         setLocalSaveState("Saved locally");
+      } catch {
+        if (!cancelled) setLocalSaveState("Restore unavailable");
+      } finally {
+        if (!cancelled) setIsRestored(true);
       }
-    } catch {
-      setLocalSaveState("Local restore unavailable");
-    } finally {
-      setIsRestored(true);
-    }
-  }, []);
+    };
+    void restore();
+    return () => { cancelled = true; };
+  }, [supabase]);
 
   const canvasFrameMaxWidth = canvasWidth / canvasHeight < 0.8 ? 420 : canvasWidth / canvasHeight < 1.2 ? 520 : 920;
 
@@ -195,6 +221,37 @@ export default function StudioWorkspace() {
       setLocalSaveState("Export project to keep a backup");
     }
   }, [isRestored, projectId, title, description, canvasWidth, canvasHeight, theme, slides, canvasDataBySlide, slideBackgrounds, slideAnimations, textBorderEnabled, textBorderWidth]);
+
+  useEffect(() => {
+    if (!isRestored || !supabase || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(projectId)) return;
+    let cancelled = false;
+    const timeout = window.setTimeout(async () => {
+      setLocalSaveState("Saving to cloud…");
+      try {
+        const { data: authData } = await supabase.auth.getUser();
+        if (!authData.user) {
+          if (!cancelled) setLocalSaveState("Saved locally · sign in to sync");
+          return;
+        }
+        const projectData = { title, description, canvasWidth, canvasHeight, theme, slides, canvasDataBySlide, slideBackgrounds, slideAnimations, textBorderEnabled, textBorderWidth };
+        const { error } = await supabase.from("presentations").upsert({
+          id: projectId,
+          user_id: authData.user.id,
+          title: title.slice(0, 120) || "Untitled presentation",
+          description: description.slice(0, 500),
+          canvas_width: canvasWidth,
+          canvas_height: canvasHeight,
+          project_data: projectData,
+        }, { onConflict: "id" });
+        if (!cancelled) setLocalSaveState(error ? "Cloud save failed · local backup" : "Saved to cloud");
+        if (error) console.error("Cloud autosave failed", error);
+      } catch (error) {
+        if (!cancelled) setLocalSaveState("Cloud save failed · local backup");
+        console.error("Cloud autosave failed", error);
+      }
+    }, 900);
+    return () => { cancelled = true; window.clearTimeout(timeout); };
+  }, [isRestored, supabase, projectId, title, description, canvasWidth, canvasHeight, theme, slides, canvasDataBySlide, slideBackgrounds, slideAnimations, textBorderEnabled, textBorderWidth]);
 
   useEffect(() => {
     let cancelled = false;
