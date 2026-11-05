@@ -39,6 +39,7 @@ export default function WorkspaceDashboard() {
   const [showTrash, setShowTrash] = useState(false);
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState("");
+  const [cloudStatus, setCloudStatus] = useState("Connecting…");
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
 
@@ -67,8 +68,8 @@ export default function WorkspaceDashboard() {
       filteredPresentationsQuery.order("updated_at", { ascending: false }),
       supabase.from("presentation_folders").select("id,name,created_at").order("name"),
     ]);
-    if (presentationResult.error) setNotice(presentationResult.error.message);
-    else setPresentations((presentationResult.data ?? []) as PresentationRow[]);
+    if (presentationResult.error) { setNotice(presentationResult.error.message); setCloudStatus("Database setup required"); }
+    else { setPresentations((presentationResult.data ?? []) as PresentationRow[]); setCloudStatus("Cloud connected"); }
     if (folderResult.error) setNotice((current) => current || folderResult.error.message);
     else setFolders((folderResult.data ?? []) as FolderRow[]);
     setLoading(false);
@@ -248,7 +249,7 @@ export default function WorkspaceDashboard() {
       <div className="workspace-sidebar-bottom"><div className="workspace-user"><div className="workspace-avatar">{(user.email?.[0] || "U").toUpperCase()}</div><div><strong>{user.email}</strong><span>Cloud workspace</span></div></div><button className="workspace-signout" onClick={() => { if (supabase) void supabase.auth.signOut(); }}><LogOut size={15}/> Sign out</button></div>
     </aside>
     <section className="workspace-main">
-      <header className="workspace-topbar"><span>Workspace <i>/</i> {showTrash ? "Trash" : "My presentations"}</span><span className="workspace-cloud-status"><span/> Cloud synced</span></header>
+      <header className="workspace-topbar"><span>Workspace <i>/</i> {showTrash ? "Trash" : "My presentations"}</span><span className="workspace-cloud-status"><span/> {cloudStatus}</span></header>
       <div className="workspace-content">
         <div className="workspace-welcome"><div><div className="workspace-eyebrow">YOUR CREATIVE WORKSPACE</div><h1>{showTrash ? "Recently deleted" : "Your ideas, organized."}</h1><p>{showTrash ? "Deleted presentations stay here until you restore or permanently remove them." : "Your presentations are saved to your account and available across devices."}</p></div><button className="workspace-secondary" onClick={() => void createFolder()}><FolderPlus size={15}/> New folder</button></div>
         {!showTrash && <section className="workspace-create"><div className="workspace-create-icon"><Plus size={20}/></div><div className="workspace-create-fields"><input value={newTitle} onChange={(event) => setNewTitle(event.target.value)} placeholder="Presentation name (optional)" maxLength={120}/><input value={newDescription} onChange={(event) => setNewDescription(event.target.value)} placeholder="Description (optional)" maxLength={500}/></div><button className="workspace-primary workspace-create-button" onClick={() => void createPresentation()}>Create presentation <ArrowUpRight size={15}/></button></section>}
