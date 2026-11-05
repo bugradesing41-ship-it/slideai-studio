@@ -139,7 +139,7 @@ using ((select auth.uid()) = user_id);
 grant usage on schema public to authenticated;
 grant select, insert, update, delete on public.presentation_folders to authenticated;
 grant select, insert, update, delete on public.presentations to authenticated;
-grant select, delete on public.presentation_versions to authenticated;
+grant select, insert, delete on public.presentation_versions to authenticated;
 
 -- Private bucket for future uploaded presentation assets.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
