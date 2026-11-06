@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, useAnimationControls, type TargetAndTransition, type Transition } from "motion/react";
 import Link from "next/link";
 import DesignCanvas, { type Tool } from "./DesignCanvas";
+import SlidePreview from "../components/SlidePreview";
 import AssetLibrary, { type StudioAsset } from "./AssetLibrary";
 import { imageDataBytes, makePdf, makeZip } from "./exportUtils";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -683,7 +684,19 @@ export default function StudioWorkspace() {
             </div>
           </div>
 
-          <div className="filmstrip"><div className="filmstrip-label">SLIDES <span>{slides.length}</span><span> · CURRENT {String(Math.max(0,slides.findIndex((slide)=>slide.id===activeId))+1).padStart(2,"0")} / {String(slides.length).padStart(2,"0")}</span></div><div className="thumbnail-list">{slides.map((slide,index) => <button className={`thumbnail ${activeId===slide.id?"selected":""}`} key={slide.id} onClick={() => setActiveId(slide.id)}><div className={`thumbnail-art thumb-${slide.kind}`}><small>{slide.eyebrow}</small><strong>{slide.title}</strong><i/><i/><em className="thumbnail-number">{String(index+1).padStart(2,"0")} / {String(slides.length).padStart(2,"0")}</em></div><span>{String(index+1).padStart(2,"0")} · {slide.title}</span></button>)}<button className="add-slide" onClick={addSlide}><Plus size={18}/><span>Add slide</span></button></div></div>
+          <div className="filmstrip">
+            <div className="filmstrip-label">SLIDES <span>{slides.length}</span><span> · CURRENT {String(Math.max(0,slides.findIndex((slide)=>slide.id===activeId))+1).padStart(2,"0")} / {String(slides.length).padStart(2,"0")}</span></div>
+            <div className="thumbnail-list">
+              {slides.map((slide,index) => <button type="button" className={`thumbnail ${activeId===slide.id?"selected":""}`} key={slide.id} onClick={() => setActiveId(slide.id)} aria-label={`Go to slide ${index+1}`}>
+                <div className="thumbnail-art">
+                  <SlidePreview canvasData={canvasDataBySlide[slide.id]} width={canvasWidth} height={canvasHeight} background={slideBackgrounds[slide.id] ?? (theme==="light"?"#ffffff":theme==="blue"?"#102333":"#171525")} title={slide.title}/>
+                  <em className="thumbnail-number">{String(index+1).padStart(2,"0")}</em>
+                </div>
+                <span>{String(index+1).padStart(2,"0")} · {slide.title.trim() || "Untitled slide"}</span>
+              </button>)}
+              <button type="button" className="add-slide" onClick={addSlide}><Plus size={18}/><span>Add slide</span></button>
+            </div>
+          </div>
         </section>
 
         <aside className="inspector-panel advanced-inspector">
