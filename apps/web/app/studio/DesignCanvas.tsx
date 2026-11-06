@@ -518,7 +518,7 @@ export default function DesignCanvas({
     // Fabric 6 removed ActiveSelection.toGroup() and Group.toActiveSelection().
     // Build and dismantle groups with the v6 collection API instead.
     if(action==="group" && active?.type==="activeselection"){
-      const selectedObjects=active.getObjects();
+      const selectedObjects=[...active.getObjects()];
       if(selectedObjects.length<2)return;
       canvas.discardActiveObject();
       const group=new fabric.Group(selectedObjects);
@@ -532,7 +532,7 @@ export default function DesignCanvas({
       return;
     }
     if(action==="ungroup" && active?.type==="group"){
-      const groupedObjects=active.getObjects();
+      const groupedObjects=[...active.getObjects()];
       active.removeAll();
       canvas.remove(active);
       if(groupedObjects.length){
