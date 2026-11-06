@@ -79,6 +79,15 @@ export default function WorkspaceDashboard() {
     return () => { alive = false; listener.subscription.unsubscribe(); };
   }, [supabase]);
 
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+    const oauthError = query.get("error_description") || query.get("error");
+    if (oauthError) {
+      setAuthError(oauthError.replace(/\\+/g, " "));
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
+
   const loadWorkspace = useCallback(async () => {
     if (!supabase || !user) return;
     setLoading(true);
@@ -278,7 +287,7 @@ export default function WorkspaceDashboard() {
     <h1>{authMode === "signin" ? "Tekrar hoş geldiniz" : "Hesabınızı oluşturun"}</h1>
     <p>Sunumlarınızı güvenle saklayın, tasarımlarınıza her yerden erişin.</p>
     <button type="button" className="workspace-google-button" onClick={() => void handleGoogleSignIn()} disabled={authBusy}>
-      <span className="workspace-google-mark" aria-hidden="true">G</span>
+      <span className="workspace-google-mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20"><path fill="#4285F4" d="M21.35 12.2c0-.68-.06-1.32-.17-1.95H12v3.69h5.25a4.5 4.5 0 0 1-1.95 2.95v2.45h3.15c1.85-1.7 2.9-4.2 2.9-7.14Z"/><path fill="#34A853" d="M12 21.7c2.62 0 4.82-.87 6.43-2.36l-3.15-2.45c-.87.58-1.98.93-3.28.93-2.53 0-4.67-1.71-5.44-4.01H3.32v2.53A9.7 9.7 0 0 0 12 21.7Z"/><path fill="#FBBC05" d="M6.56 13.81a5.8 5.8 0 0 1 0-3.62V7.66H3.32a9.7 9.7 0 0 0 0 8.68l3.24-2.53Z"/><path fill="#EA4335" d="M12 6.18c1.43 0 2.7.49 3.71 1.45l2.78-2.79A9.45 9.45 0 0 0 12 2.3a9.7 9.7 0 0 0-8.68 5.36l3.24 2.53C7.33 7.89 9.47 6.18 12 6.18Z"/></svg></span>
       {authBusy ? "Google bağlanıyor…" : "Google ile devam et"}
     </button>
     <div className="workspace-auth-divider"><span>veya e-posta ile devam et</span></div>
