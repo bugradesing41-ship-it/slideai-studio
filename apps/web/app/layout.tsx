@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./studio-home.css";
+import "./studio-editor.css";
 
 export const metadata: Metadata = {
   title: "SlideAI Studio — Presentations, reimagined",
