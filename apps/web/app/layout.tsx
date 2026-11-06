@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./studio-editor.css";
+import "./orvia-theme.css";
 
 export const metadata: Metadata = {
-  title: "SlideAI Studio — Presentations, reimagined",
+  title: "ORVIA Studio — Create with clarity",
   description:
-    "Create clear, compelling presentations with an AI-powered creative workspace.",
+    "Create, organize and export beautiful presentations in ORVIA Studio.",
 };
 
 export default function RootLayout({
