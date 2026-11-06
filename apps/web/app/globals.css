@@ -496,3 +496,91 @@ h1{font:700 clamp(34px,4vw,49px)/1.12 Manrope,sans-serif;letter-spacing:-2.4px;m
 .workspace-color-field input{width:34px;height:34px;padding:3px;cursor:pointer}
 @media(max-width:900px){.workspace-create-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.workspace-create-fields input,.workspace-create-fields select{width:100%}}
 @media(max-width:640px){.workspace-create-fields{grid-template-columns:1fr}.workspace-color-field{justify-content:space-between}}
+
+/* SlideAI Studio — premium light editor, aligned with the workspace home. */
+.studio-shell{
+  --ed-ink:#24352b;--ed-muted:#7b887e;--ed-line:#e5ebe4;--ed-paper:#f5f7f3;
+  --ed-panel:#ffffff;--ed-soft:#f0f4ed;--ed-accent:#314b38;--ed-lime:#c7ed75;
+  background:var(--ed-paper);color:var(--ed-ink);
+}
+.studio-shell .studio-topbar{height:66px;padding:0 24px;background:#fff;border-bottom:1px solid var(--ed-line);box-shadow:0 2px 12px rgba(32,52,38,.035);color:var(--ed-ink)}
+.studio-shell .studio-back{color:#66756a;font-weight:600}
+.studio-shell .studio-back:hover{color:#2f4a36}
+.studio-shell .studio-doc-title{color:#26382d;font-size:12px}
+.studio-shell .doc-icon{width:30px;height:30px;border-radius:9px;background:#edf3e9;color:#486548;display:grid;place-items:center}
+.studio-shell .saved-pill{padding:5px 8px;border:1px solid #e4ecdf;border-radius:20px;background:#f5f8f1;color:#5c8050}
+.studio-shell .share-button{background:#fff;border-color:#dfe6dd;color:#405247;border-radius:8px;padding:9px 12px}
+.studio-shell .share-button:hover{background:#f5f8f2;border-color:#bdcdb7}
+.studio-shell .export-button{background:#2d4634;border-color:#2d4634;color:#fff;border-radius:8px;padding:10px 13px;box-shadow:0 5px 14px rgba(45,70,52,.14)}
+.studio-shell .export-button:hover{background:#3c5a43}
+.studio-shell .studio-body{grid-template-columns:258px minmax(0,1fr) 286px;background:var(--ed-paper)}
+.studio-shell .left-tools-panel,.studio-shell .advanced-inspector{background:#fff;color:var(--ed-ink);border-color:var(--ed-line);min-height:0}
+.studio-shell .left-tools-panel{border-right:1px solid var(--ed-line);box-shadow:3px 0 18px rgba(35,55,40,.025)}
+.studio-shell .advanced-inspector{border-left:1px solid var(--ed-line);padding:0 17px 22px;box-shadow:-3px 0 18px rgba(35,55,40,.025)}
+.studio-shell .left-panel-heading,.studio-shell .inspector-heading{border-color:var(--ed-line);color:#293b30}
+.studio-shell .left-panel-heading strong,.studio-shell .inspector-heading strong{font-size:12px;color:#26382d}
+.studio-shell .left-panel-heading small,.studio-shell .inspector-hint{color:#829087}
+.studio-shell .left-panel-count{background:#f0f5e9;border-color:#e0e9d8;color:#55734b}
+.studio-shell .left-panel-tabs{border-color:var(--ed-line)}
+.studio-shell .left-panel-tabs button{color:#718075;border-radius:8px}
+.studio-shell .left-panel-tabs button:hover{background:#f4f7f1;color:#344c39}
+.studio-shell .left-panel-tabs button.active{background:#edf4e8;border-color:#dce8d5;color:#38553c}
+.studio-shell .panel-section-title strong{color:#2d4033}
+.studio-shell .panel-section-title small,.studio-shell .left-panel-hint{color:#849087}
+.studio-shell .layer-action-row button,.studio-shell .align-control-grid button{background:#f8faf7;border-color:#e3eae0;color:#506153;border-radius:8px}
+.studio-shell .layer-action-row button:hover:not(:disabled),.studio-shell .align-control-grid button:hover:not(:disabled){background:#eef5e9;border-color:#cbdcc2;color:#344d38}
+.studio-shell .layer-row{background:#fff;border-color:#e6ece4;border-radius:9px}
+.studio-shell .layer-row[draggable=true]:hover{border-color:#b8cbaa}
+.studio-shell .layer-row.active{background:#f0f6eb;border-color:#b8cda9;box-shadow:inset 2px 0 #6e925e}
+.studio-shell .layer-select{color:#334639}
+.studio-shell .layer-select strong{color:#34483a}
+.studio-shell .layer-select small{color:#8a968c}
+.studio-shell .layer-type-icon{background:#eff4eb;color:#59744f}
+.studio-shell .layer-utility{color:#849087}
+.studio-shell .layer-utility:hover{background:#edf3e9;color:#3d5b40}
+.studio-shell .left-empty-state{border-color:#e2e9df;color:#7c897f}
+.studio-shell .left-empty-state strong{color:#405445}
+.studio-shell .editor-main{background:#eef1ec}
+.studio-shell .editor-toolbar{background:#fff;border-color:var(--ed-line);color:#46574b}
+.studio-shell .toolbar-label{color:#45564a}
+.studio-shell .toolbar-label i,.studio-shell .zoom-value{color:#879389}
+.studio-shell .toolbar-divider{background:#e1e8df}
+.studio-shell .toolbar-tools .tool-button{color:#6c7a70;border-radius:8px}
+.studio-shell .toolbar-tools .tool-button:hover{background:#f0f5ec;color:#3d5940}
+.studio-shell .toolbar-tools .tool-button.active-tool{background:#eaf2e3;color:#365638;box-shadow:inset 0 0 0 1px #d6e5cb}
+.studio-shell .toolbar-right .icon-button{color:#718075}
+.studio-shell .toolbar-right .icon-button:hover{background:#eff4eb;color:#38533b}
+.studio-shell .advanced-canvas-stage{background-color:#edf1eb;background-image:radial-gradient(#cbd5c9 .8px,transparent .8px);background-size:18px 18px;padding:28px}
+.studio-shell .design-canvas-shell{border:1px solid rgba(43,65,47,.12);border-radius:5px;box-shadow:0 22px 65px rgba(35,52,39,.16),0 3px 10px rgba(35,52,39,.08)}
+.studio-shell .filmstrip{background:#fff;border-top:1px solid var(--ed-line);padding:13px 18px}
+.studio-shell .filmstrip-label{color:#829087}
+.studio-shell .filmstrip-label span{color:#55734b}
+.studio-shell .thumbnail{color:#77847a}
+.studio-shell .thumbnail-art{border-color:#dfe7dc;box-shadow:0 2px 5px rgba(36,53,43,.04)}
+.studio-shell .thumbnail.selected .thumbnail-art{outline:2px solid #71935e;outline-offset:2px}
+.studio-shell .add-slide{background:#f8faf7;border-color:#cbd8c7;color:#637765;border-radius:8px}
+.studio-shell .add-slide:hover{background:#eef5e9;border-color:#9db891;color:#3c5a3f}
+.studio-shell .advanced-inspector .inspector-section{border-color:var(--ed-line)}
+.studio-shell .inspector-label{color:#78877c}
+.studio-shell .inspector-input,.studio-shell .inspector-textarea{background:#fbfcfa;border-color:#e0e8de;color:#34463a;border-radius:8px}
+.studio-shell .inspector-input:focus,.studio-shell .inspector-textarea:focus{border-color:#9eb892;box-shadow:0 0 0 3px rgba(199,237,117,.2)}
+.studio-shell .field-label,.studio-shell .range-label{color:#657468}
+.studio-shell .range-label span{color:#527449}
+.studio-shell .range-control{accent-color:#73945f}
+.studio-shell .theme-swatch.chosen{outline-color:#72915f}
+.studio-shell .color-control-row label,.studio-shell .style-preset-grid button{background:#fbfcfa;border-color:#e1e9df;color:#5c6c60;border-radius:8px}
+.studio-shell .quick-action{background:#fbfcfa;border-color:#e2e9df;color:#58695c;border-radius:8px}
+.studio-shell .quick-action:hover:not(:disabled){background:#f0f5ec;border-color:#c6d7bd;color:#3d5a40}
+.studio-shell .quick-action.selected-effect{background:#edf4e8;border-color:#c4d8b8;color:#466542}
+.studio-shell .danger-action{color:#b45d58}
+.studio-shell .font-preview-sample{background:#f5f8f2;border-color:#e2e9df;color:#334639}
+.studio-shell .text-format-toolbar button{background:#fbfcfa;border-color:#e1e8df;color:#58695c}
+.studio-shell .text-format-toolbar button:hover:not(:disabled){background:#edf4e8;border-color:#c4d8b8;color:#3b5b3d}
+.studio-shell .inspector-tip{background:#f0f5eb;border-color:#dce8d4;color:#57754d}
+.studio-shell .inspector-tip p{color:#748276}
+.studio-shell .export-menu{background:#fff;border-color:#e0e8de;box-shadow:0 16px 40px rgba(35,53,39,.16)}
+.studio-shell .export-menu button{color:#405247}
+.studio-shell .export-menu button:hover{background:#f0f5eb;color:#2d4634}
+.studio-shell .icon-button:hover{background:#edf3e9;color:#38533b}
+@media(max-width:1050px){.studio-shell .studio-body{grid-template-columns:235px minmax(0,1fr)}}
+@media(max-width:700px){.studio-shell .studio-topbar{height:58px}.studio-shell .studio-body{grid-template-columns:1fr}.studio-shell .advanced-canvas-stage{padding:12px}.studio-shell .filmstrip{height:126px}}
