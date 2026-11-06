@@ -537,8 +537,12 @@ export default function DesignCanvas({
       canvas.remove(active);
       if(groupedObjects.length){
         canvas.add(...groupedObjects);
-        const selection=new fabric.ActiveSelection(groupedObjects,{canvas});
-        canvas.setActiveObject(selection);
+        if(groupedObjects.length>1){
+          const selection=new fabric.ActiveSelection(groupedObjects,{canvas});
+          canvas.setActiveObject(selection);
+        }else{
+          canvas.setActiveObject(groupedObjects[0]);
+        }
       }
       canvas.requestRenderAll();
       recordCommand();
