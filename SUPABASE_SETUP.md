@@ -71,3 +71,18 @@ Open http://localhost:3000. Create an account, confirm the email if confirmation
 - Existing local browser projects are imported into the signed-in account the first time the dashboard loads after sign-in.
 
 Large binary assets belong in Supabase Storage, not in PostgreSQL rows. The private bucket and owner-only policies are provisioned here; the current editor autosaves its serialized project data, and moving embedded/base64 image payloads into Storage is a separate asset-migration enhancement.
+
+
+## 7. Enable Google sign-in
+
+The workspace includes a **Continue with Google** button powered by Supabase OAuth. Enable the provider before testing it:
+
+1. Open **Authentication → Providers → Google** in your Supabase dashboard and enable Google.
+2. In Google Cloud Console, create or select an OAuth 2.0 Client ID with application type **Web application**.
+3. Add the Supabase callback URL shown on the Google provider setup page to Google's **Authorized redirect URIs**. It usually looks like:
+   `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback`.
+4. Copy the Google Client ID and Client Secret into the Supabase Google provider settings and save.
+5. In **Authentication → URL Configuration**, set the Site URL to your local app URL (for example `http://localhost:3000`) and add both local and production app URLs to **Redirect URLs** (for example `http://localhost:3000/**` and `https://your-domain.example/**`).
+6. Restart the local app and test **Google ile devam et**. For production, ensure the production domain is in the allowed redirect list.
+
+Google OAuth cannot be completed by adding only a frontend button: the Google provider must be enabled and its client credentials configured in Supabase. Never expose the Google client secret in frontend code or commit it to this repository.
