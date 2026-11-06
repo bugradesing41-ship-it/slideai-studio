@@ -515,8 +515,36 @@ export default function DesignCanvas({
       else {const locked=object.locked!==true;object.set({locked,selectable:!locked,evented:!locked,hasControls:!locked,lockMovementX:locked,lockMovementY:locked,lockScalingX:locked,lockScalingY:locked,lockRotation:locked});}
       canvas.requestRenderAll();recordCommand();return;
     }
-    if(action==="group" && active?.type==="activeselection"){active.toGroup();canvas.requestRenderAll();recordCommand();return;}
-    if(action==="ungroup" && active?.type==="group"){active.toActiveSelection();canvas.requestRenderAll();recordCommand();return;}
+    // Fabric 6 removed ActiveSelection.toGroup() and Group.toActiveSelection().
+    // Build and dismantle groups with the v6 collection API instead.
+    if(action==="group" && active?.type==="activeselection"){
+      const selectedObjects=active.getObjects();
+      if(selectedObjects.length<2)return;
+      canvas.discardActiveObject();
+      const group=new fabric.Group(selectedObjects);
+      canvas.remove(...selectedObjects);
+      canvas.add(group);
+      canvas.setActiveObject(group);
+      group.setCoords();
+      canvas.requestRenderAll();
+      recordCommand();
+      latestRef.current.onSelectionChange(true,group.type??"group");
+      return;
+    }
+    if(action==="ungroup" && active?.type==="group"){
+      const groupedObjects=active.getObjects();
+      active.removeAll();
+      canvas.remove(active);
+      if(groupedObjects.length){
+        canvas.add(...groupedObjects);
+        const selection=new fabric.ActiveSelection(groupedObjects,{canvas});
+        canvas.setActiveObject(selection);
+      }
+      canvas.requestRenderAll();
+      recordCommand();
+      latestRef.current.onSelectionChange(groupedObjects.length>0,groupedObjects.length>1?"activeselection":groupedObjects[0]?.type??"");
+      return;
+    }
     if(action.startsWith("align:") && active){
       const mode=action.split(":")[1];const bounds=active.getBoundingRect();const updates:Record<string,number>={};
       if(mode==="left")updates.left=(active.left??0)-bounds.left;
