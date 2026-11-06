@@ -515,8 +515,50 @@ export default function DesignCanvas({
       else {const locked=object.locked!==true;object.set({locked,selectable:!locked,evented:!locked,hasControls:!locked,lockMovementX:locked,lockMovementY:locked,lockScalingX:locked,lockScalingY:locked,lockRotation:locked});}
       canvas.requestRenderAll();recordCommand();return;
     }
-    if(action==="group" && active?.type==="activeselection"){active.toGroup();canvas.requestRenderAll();recordCommand();return;}
-    if(action==="ungroup" && active?.type==="group"){active.toActiveSelection();canvas.requestRenderAll();recordCommand();return;}
+    // Fabric 6.7 removed ActiveSelection.toGroup() and Group.toActiveSelection().
+    // Use Fabric 6's Group and removeAll APIs instead.
+    if(action==="group" && String(active?.type??"").toLowerCase()==="activeselection"){
+      const selectedObjects=[...canvas.getActiveObjects()];
+      if(selectedObjects.length<2)return;
+      canvas.discardActiveObject();
+      void import("fabric").then(({Group})=>{
+        if(canvasRef.current!==canvas)return;
+        const group=new Group(selectedObjects);
+        canvas.remove(...selectedObjects);
+        canvas.add(group);
+        canvas.setActiveObject(group);
+        group.setCoords();
+        canvas.requestRenderAll();
+        recordCommand();
+        latestRef.current.onSelectionChange(true,"group");
+      }).catch((error)=>console.error("Unable to group selected slide objects:",error));
+      return;
+    }
+    if(action==="ungroup" && String(active?.type??"").toLowerCase()==="group"){
+      void import("fabric").then(({ActiveSelection})=>{
+        if(canvasRef.current!==canvas)return;
+        const currentGroup=canvas.getActiveObject();
+        if(!currentGroup || String(currentGroup.type??"").toLowerCase()!=="group")return;
+        const groupedObjects=currentGroup.removeAll();
+        canvas.remove(currentGroup);
+        if(groupedObjects.length){
+          canvas.add(...groupedObjects);
+          if(groupedObjects.length>1){
+            const selection=new ActiveSelection(groupedObjects,{canvas});
+            canvas.setActiveObject(selection);
+          }else{
+            canvas.setActiveObject(groupedObjects[0]);
+          }
+        }
+        canvas.requestRenderAll();
+        recordCommand();
+        latestRef.current.onSelectionChange(
+          groupedObjects.length>0,
+          groupedObjects.length>1?"activeselection":String(groupedObjects[0]?.type??"")
+        );
+      }).catch((error)=>console.error("Unable to ungroup slide objects:",error));
+      return;
+    }
     if(action.startsWith("align:") && active){
       const mode=action.split(":")[1];const bounds=active.getBoundingRect();const updates:Record<string,number>={};
       if(mode==="left")updates.left=(active.left??0)-bounds.left;
