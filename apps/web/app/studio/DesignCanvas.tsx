@@ -68,6 +68,14 @@ type Props = {
 
 export type { Tool };
 
+function normalizeSelectionType(type: unknown): string {
+  const value = String(type ?? "");
+  const normalized = value.toLowerCase();
+  if (normalized === "activeselection") return "activeselection";
+  if (normalized === "group") return "group";
+  return value;
+}
+
 function restoreLegacyAssetSources(value:unknown) {
   if(Array.isArray(value)){value.forEach(restoreLegacyAssetSources);return;}
   if(!value||typeof value!=="object")return;
@@ -210,7 +218,7 @@ export default function DesignCanvas({
         const rawWeight = active?.get("fontWeight");
         const parsedWeight = typeof rawWeight === "number" ? rawWeight : rawWeight === "bold" ? 700 : rawWeight === "normal" ? 400 : Number(rawWeight ?? 400);
         const typography = active && "fontFamily" in active ? { fontFamily:String(active.get("fontFamily") ?? "").replace(/\s+Variable$/i,""), fontSize:Number(active.get("fontSize") ?? 0), fontWeight:Number.isFinite(parsedWeight) ? parsedWeight : 400, charSpacing:Number(active.get("charSpacing")??0), lineHeight:Number(active.get("lineHeight")??1.2) } : undefined;
-        latestRef.current.onSelectionChange(Boolean(active), active?.type ?? "", typography, typeof active?.animationPreset === "string" ? active.animationPreset : "", Number(active?.angle) || 0);
+        latestRef.current.onSelectionChange(Boolean(active), normalizeSelectionType(active?.type), typography, typeof active?.animationPreset === "string" ? active.animationPreset : "", Number(active?.angle) || 0);
         latestRef.current.onLayersChange(canvas.getObjects().map((object:any,index:number)=>({index,id:String(index),name:String(object.name||object.type||"Object"),type:String(object.type||"object"),visible:object.visible!==false,locked:object.locked===true,active:active===object})).reverse());
         // Selection is read-only: do not mutate Fabric objects or save from a selection event.
         // This prevents selection -> save -> parent render -> selection update loops.
@@ -495,7 +503,7 @@ export default function DesignCanvas({
     };
     if(action.startsWith("select-layer:")) {
       const object=canvas.getObjects()[Number(action.split(":")[1])];
-      if(object){canvas.setActiveObject(object);canvas.requestRenderAll();latestRef.current.onSelectionChange(true,object.type??"");latestRef.current.onLayersChange(canvas.getObjects().map((item:any,index:number)=>({index,id:String(index),name:String(item.name||item.type||"Object"),type:String(item.type||"object"),visible:item.visible!==false,locked:item.locked===true,active:item===object})).reverse());}
+      if(object){canvas.setActiveObject(object);canvas.requestRenderAll();latestRef.current.onSelectionChange(true,normalizeSelectionType(object.type));latestRef.current.onLayersChange(canvas.getObjects().map((item:any,index:number)=>({index,id:String(index),name:String(item.name||item.type||"Object"),type:String(item.type||"object"),visible:item.visible!==false,locked:item.locked===true,active:item===object})).reverse());}
       return;
     }
     if(action.startsWith("layer-up:")||action.startsWith("layer-down:")){
@@ -507,7 +515,7 @@ export default function DesignCanvas({
       const [,fromValue,toValue]=action.split(":");const from=Number(fromValue),to=Number(toValue);const objects=canvas.getObjects();
       if(!Number.isInteger(from)||!Number.isInteger(to)||from<0||to<0||from>=objects.length||to>=objects.length||from===to)return;
       const object=objects[from];canvas.moveObjectTo(object,to);canvas.setActiveObject(object);canvas.requestRenderAll();recordCommand();
-      latestRef.current.onSelectionChange(true,object.type??"",undefined,typeof object.animationPreset==="string"?object.animationPreset:"");return;
+      latestRef.current.onSelectionChange(true,normalizeSelectionType(object.type),undefined,typeof object.animationPreset==="string"?object.animationPreset:"");return;
     }
     if(action.startsWith("toggle-visible:")||action.startsWith("toggle-lock:")) {
       const parts=action.split(":");const object=canvas.getObjects()[Number(parts[1])];if(!object)return;
@@ -515,38 +523,48 @@ export default function DesignCanvas({
       else {const locked=object.locked!==true;object.set({locked,selectable:!locked,evented:!locked,hasControls:!locked,lockMovementX:locked,lockMovementY:locked,lockScalingX:locked,lockScalingY:locked,lockRotation:locked});}
       canvas.requestRenderAll();recordCommand();return;
     }
-    // Fabric 6 removed ActiveSelection.toGroup() and Group.toActiveSelection().
-    // Build and dismantle groups with the v6 collection API instead.
-    if(action==="group" && active?.type==="activeselection"){
-      const selectedObjects=[...active.getObjects()];
+    // Fabric 6.7: Group/ActiveSelection no longer expose toGroup/toActiveSelection.
+    // Discarding the selection first restores child objects to canvas coordinates.
+    if(action==="group" && normalizeSelectionType(active?.type)==="activeselection"){
+      const selectedObjects=canvas.getActiveObjects();
       if(selectedObjects.length<2)return;
       canvas.discardActiveObject();
-      const group=new fabric.Group(selectedObjects);
-      canvas.remove(...selectedObjects);
-      canvas.add(group);
-      canvas.setActiveObject(group);
-      group.setCoords();
-      canvas.requestRenderAll();
-      recordCommand();
-      latestRef.current.onSelectionChange(true,group.type??"group");
+      void import("fabric").then(({Group})=>{
+        if(canvasRef.current!==canvas)return;
+        const group=new Group(selectedObjects);
+        canvas.remove(...selectedObjects);
+        canvas.add(group);
+        canvas.setActiveObject(group);
+        group.setCoords();
+        canvas.requestRenderAll();
+        recordCommand();
+        latestRef.current.onSelectionChange(true,"group");
+      }).catch((error)=>console.error("Unable to group selected slide objects:",error));
       return;
     }
-    if(action==="ungroup" && active?.type==="group"){
-      const groupedObjects=[...active.getObjects()];
-      active.removeAll();
-      canvas.remove(active);
-      if(groupedObjects.length){
-        canvas.add(...groupedObjects);
-        if(groupedObjects.length>1){
-          const selection=new fabric.ActiveSelection(groupedObjects,{canvas});
-          canvas.setActiveObject(selection);
-        }else{
-          canvas.setActiveObject(groupedObjects[0]);
+    if(action==="ungroup" && normalizeSelectionType(active?.type)==="group"){
+      void import("fabric").then(({ActiveSelection})=>{
+        if(canvasRef.current!==canvas)return;
+        const currentGroup=canvas.getActiveObject();
+        if(!currentGroup || normalizeSelectionType(currentGroup.type)!=="group")return;
+        const groupedObjects=currentGroup.removeAll();
+        canvas.remove(currentGroup);
+        if(groupedObjects.length){
+          canvas.add(...groupedObjects);
+          if(groupedObjects.length>1){
+            const selection=new ActiveSelection(groupedObjects,{canvas});
+            canvas.setActiveObject(selection);
+          }else{
+            canvas.setActiveObject(groupedObjects[0]);
+          }
         }
-      }
-      canvas.requestRenderAll();
-      recordCommand();
-      latestRef.current.onSelectionChange(groupedObjects.length>0,groupedObjects.length>1?"activeselection":groupedObjects[0]?.type??"");
+        canvas.requestRenderAll();
+        recordCommand();
+        latestRef.current.onSelectionChange(
+          groupedObjects.length>0,
+          groupedObjects.length>1?"activeselection":normalizeSelectionType(groupedObjects[0]?.type)
+        );
+      }).catch((error)=>console.error("Unable to ungroup slide objects:",error));
       return;
     }
     if(action.startsWith("align:") && active){
@@ -565,7 +583,7 @@ export default function DesignCanvas({
       if(!Number.isFinite(requested))return;
       active.set("angle",Math.max(0,Math.min(360,requested)));
       active.setCoords();canvas.requestRenderAll();recordCommand();
-      latestRef.current.onSelectionChange(true,active.type??"",undefined,typeof active.animationPreset==="string"?active.animationPreset:"",Number(active.angle)||0);
+      latestRef.current.onSelectionChange(true,normalizeSelectionType(active.type),undefined,typeof active.animationPreset==="string"?active.animationPreset:"",Number(active.angle)||0);
       return;
     }
     if(action.startsWith("text-style:") && active && ["textbox","i-text","text"].includes(String(active.type??"").toLowerCase())){
@@ -586,7 +604,7 @@ export default function DesignCanvas({
       active.set({ animationPreset: preset, animationKind: kind });
       canvas.requestRenderAll();
       recordCommand();
-      latestRef.current.onSelectionChange(true, active.type ?? "", undefined, preset);
+      latestRef.current.onSelectionChange(true, normalizeSelectionType(active.type), undefined, preset);
       return;
     }
     if (action.startsWith("effect:")) {
