@@ -170,6 +170,26 @@ export default function WorkspaceDashboard() {
     } finally { setAuthBusy(false); }
   }
 
+  async function handleGoogleSignIn() {
+    if (!supabase || authBusy) return;
+    setAuthBusy(true);
+    setAuthError("");
+    setAuthMessage("");
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: new URL("/", window.location.origin).toString(),
+          queryParams: { prompt: "select_account" },
+        },
+      });
+      if (error) throw error;
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : "Google sign-in could not be started.");
+      setAuthBusy(false);
+    }
+  }
+
   function chooseFormat(next: CanvasFormat) {
     setFormat(next);
     if (next !== "custom") { setCanvasWidth(CANVAS_FORMATS[next].width); setCanvasHeight(CANVAS_FORMATS[next].height); }
@@ -249,6 +269,11 @@ export default function WorkspaceDashboard() {
     <div className="workspace-auth-icon"><Presentation size={25}/></div>
     <h1>{authMode === "signin" ? "Welcome back" : "Create your account"}</h1>
     <p>Sign in to save presentations to your account and access them from any device.</p>
+    <button type="button" className="workspace-google-button" onClick={() => void handleGoogleSignIn()} disabled={authBusy}>
+      <span className="workspace-google-mark" aria-hidden="true">G</span>
+      {authBusy ? "Connecting to Google…" : "Continue with Google"}
+    </button>
+    <div className="workspace-auth-divider"><span>or continue with email</span></div>
     <form onSubmit={handleAuth}>
       <label>Email address<input type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com"/></label>
       <label>Password<input type="password" minLength={8} autoComplete={authMode === "signin" ? "current-password" : "new-password"} required value={password} onChange={(event) => setPassword(event.target.value)} placeholder="At least 8 characters"/></label>
