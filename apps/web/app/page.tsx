@@ -1,5 +1,5 @@
-import WorkspaceDashboard from "./WorkspaceDashboard";
+import StudioHome from "./StudioHome";
 
 export default function Home() {
-  return <WorkspaceDashboard />;
+  return <StudioHome />;
 }
