@@ -45,8 +45,8 @@ export default function StudioWorkspace() {
   const canvasStageRef = useRef<HTMLDivElement>(null);
   const [theme, setTheme] = useState<"violet" | "blue" | "light">("light");
   const [tool, setTool] = useState<Tool>("select");
-  const [fill, setFill] = useState("#a78bfa");
-  const [stroke, setStroke] = useState("#d8ccff");
+  const [fill, setFill] = useState("#527d5b");
+  const [stroke, setStroke] = useState("#a7c4a5");
   const [strokeWidth, setStrokeWidth] = useState(3);
   const [textBorderEnabled, setTextBorderEnabled] = useState(false);
   const [textBorderWidth, setTextBorderWidth] = useState(1);
@@ -534,7 +534,7 @@ export default function StudioWorkspace() {
   return (
     <main className="studio-shell">
       <header className="studio-topbar">
-        <Link className="studio-back" href="/"><ArrowLeft size={16} /><span>Back to workspace</span></Link>
+        <Link className="studio-back" href="/"><ArrowLeft size={16} /><span>ORVIA Workspace</span></Link>
         <div className="studio-doc-title"><span className="doc-icon"><LayoutTemplate size={15} /></span><span>{title}</span><span className="saved-pill"><Check size={12} /> {localSaveState}</span></div>
         <div className="studio-top-actions">{isExporting && <span className="export-progress" role="status">{exportProgress || "Exporting…"}</span>}<button className="share-button" onClick={() => void shareProject()}>Share <ArrowUpRight size={14}/></button><div className="export-menu-wrap"><button className="export-button" disabled={isExporting} onClick={() => setExportMenuOpen((open) => !open)}><Download size={14}/> {isExporting ? "Exporting…" : "Export"} <ChevronDown size={13}/></button>{exportMenuOpen && <div className="export-menu"><button disabled={isExporting} onClick={() => { exportProject(); setExportMenuOpen(false); }}><Download size={14}/> Editable project (.json)</button><button disabled={isExporting} onClick={() => { void exportSlideImage("png"); setExportMenuOpen(false); }}><ImagePlus size={14}/> Current slide · PNG 3×</button><button disabled={isExporting} onClick={() => { void exportSlideImage("jpeg"); setExportMenuOpen(false); }}><ImagePlus size={14}/> Current slide · JPG 3×</button><button disabled={isExporting} onClick={() => { void exportAllSlideImages("png"); setExportMenuOpen(false); }}><ImagePlus size={14}/> All slides · PNG ZIP</button><button disabled={isExporting} onClick={() => { void exportAllSlideImages("jpeg"); setExportMenuOpen(false); }}><ImagePlus size={14}/> All slides · JPG ZIP</button><button disabled={isExporting} onClick={() => { void exportPdf(); setExportMenuOpen(false); }}><Download size={14}/> All slides · PDF</button><button disabled={isExporting} onClick={() => { void exportPowerPoint(); setExportMenuOpen(false); }}><Download size={14}/> Editable PowerPoint (.pptx)</button></div>}</div></div>
       </header>
