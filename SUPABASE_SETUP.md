@@ -47,9 +47,25 @@ For Vercel, add the same two variables in **Project → Settings → Environment
 
 **Never put the secret key or legacy service_role key in a NEXT_PUBLIC variable or browser code.**
 
-## 5. Configure authentication
+## 5. Configure Google sign-in
 
-In **Authentication → URL Configuration**, set your local Site URL to `http://localhost:3000`. Add your deployed domain to the Redirect URLs list. Configure email confirmation and SMTP according to your launch requirements.
+1. In Google Cloud Console, create or select a project and configure the **OAuth consent screen**.
+2. Create an **OAuth Client ID → Web application**.
+3. In **Authorized JavaScript origins**, add:
+   - `http://localhost:3000`
+   - Your deployed app origin, for example `https://your-domain.com`
+4. In **Authorized redirect URIs**, add the Supabase callback shown in **Supabase → Authentication → Providers → Google**. It has this format:
+   - `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback`
+5. Copy the Google Client ID and Client Secret into **Supabase → Authentication → Providers → Google**, enable the provider, and save.
+6. In **Supabase → Authentication → URL Configuration**:
+   - Set **Site URL** to your deployed app origin.
+   - Add `http://localhost:3000/` to Redirect URLs.
+   - Add your production and preview callback URLs as exact origins/paths you actually use (for example `https://your-domain.com/`).
+7. The app starts Google OAuth with `redirectTo: window.location.origin + "/"`; Supabase JS completes the PKCE callback and restores the browser session on return.
+
+Keep the Google Client Secret only in Supabase. Never place it in `.env.local`, frontend code, or a `NEXT_PUBLIC_*` variable. The app's Google button cannot work until the provider is enabled and these URLs match exactly.
+
+For email confirmation and password recovery, configure SMTP and the corresponding redirect URLs according to your launch requirements.
 
 ## 6. Run the app
 
